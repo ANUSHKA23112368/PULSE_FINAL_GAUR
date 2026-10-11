@@ -11,6 +11,7 @@ for future experimental integration of a fine-tuned transformer model.
 import re
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Tuple
+from backend.extraction.context_extractor import clinical_context_extractor
 
 class ClinicalEntityExtractor(ABC):
     """
@@ -136,6 +137,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:renal\s*failure|kidney\s*disease|ckd)\b", "Chronic Kidney Disease"),
             (r"\b(?:depression|anxiety|bipolar)\b", "Psychiatric History"),
             (r"\b(?:fracture|fractured\s*nof|broken\s*hip)\b", "Fracture"),
+            (r"\b(?:infections?)\b", "Infection (Suspected / Documented)"),
             (r"\b(?:history\s*of\s*([a-zA-Z0-9\s]+?)(?:,|\.|\sand\s|\swith\s))", "Documented Medical History")
         ]
 
@@ -175,15 +177,21 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:statin|atorvastatin|rosuvastatin|simvastatin)\b", "HMG-CoA Reductase Inhibitor"),
             (r"\b(?:metformin|gliclazide|jardiance)\b", "Oral Hypoglycemic Agent"),
             (r"\b(?:ondansetron|maxolon|metoclopramide)\b", "Antiemetic Agent"),
-            (r"\b(?:laxative[s]?|coloxyl|senna|movicol)\b", "Aperient / Bowel Management")
+            (r"\b(?:laxative[s]?|coloxyl|senna|movicol)\b", "Aperient / Bowel Management"),
+            (r"\b(?:combiflam|ibuprofen|advil|brufen|nurofen)\b", "Combiflam (Ibuprofen / Paracetamol Analgesia)"),
+            (r"\b(?:(?:some\s+)?medicines?(?:\s+for\s+relief\s+of\s+pain)?|pain\s*relief\s*medicines?|medicines?\s+for\s+pain|analgesics?)\b", "Analgesic / Unspecified Medication")
         ]
 
         # Investigations
         self.investigation_patterns = [
+            (r"\b(?:renal\s*biopsy|biopsy)\b", "Renal Biopsy / Diagnostic Tissue Biopsy"),
             (r"\b(?:brain\s*mri|mri(?:\s*scan)?)\b", "Brain Magnetic Resonance Imaging (MRI)"),
             (r"\b(?:carotid\s*doppler|doppler\s*ultrasound|carotid\s*ultrasound)\b", "Carotid Doppler Ultrasound"),
             (r"\b(?:ct(?:\s*scan)?|computed\s*tomography)\b", "Computed Tomography (CT Scan)"),
             (r"\b(?:ecg|electrocardiogram|telemetry|cardiac\s*monitor(?:ing)?)\b", "12-Lead ECG / Telemetry"),
+            (r"\b(?:wbc|white\s*blood\s*(?:cells?|count))\b", "White Blood Cell Count (WBC)"),
+            (r"\b(?:rbc|red\s*blood\s*(?:cells?|count))\b", "Red Blood Cell Count (RBC)"),
+            (r"\b(?:platelets?|platelettes?)\b", "Platelet Count"),
             (r"\b(?:chest\s*x-?ray|cxr|x-?ray)\b", "Chest Radiography (CXR)"),
             (r"\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b", "Blood Glucose Monitoring (BGL)"),
             (r"\b(?:blood\s*test[s]?|pathology|fbc|full\s*blood\s*count|uec|lfts?|inr|troponin|blood\s*cultures?)\b", "Pathology / Blood Analysis"),
@@ -220,15 +228,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
         ]
 
     def _split_into_sentences(self, text: str) -> List[Tuple[str, int, int]]:
-        sentence_spans = []
-        pattern = re.compile(r'([^.!?]+(?:[.!?]+|$))', re.MULTILINE)
-        for match in pattern.finditer(text):
-            sent = match.group().strip()
-            if sent:
-                sentence_spans.append((sent, match.start(), match.end()))
-        if not sentence_spans and text:
-            sentence_spans.append((text, 0, len(text)))
-        return sentence_spans
+        return clinical_context_extractor.split_sentences_protected(text)
 
     def _find_source_sentence(self, match_start: int, sentence_spans: List[Tuple[str, int, int]]) -> str:
         for sent_text, s_start, s_end in sentence_spans:
@@ -301,7 +301,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "field": "Bed / Room",
                 "value": bed_match.group(0),
                 "detail": f"Bed {bed_match.group(1)}",
-                "confidence": "High (Rule Pattern)",
+                "confidence": None,
+                "confidence_type": "deterministic_rule",
+                "raw_model_probability": None,
+                "calibrated": False,
+                "rule_source": "Bed Pattern Regular Expression",
+                "matching_method": "Regex Pattern Matching",
                 "source_sentence": self._find_source_sentence(bed_match.start(), sentence_spans),
                 "start_char": bed_match.start(),
                 "end_char": bed_match.end()
@@ -322,7 +327,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "field": "Patient Name",
                         "value": name_val,
                         "detail": name_val,
-                        "confidence": "High (Named Entity Context)",
+                        "confidence": None,
+                        "confidence_type": "deterministic_rule",
+                        "raw_model_probability": None,
+                        "calibrated": False,
+                        "rule_source": "Patient Name Pattern Matching",
+                        "matching_method": "Named Entity Context Pattern",
                         "source_sentence": self._find_source_sentence(m.start(1), sentence_spans),
                         "start_char": m.start(1),
                         "end_char": m.end(1)
@@ -343,7 +353,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                     "field": "Age",
                     "value": formatter(m),
                     "detail": formatter(m),
-                    "confidence": "High (Rule Pattern)",
+                    "confidence": None,
+                    "confidence_type": "deterministic_rule",
+                    "raw_model_probability": None,
+                    "calibrated": False,
+                    "rule_source": "Age Regular Expression",
+                    "matching_method": "Regex Pattern Matching",
                     "source_sentence": self._find_source_sentence(m.start(), sentence_spans),
                     "start_char": m.start(),
                     "end_char": m.end()
@@ -359,7 +374,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "field": "Gender / Sex",
                 "value": gender_val,
                 "detail": f"Verified via clinical pronoun/record ('{gender_m.group(1)}')",
-                "confidence": "High (Lexical Match)",
+                "confidence": None,
+                "confidence_type": "deterministic_rule",
+                "raw_model_probability": None,
+                "calibrated": False,
+                "rule_source": "Clinical Pronoun / Gender Lexicon",
+                "matching_method": "Exact Lexical Match",
                 "source_sentence": self._find_source_sentence(gender_m.start(), sentence_spans),
                 "start_char": gender_m.start(),
                 "end_char": gender_m.end()
@@ -372,7 +392,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "field": "Attending Consultant",
                 "value": doc_m.group(1),
                 "detail": doc_m.group(1),
-                "confidence": "High (Named Entity Context)",
+                "confidence": None,
+                "confidence_type": "deterministic_rule",
+                "raw_model_probability": None,
+                "calibrated": False,
+                "rule_source": "Consultant Title Pattern Matching",
+                "matching_method": "Named Entity Context Pattern",
                 "source_sentence": self._find_source_sentence(doc_m.start(1), sentence_spans),
                 "start_char": doc_m.start(1),
                 "end_char": doc_m.end(1)
@@ -385,14 +410,28 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 span = (m.start(), m.end())
                 matched_text = m.group(0).strip()
                 source_sent = self._find_source_sentence(m.start(), sentence_spans)
+                ctx = clinical_context_extractor.analyze_assertion(matched_text, m.start(), m.end(), text)
 
-                # Deduplicate by normalized name while preserving all span highlights
-                if normalized_name not in matched_dict:
-                    matched_dict[normalized_name] = {
+                # Key preserves assertion and temporality so negated/historical occurrences are not collapsed with active ones
+                dedup_key = (normalized_name, ctx["assertion"], ctx["temporality"])
+                if dedup_key not in matched_dict:
+                    matched_dict[dedup_key] = {
                         "category": category_label,
                         "text": matched_text,
                         "normalized": normalized_name,
-                        "confidence": "High (Clinical Lexicon)",
+                        "assertion": ctx["assertion"],
+                        "temporality": ctx["temporality"],
+                        "is_negated": ctx["is_negated"],
+                        "is_uncertain": ctx["is_uncertain"],
+                        "is_historical": ctx["is_historical"],
+                        "is_planned": ctx["is_planned"],
+                        "context_cue": ctx["cue"],
+                        "confidence": None,
+                        "confidence_type": "deterministic_rule",
+                        "raw_model_probability": None,
+                        "calibrated": False,
+                        "rule_source": f"PULSE {category_label} Lexicon & Context Scope",
+                        "matching_method": "Clinical Lexicon & Regex Match",
                         "source_sentence": source_sent,
                         "start_char": m.start(),
                         "end_char": m.end(),
@@ -400,8 +439,8 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "occurrences": 1
                     }
                 else:
-                    matched_dict[normalized_name]["all_spans"].append(span)
-                    matched_dict[normalized_name]["occurrences"] += 1
+                    matched_dict[dedup_key]["all_spans"].append(span)
+                    matched_dict[dedup_key]["occurrences"] += 1
 
         for item in matched_dict.values():
             output_list.append(item)
@@ -413,25 +452,36 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 start, end = m.start(), m.end()
                 matched_med = m.group(0).strip()
                 source_sent = self._find_source_sentence(start, sentence_spans)
+                ctx = clinical_context_extractor.analyze_assertion(matched_med, start, end, text)
 
-                dosage_match = re.search(r"\b(\d+\s*(?:mg|mcg|ml|units?|puffs?)|variable\s*dose|sliding\s*scale|\d+\s+nitros?)\b", source_sent, re.IGNORECASE)
-                dosage = dosage_match.group(0) if dosage_match else "Standard ward dose"
+                dosage_match = re.search(r"\b(\d+\s*(?:mg|mcg|ml|units?|puffs?|dosage|doses?)|variable\s*dose|sliding\s*scale|\d+\s+nitros?)\b", source_sent, re.IGNORECASE)
+                dosage = dosage_match.group(0) if dosage_match else "Unspecified dose in text"
 
                 freq_match = re.search(r"\b(qid|bd|tds|prn|daily|mane|nocte|hourly)\b", source_sent, re.IGNORECASE)
-                frequency = freq_match.group(0).upper() if freq_match else "Per clinical protocol"
+                frequency = freq_match.group(0).upper() if freq_match else "Unspecified frequency"
 
                 route_match = re.search(r"\b(iv|oral|po|subcut|sc|topical|sublingual|inhal(?:er|ation))\b", source_sent, re.IGNORECASE)
-                route = route_match.group(0).upper() if route_match else "PO / Clinical route"
+                route = route_match.group(0).upper() if route_match else "Unspecified route"
 
-                if norm not in matched_meds:
-                    matched_meds[norm] = {
+                dedup_key = (norm, ctx["assertion"], ctx["temporality"])
+                if dedup_key not in matched_meds:
+                    matched_meds[dedup_key] = {
                         "category": "Medication",
                         "text": matched_med,
                         "normalized": norm,
                         "dosage": dosage,
                         "frequency": frequency,
                         "route": route,
-                        "confidence": "High (Clinical Lexicon)",
+                        "assertion": ctx["assertion"],
+                        "temporality": ctx["temporality"],
+                        "is_negated": ctx["is_negated"],
+                        "is_uncertain": ctx["is_uncertain"],
+                        "confidence": None,
+                        "confidence_type": "deterministic_rule",
+                        "raw_model_probability": None,
+                        "calibrated": False,
+                        "rule_source": "PULSE Medication Lexicon",
+                        "matching_method": "Medication Lexicon Matching",
                         "source_sentence": source_sent,
                         "start_char": start,
                         "end_char": end,
@@ -439,8 +489,8 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "occurrences": 1
                     }
                 else:
-                    matched_meds[norm]["all_spans"].append((start, end))
-                    matched_meds[norm]["occurrences"] += 1
+                    matched_meds[dedup_key]["all_spans"].append((start, end))
+                    matched_meds[dedup_key]["occurrences"] += 1
 
         for item in matched_meds.values():
             output_list.append(item)
@@ -458,7 +508,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "category": "Measurement",
                         "type": m_type,
                         "text": matched,
-                        "confidence": "High (Clinical Pattern)",
+                        "confidence": None,
+                        "confidence_type": "deterministic_rule",
+                        "raw_model_probability": None,
+                        "calibrated": False,
+                        "rule_source": "Clinical Measurement Regex",
+                        "matching_method": "Regex Pattern Matching",
                         "source_sentence": source_sent,
                         "start_char": m.start(),
                         "end_char": m.end()
@@ -483,30 +538,77 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
     def _extract_clinical_risks(self, text: str, entities: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
         Synthesizes real-world clinical safety flags (Fall Risk, Glycemic Alert, Cardiac Alert, Neurological Alert).
+        Requires affirmative, non-negated, current clinical findings.
         """
         risks = []
         lower = text.lower()
 
-        # Fall Risk
-        if any(term in lower for term in ["unsteady", "ataxia", "blind", "vision", "assistance", "falls", "balance", "mobility"]):
+        # 1. Fall Risk: requires affirmative mobility or balance concern (and not negated)
+        fall_risk_active = False
+        for s in entities.get("symptoms", []):
+            if s.get("normalized") in ["Gait Unsteadiness / Ataxia", "Severe Visual Impairment"] and not s.get("is_negated"):
+                fall_risk_active = True
+                break
+        for trt in entities.get("treatments", []):
+            if "assistance" in trt.get("text", "").lower() and not trt.get("is_negated"):
+                fall_risk_active = True
+                break
+        if not fall_risk_active:
+            m = re.search(r'\b(?:unsteady|ataxia|loss\s+of\s+balance)\b', lower)
+            if m:
+                ctx = clinical_context_extractor.analyze_assertion(m.group(0), m.start(), m.end(), text)
+                if not ctx["is_negated"]:
+                    fall_risk_active = True
+
+        if fall_risk_active:
             risks.append({
                 "risk_type": "Fall Risk Alert",
                 "severity": "High",
-                "rationale": "Patient documented as unsteady, requiring assistance, or exhibiting sensory/balance deficit.",
+                "rationale": "Patient documented with affirmative unsteadiness, transfer assistance requirement, or visual impairment.",
                 "care_directive": "Ensure call bell within reach; assist during transfers; non-slip footwear."
             })
 
-        # Cardiac / Ischemic Alert
-        if any(term in lower for term in ["chest pain", "no effect", "nitro", "angina", "troponin", "cva", "stroke"]):
+        # 2. Cardiovascular / Ischemic Alert:
+        # MUST BE CURRENT AND AFFIRMATIVE! If chest pain is denied or historical, DO NOT FIRE!
+        cardiac_active = False
+        cardiac_rationale = ""
+        for s in entities.get("symptoms", []):
+            if s.get("normalized") == "Chest Pain / Angina Symptoms":
+                if not s.get("is_negated") and not s.get("is_historical"):
+                    cardiac_active = True
+                    cardiac_rationale = "Active current chest pain or angina symptoms documented."
+                    break
+        if not cardiac_active:
+            for c in entities.get("conditions", []):
+                if c.get("normalized") in ["Angina Pectoris", "Cerebrovascular Accident / Stroke"] and not c.get("is_negated"):
+                    cardiac_active = True
+                    cardiac_rationale = f"Active documented {c.get('normalized')}."
+                    break
+        if not cardiac_active:
+            for m in entities.get("medications", []):
+                if "nitro" in m.get("normalized", "").lower() and "no effect" in lower:
+                    cardiac_active = True
+                    cardiac_rationale = "Nitroglycerin administration with refractory symptoms documented."
+                    break
+
+        if cardiac_active:
             risks.append({
                 "risk_type": "Cardiovascular / Ischemic Alert",
-                "severity": "High" if "no effect" in lower or "chest pain" in lower else "Medium",
-                "rationale": "Active chest pain history or acute cardiac medication administration noted.",
+                "severity": "High",
+                "rationale": cardiac_rationale,
                 "care_directive": "Continuous observation; notify medical team immediately if pain recurs; repeat 12-lead ECG."
             })
 
-        # Glycemic / Diabetic Alert
-        if any(term in lower for term in ["type 1", "sliding scale", "bgl trend", "high during the am", "insulin"]):
+        # 3. Glycemic / Diabetic Alert:
+        glycemic_active = False
+        for med in entities.get("medications", []):
+            if "insulin" in med.get("normalized", "").lower():
+                glycemic_active = True
+                break
+        if not glycemic_active and any(term in lower for term in ["sliding scale", "bgl trend", "high during the am"]):
+            glycemic_active = True
+
+        if glycemic_active:
             risks.append({
                 "risk_type": "Glycemic Management Alert",
                 "severity": "Medium",
@@ -514,12 +616,25 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "care_directive": "Pre-prandial BGL monitoring; clarify sliding scale dose with medical team prior to administration."
             })
 
-        # Neurological / Coma Alert
-        if any(term in lower for term in ["gcs", "bell's palsy", "vertigo", "photophobia", "headache", "mri"]):
+        # 4. Neurological / Coma Alert:
+        neuro_active = False
+        for s in entities.get("symptoms", []):
+            if s.get("normalized") in ["Headache (Cephalgia)", "Vertigo (Vestibular)", "Photophobia (Light Sensitivity)"] and not s.get("is_negated") and not s.get("is_historical"):
+                neuro_active = True
+                break
+        if not neuro_active:
+            for c in entities.get("conditions", []):
+                if "bell's palsy" in c.get("normalized", "").lower() and not c.get("is_negated"):
+                    neuro_active = True
+                    break
+        if not neuro_active and any(term in lower for term in ["gcs", "brain mri"]):
+            neuro_active = True
+
+        if neuro_active:
             risks.append({
                 "risk_type": "Neurological Monitoring Alert",
                 "severity": "Medium",
-                "rationale": "Ongoing central nervous system or cranial nerve symptoms under investigation.",
+                "rationale": "Ongoing central nervous system or cranial nerve symptoms under active observation.",
                 "care_directive": "Routine 4-hourly neuro observations; assess pupillary reaction and limb symmetry."
             })
 

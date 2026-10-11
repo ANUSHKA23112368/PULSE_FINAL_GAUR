@@ -29,19 +29,14 @@ class ClinicalTemporalExtractor(TemporalExtractor):
             # Durations & Historical spans
             (r"\b(for\s+the\s+last\s+(?:\d+|three|four|five|several|few)\s+(?:years|months|weeks|days|hours))\b", "Duration"),
             (r"\b(since\s+(?:childhood|yesterday|admission|this\s+morning))\b", "Onset Anchor"),
-            (r"\b(\d+\s+(?:days?|weeks?|months?|years?)\s+ago)\b", "Historical Distance")
+            (r"\b(\d+\s+(?:days?|weeks?|months?|years?)\s+ago)\b", "Historical Distance"),
+            # Follow-up intervals & future delays
+            (r"\b(?:after|in)\s+(\d+\s*(?:days?|weeks?|months?|hours?))\b", "Future Temporal Interval / Follow-Up Timing")
         ]
 
     def _split_into_sentences(self, text: str) -> List[Tuple[str, int, int]]:
-        sentence_spans = []
-        pattern = re.compile(r'([^.!?]+(?:[.!?]+|$))', re.MULTILINE)
-        for match in pattern.finditer(text):
-            sent = match.group().strip()
-            if sent:
-                sentence_spans.append((sent, match.start(), match.end()))
-        if not sentence_spans and text:
-            sentence_spans.append((text, 0, len(text)))
-        return sentence_spans
+        from backend.extraction.context_extractor import clinical_context_extractor
+        return clinical_context_extractor.split_sentences_protected(text)
 
     def _find_source_sentence(self, match_start: int, sentence_spans: List[Tuple[str, int, int]]) -> str:
         for sent_text, s_start, s_end in sentence_spans:

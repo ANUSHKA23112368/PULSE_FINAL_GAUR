@@ -1,176 +1,184 @@
 import React, { useState, useEffect } from 'react';
 import { 
+  Users, 
   Activity, 
-  FileText, 
   Layers, 
-  Database, 
-  Info, 
+  FileText, 
+  History, 
   HeartPulse, 
+  CheckCircle2, 
   ShieldAlert,
-  Sparkles,
-  CheckCircle2
+  Info
 } from 'lucide-react';
-import { DashboardPage } from './pages/DashboardPage';
-import { AnalyzePage } from './pages/AnalyzePage';
-import { SampleReportsPage } from './pages/SampleReportsPage';
-import { ExtractionResultsPage } from './pages/ExtractionResultsPage';
-import { DatasetPage } from './pages/DatasetPage';
-import { AboutPage } from './pages/AboutPage';
-import { fetchHealth } from './services/api';
+import { PatientDashboardPage } from './pages/PatientDashboardPage';
+import { VitalsPage } from './pages/VitalsPage';
+import { ClinicalNotesPage } from './pages/ClinicalNotesPage';
+import { HandoverSummaryPage } from './pages/HandoverSummaryPage';
+import { HistoryPage } from './pages/HistoryPage';
+import { fetchHealth, fetchPatients } from './services/api';
 
 export function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedReportId, setSelectedReportId] = useState('0');
-  const [latestResult, setLatestResult] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [systemHealth, setSystemHealth] = useState(null);
+  const [totalPatients, setTotalPatients] = useState(null);
 
   useEffect(() => {
-    async function checkSys() {
+    async function initApp() {
       try {
-        const h = await fetchHealth();
-        setSystemHealth(h);
+        const [healthData, patientsData] = await Promise.all([
+          fetchHealth(),
+          fetchPatients()
+        ]);
+        setSystemHealth(healthData);
+        const count = patientsData?.total_patients ?? patientsData?.patients?.length ?? healthData?.total_patients ?? 10;
+        setTotalPatients(count);
+        if (patientsData?.patients?.length > 0) {
+          setSelectedPatient(patientsData.patients[0]);
+        }
       } catch (err) {
-        console.warn("Backend healthcheck pending:", err);
+        console.warn("Backend initialization check:", err);
       }
     }
-    checkSys();
+    initApp();
   }, []);
 
-  function handleSelectReport(id) {
-    setSelectedReportId(String(id));
+  function handleSelectPatient(patient) {
+    setSelectedPatient(patient);
   }
 
-  function handleStoreResults(res) {
-    setLatestResult(res);
+  function handleSwitchPatient() {
+    setActiveTab('dashboard');
   }
 
   return (
-    <div className="app-container">
-      {/* Disclaimer Banner */}
-      <div className="disclaimer-banner">
-        <span className="disclaimer-badge">Clinical Scope</span>
-        <span>
-          <strong>PULSE is an AI-assisted clinical information-organization prototype.</strong> It does not diagnose, prescribe treatment, or replace professional clinical judgment.
-        </span>
+    <div className="app-container hospital-theme">
+      {/* Persistent Research Prototype & Clinical Safety Banner */}
+      <div className="clinical-scope-banner">
+        <div className="banner-content">
+          <ShieldAlert size={16} className="scope-icon" />
+          <span>
+            <strong>PULSE Research Prototype (Demonstration Only):</strong> Uses synthetic demonstration data. Not connected to live hospital EHR or patient monitors. Not for clinical diagnosis, prescribing, or treatment decisions.
+          </span>
+        </div>
       </div>
 
-      {/* Main Header */}
-      <header className="main-header">
+      {/* Hospital Workstation Header */}
+      <header className="hospital-header">
         <div className="header-inner">
-          <div className="brand-section" onClick={() => setActiveTab('dashboard')}>
-            <div className="brand-logo-glow">
-              <HeartPulse size={24} />
+          {/* Hospital Brand & Prototype Tag */}
+          <div className="hospital-brand" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
+            <div className="brand-icon">
+              <HeartPulse size={22} color="#ffffff" />
             </div>
-            <div className="brand-titles">
-              <div className="brand-name">
+            <div className="brand-text">
+              <div className="brand-title">
                 PULSE
-                <span className="brand-badge">Research Prototype</span>
+                <span className="prototype-tag">Research & Demo</span>
               </div>
-              <div className="brand-subtitle">
-                Patient Update & Log Structuring Engine
-              </div>
+              <div className="brand-sub">Hospital Handover Intelligence System</div>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <nav className="nav-tabs">
+          {/* Primary Hospital Navigation (Parts A & B) */}
+          <nav className="hospital-nav">
             <button 
-              className={`nav-tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+              className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
               onClick={() => setActiveTab('dashboard')}
             >
-              <Activity size={16} /> Dashboard
+              <Users size={16} /> Patient Dashboard
             </button>
+
             <button 
-              className={`nav-tab ${activeTab === 'analyze' ? 'active' : ''}`}
-              onClick={() => setActiveTab('analyze')}
+              className={`nav-item ${activeTab === 'vitals' ? 'active' : ''}`}
+              onClick={() => setActiveTab('vitals')}
             >
-              <HeartPulse size={16} /> Analyze Handover
+              <Activity size={16} /> Vitals
             </button>
+
             <button 
-              className={`nav-tab ${activeTab === 'reports' ? 'active' : ''}`}
-              onClick={() => setActiveTab('reports')}
+              className={`nav-item ${activeTab === 'notes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('notes')}
             >
-              <FileText size={16} /> Sample Reports
+              <FileText size={16} /> Clinical Notes
             </button>
+
             <button 
-              className={`nav-tab ${activeTab === 'results' ? 'active' : ''}`}
-              onClick={() => setActiveTab('results')}
+              className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
+              onClick={() => setActiveTab('summary')}
             >
-              <Layers size={16} /> Extraction Results
+              <Layers size={16} /> Handover Summary
             </button>
+
             <button 
-              className={`nav-tab ${activeTab === 'dataset' ? 'active' : ''}`}
-              onClick={() => setActiveTab('dataset')}
+              className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
+              onClick={() => setActiveTab('history')}
             >
-              <Database size={16} /> Dataset
-            </button>
-            <button 
-              className={`nav-tab ${activeTab === 'about' ? 'active' : ''}`}
-              onClick={() => setActiveTab('about')}
-            >
-              <Info size={16} /> About PULSE
+              <History size={16} /> History
             </button>
           </nav>
         </div>
       </header>
 
-      {/* Main Page Routing */}
-      <main className="main-content">
+      {/* Active Workstation Body */}
+      <main className="main-viewport">
         {activeTab === 'dashboard' && (
-          <DashboardPage 
-            onNavigate={(tab) => setActiveTab(tab)} 
-            onSelectReport={handleSelectReport}
+          <PatientDashboardPage 
+            selectedPatient={selectedPatient}
+            onSelectPatient={handleSelectPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+            onPatientCountChange={(count) => setTotalPatients(count)}
           />
         )}
-        {activeTab === 'analyze' && (
-          <AnalyzePage 
-            selectedReportId={selectedReportId}
-            onSelectReport={handleSelectReport}
-            onStoreResults={handleStoreResults}
-          />
-        )}
-        {activeTab === 'reports' && (
-          <SampleReportsPage 
-            onSelectReport={handleSelectReport}
+
+        {activeTab === 'vitals' && (
+          <VitalsPage 
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
           />
         )}
-        {activeTab === 'results' && (
-          <ExtractionResultsPage 
-            latestResult={latestResult}
-            onNavigate={(tab) => setActiveTab(tab)}
-            onSelectReport={handleSelectReport}
-          />
-        )}
-        {activeTab === 'dataset' && (
-          <DatasetPage 
-            onSelectReport={handleSelectReport}
+
+        {activeTab === 'notes' && (
+          <ClinicalNotesPage 
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
           />
         )}
-        {activeTab === 'about' && (
-          <AboutPage />
+
+        {activeTab === 'summary' && (
+          <HandoverSummaryPage 
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
+
+        {activeTab === 'history' && (
+          <HistoryPage 
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="pulse-footer">
+      {/* Restrained Hospital Workstation Footer */}
+      <footer className="hospital-footer">
         <div className="footer-inner">
-          <div>
-            <span style={{ fontWeight: 700, color: '#f8fafc' }}>PULSE Prototype</span> — Patient Update & Log Structuring Engine
-            <div style={{ color: '#64748b', fontSize: '0.75rem', marginTop: '0.2rem' }}>
-              Corpus: Synthetic Nursing Handover Training and Development Data Set (101 Reports)
-            </div>
+          <div className="footer-info">
+            <strong>PULSE Prototype</strong> • Hospital Handover Intelligence Engine
+            <span className="footer-muted"> (Synthetic demonstration corpus • {totalPatients != null ? `${totalPatients} registered demo patients` : 'registered demo patients'})</span>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem' }}>
-            <span style={{ color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <CheckCircle2 size={13} />
-              {systemHealth ? `Backend Active (${systemHealth.total_reports} Reports)` : 'FastAPI Connected'}
+          <div className="footer-status">
+            <span className="status-indicator">
+              <CheckCircle2 size={13} color="#059669" />
+              <span>{systemHealth ? 'FastAPI Backend Ready' : 'Backend Connecting'}</span>
             </span>
-            <span style={{ color: '#94a3b8' }}>
-              Candidate Model: Bio_ClinicalBERT
-            </span>
+            <span className="status-separator">•</span>
+            <span className="status-engine">Model: Bio_ClinicalBERT (Uncalibrated Softmax)</span>
           </div>
         </div>
       </footer>

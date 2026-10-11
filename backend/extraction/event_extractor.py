@@ -57,9 +57,14 @@ class RuleBasedEventExtractor(EventExtractor):
             },
             # 4. Investigation Scheduled / Rescheduled / Pending
             {
-                "pattern": r"\b(?:is\s+for|scheduled\s+for|supposed\s+to\s+have|booked\s+for)\s+([^.,;]*(?:carotid\s+doppler|mri|ct|doppler|scan|procedure|surgery|blood\s*test)[^.,;]*)",
+                "pattern": r"\b(?:is\s+planned\s+for|planned\s+for|is\s+for|scheduled\s+for|supposed\s+to\s+have|booked\s+for)\s+([^.,;]*(?:biopsy|renal\s+biopsy|carotid\s+doppler|mri|ct|doppler|scan|procedure|surgery|blood\s*test)[^.,;]*)",
                 "type": "Investigation / Procedure Scheduled",
                 "template": "Scheduled for {0}"
+            },
+            {
+                "pattern": r"\b(?:a\s+([a-zA-Z\s]+?(?:biopsy|procedure|surgery|scan))\s+is\s+planned\s+for\s+([^.,;]+))",
+                "type": "Investigation / Procedure Scheduled",
+                "template": "Scheduled for {0} (timing: {1})"
             },
             {
                 "pattern": r"\b(?:pushed\s+(?:it\s+)?back\s+to|rescheduled\s+to|delayed\s+to|needs\s+another)\s+([^.,;]+)",
@@ -93,15 +98,8 @@ class RuleBasedEventExtractor(EventExtractor):
         ]
 
     def _split_into_sentences(self, text: str) -> List[Tuple[str, int, int]]:
-        sentence_spans = []
-        pattern = re.compile(r'([^.!?]+(?:[.!?]+|$))', re.MULTILINE)
-        for match in pattern.finditer(text):
-            sent = match.group().strip()
-            if sent:
-                sentence_spans.append((sent, match.start(), match.end()))
-        if not sentence_spans and text:
-            sentence_spans.append((text, 0, len(text)))
-        return sentence_spans
+        from backend.extraction.context_extractor import clinical_context_extractor
+        return clinical_context_extractor.split_sentences_protected(text)
 
     def _find_source_sentence(self, match_start: int, sentence_spans: List[Tuple[str, int, int]]) -> str:
         for sent_text, s_start, s_end in sentence_spans:
@@ -133,8 +131,11 @@ class RuleBasedEventExtractor(EventExtractor):
 
         for rule in self.event_rules:
             for m in re.finditer(rule["pattern"], text, re.IGNORECASE):
-                matched_arg = m.group(1).strip() if m.groups() else ""
-                event_desc = rule["template"].format(matched_arg).strip()
+                matched_groups = [g.strip() if g else "" for g in m.groups()] if m.groups() else [""]
+                try:
+                    event_desc = rule["template"].format(*matched_groups).strip()
+                except Exception:
+                    event_desc = rule["template"].format(matched_groups[0]).strip()
                 source_sentence = self._find_source_sentence(m.start(), sentence_spans)
                 time_expr = self._extract_time_from_sentence(source_sentence)
 

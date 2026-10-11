@@ -1,0 +1,226 @@
+{
+  "dataset": "PULSE Synthetic Nursing Handover (101 Documents)",
+  "evaluation_protocol": "Stratified Document-Level 5-Fold Cross-Validation",
+  "rule_based_baseline": {
+    "strict_span_metrics": {
+      "precision_mean": 44.48,
+      "precision_std": 3.79,
+      "recall_mean": 17.26,
+      "recall_std": 2.21,
+      "f1_mean": 24.84,
+      "f1_std": 2.81
+    },
+    "lenient_span_metrics": {
+      "precision_mean": 85.51,
+      "precision_std": 2.8,
+      "recall_mean": 33.15,
+      "recall_std": 2.89,
+      "f1_mean": 47.72,
+      "f1_std": 3.28
+    },
+    "per_fold": [
+      {
+        "strict": {
+          "precision": 42.2,
+          "recall": 15.34,
+          "f1": 22.5,
+          "tp": 73,
+          "fp": 100,
+          "fn": 403
+        },
+        "lenient": {
+          "precision": 87.28,
+          "recall": 31.72,
+          "f1": 46.53,
+          "tp": 151,
+          "fp": 22,
+          "fn": 325
+        }
+      },
+      {
+        "strict": {
+          "precision": 43.71,
+          "recall": 16.94,
+          "f1": 24.41,
+          "tp": 73,
+          "fp": 94,
+          "fn": 358
+        },
+        "lenient": {
+          "precision": 82.63,
+          "recall": 32.02,
+          "f1": 46.15,
+          "tp": 138,
+          "fp": 29,
+          "fn": 293
+        }
+      },
+      {
+        "strict": {
+          "precision": 40.44,
+          "recall": 17.01,
+          "f1": 23.95,
+          "tp": 74,
+          "fp": 109,
+          "fn": 361
+        },
+        "lenient": {
+          "precision": 83.61,
+          "recall": 35.17,
+          "f1": 49.51,
+          "tp": 153,
+          "fp": 30,
+          "fn": 282
+        }
+      },
+      {
+        "strict": {
+          "precision": 44.52,
+          "recall": 15.54,
+          "f1": 23.04,
+          "tp": 69,
+          "fp": 86,
+          "fn": 375
+        },
+        "lenient": {
+          "precision": 83.87,
+          "recall": 29.28,
+          "f1": 43.41,
+          "tp": 130,
+          "fp": 25,
+          "fn": 314
+        }
+      },
+      {
+        "strict": {
+          "precision": 51.52,
+          "recall": 21.45,
+          "f1": 30.29,
+          "tp": 68,
+          "fp": 64,
+          "fn": 249
+        },
+        "lenient": {
+          "precision": 90.15,
+          "recall": 37.54,
+          "f1": 53.01,
+          "tp": 119,
+          "fp": 13,
+          "fn": 198
+        }
+      }
+    ]
+  },
+  "statistical_classifier_baseline": {
+    "token_accuracy_mean": 78.52,
+    "token_accuracy_std": 3.17,
+    "strict_span_metrics": {
+      "precision_mean": 47.48,
+      "precision_std": 5.61,
+      "recall_mean": 58.09,
+      "recall_std": 3.27,
+      "f1_mean": 52.2,
+      "f1_std": 4.62
+    },
+    "lenient_span_metrics": {
+      "precision_mean": 72.86,
+      "precision_std": 5.32,
+      "recall_mean": 89.37,
+      "recall_std": 0.95,
+      "f1_mean": 80.19,
+      "f1_std": 3.47
+    },
+    "per_fold": [
+      {
+        "strict": {
+          "precision": 45.59,
+          "recall": 58.61,
+          "f1": 51.29,
+          "tp": 279,
+          "fp": 333,
+          "fn": 197
+        },
+        "lenient": {
+          "precision": 69.12,
+          "recall": 88.87,
+          "f1": 77.76,
+          "tp": 423,
+          "fp": 189,
+          "fn": 53
+        }
+      },
+      {
+        "strict": {
+          "precision": 45.89,
+          "recall": 55.68,
+          "f1": 50.31,
+          "tp": 240,
+          "fp": 283,
+          "fn": 191
+        },
+        "lenient": {
+          "precision": 72.85,
+          "recall": 88.4,
+          "f1": 79.87,
+          "tp": 381,
+          "fp": 142,
+          "fn": 50
+        }
+      },
+      {
+        "strict": {
+          "precision": 41.98,
+          "recall": 54.71,
+          "f1": 47.5,
+          "tp": 238,
+          "fp": 329,
+          "fn": 197
+        },
+        "lenient": {
+          "precision": 68.43,
+          "recall": 89.2,
+          "f1": 77.45,
+          "tp": 388,
+          "fp": 179,
+          "fn": 47
+        }
+      },
+      {
+        "strict": {
+          "precision": 45.62,
+          "recall": 57.43,
+          "f1": 50.85,
+          "tp": 255,
+          "fp": 304,
+          "fn": 189
+        },
+        "lenient": {
+          "precision": 70.84,
+          "recall": 89.19,
+          "f1": 78.96,
+          "tp": 396,
+          "fp": 163,
+          "fn": 48
+        }
+      },
+      {
+        "strict": {
+          "precision": 58.33,
+          "recall": 64.04,
+          "f1": 61.05,
+          "tp": 203,
+          "fp": 145,
+          "fn": 114
+        },
+        "lenient": {
+          "precision": 83.05,
+          "recall": 91.17,
+          "f1": 86.92,
+          "tp": 289,
+          "fp": 59,
+          "fn": 28
+        }
+      }
+    ]
+  }
+}

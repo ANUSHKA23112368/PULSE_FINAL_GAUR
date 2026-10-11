@@ -40,3 +40,10 @@ backend/*.db
 .DS_Store
 Thumbs.db
 *.log
+
+# Model weight checkpoints (large binaries)
+*.safetensors
+*.bin
+*.pt
+*.pth
+

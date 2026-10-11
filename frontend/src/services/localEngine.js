@@ -190,8 +190,136 @@ function findSentence(pos, sList) {
   return sList[0]?.text || "";
 }
 
+// Clinical ConText / Assertion Analyzer
+function analyzeAssertion(entityText, startChar, endChar, fullText, sList) {
+  let sentText = fullText;
+  let sentStart = 0;
+  for (const s of sList) {
+    if (s.start <= startChar && startChar <= s.end) {
+      sentText = s.text;
+      sentStart = s.start;
+      break;
+    }
+  }
+
+  const relStart = Math.max(0, startChar - sentStart);
+  const relEnd = Math.max(relStart, endChar - sentStart);
+  let preText = sentText.slice(0, relStart);
+  let postText = sentText.slice(relEnd);
+
+  // Immediate compound suffix like "pain-free"
+  if (/^-free\b/i.test(postText) || entityText.toLowerCase().endsWith('-free')) {
+    return { assertion: "Negated", temporality: "Current", is_negated: true, is_uncertain: false, is_historical: false, is_planned: false, cue: "-free" };
+  }
+
+  // Pseudo-negation removal
+  const pseudoNegs = [/\bno\s+further\b/gi, /\bno\s+increase\b/gi, /\bnot\s+only\b/gi, /\bnot\s+cause\b/gi, /\bwithout\s+difficulty\b/gi];
+  for (const pnp of pseudoNegs) {
+    preText = preText.replace(pnp, " ");
+  }
+
+  // Scope termination (take closest clause in preText)
+  const scopeTerm = /\b(?:but|however|although|yet|except|aside\s+from|due\s+to)\b|[,;.!]/gi;
+  let lastTermIdx = -1;
+  let sm;
+  while ((sm = scopeTerm.exec(preText)) !== null) {
+    lastTermIdx = sm.index + sm[0].length;
+  }
+  const activePre = lastTermIdx >= 0 ? preText.slice(lastTermIdx) : preText;
+  
+  const postTermMatch = scopeTerm.exec(postText);
+  const activePost = postTermMatch ? postText.slice(0, postTermMatch.index) : postText;
+
+  // Pre-negation
+  const preNegs = [
+    /\b(?:denies|denied|denying)\b/i,
+    /\b(?:no|not|non)\b/i,
+    /\b(?:without|nil|none|never)\b/i,
+    /\b(?:rules?\s*out|ruled\s*out|r\/o)\b/i,
+    /\b(?:negative\s*(?:for)?)\b/i,
+    /\b(?:absent|free\s*of)\b/i,
+    /\b(?:no\s+evidence\s+of|no\s+sign\s+of|no\s+history\s+of)\b/i
+  ];
+  let assertion = "Affirmative";
+  let cue = null;
+  for (const pat of preNegs) {
+    const pm = activePre.match(pat);
+    if (pm) {
+      assertion = "Negated";
+      cue = pm[0];
+      break;
+    }
+  }
+
+  if (assertion === "Affirmative") {
+    const postNegs = [/\bunlikely\b/i, /\b(?:free|resolved|ceased|negative)\b/i, /\bwas\s+ruled\s+out\b/i];
+    for (const pat of postNegs) {
+      const pm = activePost.match(pat);
+      if (pm) {
+        assertion = "Negated";
+        cue = pm[0];
+        break;
+      }
+    }
+  }
+
+  if (assertion === "Affirmative") {
+    const uncPats = [
+      /\b(?:may|might|could|possible|possibly)\b/i,
+      /\b(?:query|\?|suspected|suspicion\s+of)\b/i,
+      /\b(?:evaluating\s+for|assessing\s+for|consider)\b/i,
+      /\b(?:potential|probable|likely)\b/i,
+      /\b(?:may\s+have|may\s+be|may\s+die)\b/i
+    ];
+    for (const pat of uncPats) {
+      const pm = activePre.match(pat) || activePost.match(pat);
+      if (pm) {
+        assertion = "Possible";
+        cue = pm[0];
+        break;
+      }
+    }
+  }
+
+  // Temporality
+  let temporality = "Current";
+  const planPats = [
+    /\b(?:planned\s+for|is\s+planned\s+for|scheduled\s+for|booked\s+for|tomorrow|next\s+shift|later|is\s+for|awaiting|pending)\b/i
+  ];
+  for (const pat of planPats) {
+    const pm = activePre.match(pat) || activePost.match(pat);
+    if (pm) {
+      temporality = "Planned";
+      break;
+    }
+  }
+
+  if (temporality === "Current") {
+    const histPats = [
+      /\b(?:history\s+of|hx\s+of|background\s+of|past|previous|previously|prior\s+to|yesterday|earlier|former|\d+\s+days?\s+ago|since\s+childhood)\b/i
+    ];
+    for (const pat of histPats) {
+      const pm = activePre.match(pat) || activePost.match(pat);
+      if (pm) {
+        temporality = "Historical";
+        break;
+      }
+    }
+  }
+
+  return {
+    assertion,
+    temporality,
+    is_negated: assertion === "Negated",
+    is_uncertain: assertion === "Possible",
+    is_historical: temporality === "Historical",
+    is_planned: temporality === "Planned",
+    cue: cue || "Direct statement"
+  };
+}
+
 // Entity & Event Extraction
-export function analyzeLocalEngine({ reportId, rawText }) {
+export function analyzeLocalEngine({ reportId, rawText, engine }) {
   let text = rawText || "";
   if (reportId && !text.trim()) {
     const found = datasetData.reports.find(r => String(r.report_id) === String(reportId));
@@ -306,18 +434,28 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     [/\b(?:cataract|cataracts)\b/gi, "Cataracts"],
     [/\b(?:glaucoma)\b/gi, "Glaucoma"],
     [/\b(?:atrial\s*fibrillation|af)\b/gi, "Atrial Fibrillation"],
-    [/\b(?:urinary\s*tract\s*infection|uti)\b/gi, "Urinary Tract Infection"]
+    [/\b(?:urinary\s*tract\s*infection|uti)\b/gi, "Urinary Tract Infection"],
+    [/\b(?:infection|wound\s*infection|chest\s*infection)\b/gi, "Infection (Suspected / Documented)"]
   ];
   const conditionsMap = {};
   for (const [pat, norm] of condPatterns) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
-      if (!conditionsMap[norm]) {
-        conditionsMap[norm] = {
+      const ctx = analyzeAssertion(m[0], m.index, m.index + m[0].length, clean, sList);
+      const key = `${norm}_${ctx.assertion}_${ctx.temporality}`;
+      if (!conditionsMap[key]) {
+        conditionsMap[key] = {
           category: "Condition",
           text: m[0],
           normalized: norm,
-          confidence: "High (Clinical Lexicon)",
+          assertion: ctx.assertion,
+          temporality: ctx.temporality,
+          is_negated: ctx.is_negated,
+          is_uncertain: ctx.is_uncertain,
+          is_historical: ctx.is_historical,
+          is_planned: ctx.is_planned,
+          context_cue: ctx.cue,
+          confidence: "High (Clinical Lexicon & Context Scope)",
           source_sentence: findSentence(m.index, sList),
           start_char: m.index,
           end_char: m.index + m[0].length,
@@ -325,8 +463,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
           occurrences: 1
         };
       } else {
-        conditionsMap[norm].all_spans.push([m.index, m.index + m[0].length]);
-        conditionsMap[norm].occurrences++;
+        conditionsMap[key].all_spans.push([m.index, m.index + m[0].length]);
+        conditionsMap[key].occurrences++;
       }
     }
   }
@@ -343,18 +481,29 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     [/\b(?:dizziness|lightheadedness|dizzy)\b/gi, "Dizziness / Presyncope"],
     [/\b(?:shortness\s*of\s*breath|dyspnoea|dyspnea|sob)\b/gi, "Dyspnea / Shortness of Breath"],
     [/\b(?:unsteady\s*(?:at\s*times)?|ataxia|unsteadiness|falls?|loss\s*of\s*balance)\b/gi, "Gait Unsteadiness / Ataxia"],
-    [/\b(?:almost\s*blind|blind|impaired\s*vision|poor\s*vision)\b/gi, "Severe Visual Impairment"]
+    [/\b(?:almost\s*blind|blind|impaired\s*vision|poor\s*vision)\b/gi, "Severe Visual Impairment"],
+    [/\b(?:fever|febrile|pyrexia)\b/gi, "Febrile Episode / Fever"],
+    [/\b(?:pain|ache)\b/gi, "Pain"]
   ];
   const symptomsMap = {};
   for (const [pat, norm] of sympPatterns) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
-      if (!symptomsMap[norm]) {
-        symptomsMap[norm] = {
+      const ctx = analyzeAssertion(m[0], m.index, m.index + m[0].length, clean, sList);
+      const key = `${norm}_${ctx.assertion}_${ctx.temporality}`;
+      if (!symptomsMap[key]) {
+        symptomsMap[key] = {
           category: "Symptom",
           text: m[0],
           normalized: norm,
-          confidence: "High (Clinical Lexicon)",
+          assertion: ctx.assertion,
+          temporality: ctx.temporality,
+          is_negated: ctx.is_negated,
+          is_uncertain: ctx.is_uncertain,
+          is_historical: ctx.is_historical,
+          is_planned: ctx.is_planned,
+          context_cue: ctx.cue,
+          confidence: "High (Clinical Lexicon & Context Scope)",
           source_sentence: findSentence(m.index, sList),
           start_char: m.index,
           end_char: m.index + m[0].length,
@@ -362,8 +511,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
           occurrences: 1
         };
       } else {
-        symptomsMap[norm].all_spans.push([m.index, m.index + m[0].length]);
-        symptomsMap[norm].occurrences++;
+        symptomsMap[key].all_spans.push([m.index, m.index + m[0].length]);
+        symptomsMap[key].occurrences++;
       }
     }
   }
@@ -382,18 +531,24 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
       const src = findSentence(m.index, sList);
+      const ctx = analyzeAssertion(m[0], m.index, m.index + m[0].length, clean, sList);
       const doseM = src.match(/\b(\d+\s*(?:mg|mcg|ml|units?|puffs?)|variable\s*dose|sliding\s*scale|\d+\s+nitros?)\b/i);
       const freqM = src.match(/\b(qid|bd|tds|prn|daily|mane|nocte)\b/i);
       const routeM = src.match(/\b(iv|oral|po|subcut|sc|topical|sublingual)\b/i);
 
-      if (!medsMap[norm]) {
-        medsMap[norm] = {
+      const key = `${norm}_${ctx.assertion}_${ctx.temporality}`;
+      if (!medsMap[key]) {
+        medsMap[key] = {
           category: "Medication",
           text: m[0],
           normalized: norm,
-          dosage: doseM ? doseM[0] : "Standard ward dose",
+          dosage: doseM ? doseM[0] : "Unspecified dose in text",
           frequency: freqM ? freqM[0].toUpperCase() : "Per protocol",
           route: routeM ? routeM[0].toUpperCase() : "PO / Ward route",
+          assertion: ctx.assertion,
+          temporality: ctx.temporality,
+          is_negated: ctx.is_negated,
+          is_uncertain: ctx.is_uncertain,
           confidence: "High (Clinical Lexicon)",
           source_sentence: src,
           start_char: m.index,
@@ -402,8 +557,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
           occurrences: 1
         };
       } else {
-        medsMap[norm].all_spans.push([m.index, m.index + m[0].length]);
-        medsMap[norm].occurrences++;
+        medsMap[key].all_spans.push([m.index, m.index + m[0].length]);
+        medsMap[key].occurrences++;
       }
     }
   }
@@ -416,17 +571,25 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     [/\b(?:ct(?:\s*scan)?|computed\s*tomography)\b/gi, "Computed Tomography (CT Scan)"],
     [/\b(?:ecg|electrocardiogram|telemetry)\b/gi, "12-Lead ECG / Telemetry"],
     [/\b(?:chest\s*x-?ray|cxr|x-?ray)\b/gi, "Chest Radiography (CXR)"],
-    [/\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b/gi, "Blood Glucose Monitoring (BGL)"]
+    [/\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b/gi, "Blood Glucose Monitoring (BGL)"],
+    [/\b(?:renal\s*biopsy|biopsy)\b/gi, "Renal Biopsy / Diagnostic Tissue Biopsy"]
   ];
   const invMap = {};
   for (const [pat, norm] of invPatterns) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
-      if (!invMap[norm]) {
-        invMap[norm] = {
+      const ctx = analyzeAssertion(m[0], m.index, m.index + m[0].length, clean, sList);
+      const key = `${norm}_${ctx.assertion}_${ctx.temporality}`;
+      if (!invMap[key]) {
+        invMap[key] = {
           category: "Investigation",
           text: m[0],
           normalized: norm,
+          assertion: ctx.assertion,
+          temporality: ctx.temporality,
+          is_negated: ctx.is_negated,
+          is_uncertain: ctx.is_uncertain,
+          is_planned: ctx.is_planned,
           confidence: "High (Clinical Lexicon)",
           source_sentence: findSentence(m.index, sList),
           start_char: m.index,
@@ -435,8 +598,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
           occurrences: 1
         };
       } else {
-        invMap[norm].all_spans.push([m.index, m.index + m[0].length]);
-        invMap[norm].occurrences++;
+        invMap[key].all_spans.push([m.index, m.index + m[0].length]);
+        invMap[key].occurrences++;
       }
     }
   }
@@ -519,7 +682,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     [/\b(?:came\s+in(?:\s+for|\s+with)?|admitted(?:\s+for|\s+with)?|presented(?:\s+with)?)\s+([^.,;]+)/gi, "Admission / Presentation", "Patient admitted with/for {0}"],
     [/\b(?:had|given|received|administered)\s+(\d+\s+nitros?|antibiotics?|insulin|medication[s]?[^.,;]*)/gi, "Medication Administration", "Administered {0}"],
     [/\b(?:just\s+came\s+back\s+from|returned\s+from|completed)\s+([^.,;]*(?:mri|scan|ct|doppler)[^.,;]*)/gi, "Investigation Completed", "Completed investigation: {0}"],
-    [/\b(?:is\s+for|scheduled\s+for|supposed\s+to\s+have)\s+([^.,;]*(?:carotid\s+doppler|mri|scan|procedure)[^.,;]*)/gi, "Investigation Scheduled", "Scheduled for {0}"],
+    [/\b(?:a\s+([a-zA-Z\s]+?(?:biopsy|procedure|surgery|scan))\s+is\s+planned\s+for\s+([^.,;]+))/gi, "Investigation / Procedure Scheduled", "Scheduled for {0} (timing: {1})"],
+    [/\b(?:is\s+planned\s+for|planned\s+for|is\s+for|scheduled\s+for|supposed\s+to\s+have)\s+([^.,;]*(?:biopsy|carotid\s+doppler|mri|scan|procedure)[^.,;]*)/gi, "Investigation / Procedure Scheduled", "Scheduled for {0}"],
     [/\b(?:pushed\s+(?:it\s+)?back\s+to|rescheduled\s+to|needs\s+another)\s+([^.,;]+)/gi, "Investigation Rescheduled", "Investigation rescheduled/pending: {0}"],
     [/\b(gcs\s+is\s+\d+[^.,;]*|obs\s+are\s+stable|pupils?\s*equal\s*and\s*reactive)/gi, "Clinical Status Assessment", "Assessment: {0}"],
     [/\b(?:still\s+for\s+referral\s+to|referred\s+to)\s+([^.,;]+)/gi, "Consultation / Referral", "Referral requested for {0}"],
@@ -528,8 +692,13 @@ export function analyzeLocalEngine({ reportId, rawText }) {
   for (const [pat, type, template] of evRules) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
-      const arg = m[1] ? m[1].trim() : m[0].trim();
-      const desc = template.replace('{0}', arg);
+      let desc = template;
+      if (m.length > 2 && template.includes('{1}')) {
+        desc = template.replace('{0}', (m[1] || '').trim()).replace('{1}', (m[2] || '').trim());
+      } else {
+        const arg = m[1] ? m[1].trim() : m[0].trim();
+        desc = template.replace('{0}', arg);
+      }
       const src = findSentence(m.index, sList);
       events.push({
         event: desc,
@@ -570,6 +739,8 @@ export function analyzeLocalEngine({ reportId, rawText }) {
   // 11. Pending Tasks & Follow-up
   const pendingTasks = [];
   const pendingPats = [
+    [/\b([a-zA-Z\s]+?\s+is\s+planned\s+for\s+[^.,;]+)/gi, "Scheduled Investigation / Procedure", "Medium"],
+    [/\b(?:is\s+planned\s+for|planned\s+for)\s+([^.,;]+)/gi, "Scheduled Investigation / Procedure", "Medium"],
     [/\b(?:needs\s+another|rescheduled|needs|waiting\s+for)\s+([^.,;]+)/gi, "Diagnostic Scheduling Pending", "High"],
     [/\b(?:still\s+for\s+referral\s+to|referral\s+to)\s+([^.,;]+)/gi, "Specialist Referral Pending", "Medium"],
     [/\b(?:still\s+need\s+(?:the\s+)?team\s+to\s+review|still\s+for\s+review)\b/gi, "Medical Team Review Pending", "High"],
@@ -607,23 +778,34 @@ export function analyzeLocalEngine({ reportId, rawText }) {
   // 12. Clinical Safety & Risk Alerts
   const clinicalRisks = [];
   const lower = clean.toLowerCase();
-  if (lower.includes("unsteady") || lower.includes("blind") || lower.includes("assistance") || lower.includes("balance")) {
+
+  // 1. Fall Risk: requires affirmative mobility or balance concern (not negated)
+  const hasFallConcern = symptoms.some(s => ["Gait Unsteadiness / Ataxia", "Severe Visual Impairment"].includes(s.normalized) && !s.is_negated) ||
+                         treatments.some(t => t.text.toLowerCase().includes("assistance") && !t.is_negated);
+  if (hasFallConcern) {
     clinicalRisks.push({
       risk_type: "Fall Risk Alert",
       severity: "High",
-      rationale: "Documented gait unsteadiness, sensory deficit, or mobility assistance required.",
-      care_directive: "Ensure call bell within reach; assistance with all ward transfers."
+      rationale: "Documented affirmative gait unsteadiness, sensory deficit, or mobility assistance required.",
+      care_directive: "Ensure call bell within reach; assistance with all ward transfers; non-slip footwear."
     });
   }
-  if (lower.includes("chest pain") || lower.includes("no effect") || lower.includes("nitro")) {
+
+  // 2. Cardiovascular Alert: MUST BE CURRENT AND AFFIRMATIVE! (not negated, not historical)
+  const hasCurrentChestPain = symptoms.some(s => s.normalized === "Chest Pain / Angina Symptoms" && !s.is_negated && !s.is_historical);
+  const hasCardiacCondition = conditions.some(c => ["Angina Pectoris", "Cerebrovascular Accident / Stroke"].includes(c.normalized) && !c.is_negated);
+  const hasRefractoryNitro = medications.some(m => m.normalized.toLowerCase().includes("nitro")) && lower.includes("no effect");
+  if (hasCurrentChestPain || hasCardiacCondition || hasRefractoryNitro) {
     clinicalRisks.push({
       risk_type: "Cardiovascular / Ischemic Alert",
       severity: "High",
-      rationale: "Chest pain history or acute cardiac medication administration noted.",
-      care_directive: "Continuous telemetry / observation; immediate doctor review if pain recurs."
+      rationale: hasCurrentChestPain ? "Active current chest pain or angina symptoms documented." : "Cardiac condition or refractory medication response documented.",
+      care_directive: "Continuous telemetry / observation; immediate doctor review if pain recurs; repeat 12-lead ECG."
     });
   }
-  if (lower.includes("type 1") || lower.includes("sliding scale") || lower.includes("bgl trend")) {
+
+  // 3. Glycemic Alert
+  if (medications.some(m => m.normalized.toLowerCase().includes("insulin")) || lower.includes("sliding scale") || lower.includes("bgl trend")) {
     clinicalRisks.push({
       risk_type: "Glycemic Management Alert",
       severity: "Medium",
@@ -631,7 +813,11 @@ export function analyzeLocalEngine({ reportId, rawText }) {
       care_directive: "Pre-prandial BGL monitoring; verify insulin dose with medical team."
     });
   }
-  if (lower.includes("gcs") || lower.includes("bell's palsy") || lower.includes("vertigo") || lower.includes("photophobia")) {
+
+  // 4. Neurological Alert
+  const hasNeuroSymptom = symptoms.some(s => ["Headache (Cephalgia)", "Vertigo (Vestibular)", "Photophobia (Light Sensitivity)"].includes(s.normalized) && !s.is_negated && !s.is_historical);
+  const hasNeuroCondition = conditions.some(c => c.normalized.toLowerCase().includes("bell's palsy") && !c.is_negated);
+  if (hasNeuroSymptom || hasNeuroCondition || lower.includes("gcs")) {
     clinicalRisks.push({
       risk_type: "Neurological Monitoring Alert",
       severity: "Medium",
@@ -640,19 +826,97 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     });
   }
 
-  // 13. Executive Shift Brief
+  // 13. Partition findings and Acuity Check
+  const activeConditions = conditions.filter(c => !c.is_negated && !c.is_historical && !c.is_uncertain);
+  const activeSymptoms = symptoms.filter(s => !s.is_negated && !s.is_historical && !s.is_uncertain);
+  const uncertainFindings = [...conditions, ...symptoms].filter(x => x.is_uncertain);
+  const negatedFindings = [...symptoms, ...conditions].filter(x => x.is_negated);
+  const historicalFindings = [...symptoms, ...conditions].filter(x => x.is_historical);
+
+  let primaryReason = "clinical evaluation";
+  if (activeConditions.length > 0) {
+    primaryReason = activeConditions[0].normalized;
+  } else if (activeSymptoms.length > 0) {
+    primaryReason = activeSymptoms[0].normalized;
+  } else if (uncertainFindings.length > 0) {
+    primaryReason = `suspected ${uncertainFindings[0].normalized}`;
+  } else if (negatedFindings.length > 0) {
+    primaryReason = `clinical observation (denies ${negatedFindings[0].text})`;
+  } else if (historicalFindings.length > 0) {
+    primaryReason = `ward observation following resolved ${historicalFindings[0].normalized}`;
+  }
+
+  const criticalCues = ["may die", "critical", "arrest", "deteriorat", "unstable", "emergency", "code blue", "in extremis", "life-threatening"];
+  const hasCriticalCue = criticalCues.some(cue => lower.includes(cue));
+
   const ptDict = {};
   for (const p of patientInfo) ptDict[p.field] = p.value;
   const pName = ptDict["Patient Name"] || "Patient";
   const pBed = ptDict["Bed / Room"] || "Ward Bed";
   const pAge = ptDict["Age"] || "";
   const pDoc = ptDict["Attending Consultant"] || "Medical Team";
-  const primaryReason = conditions[0]?.normalized || symptoms[0]?.normalized || "clinical evaluation";
-  const obsStatus = measurements.find(m => m.type.includes("GCS"))?.text || "observations stable";
-  const keyTask = pendingTasks[0]?.task ? `Key priority is to follow up on ${pendingTasks[0].task.toLowerCase()}.` : "Patient stable under routine ward care.";
-  const execSummary = `${pName} (${pBed}, ${pAge}${pDoc !== "Medical Team" ? ', under ' + pDoc : ''}) admitted for management of ${primaryReason}. ${obsStatus}; ${keyTask}`;
+
+  let obsStatus = measurements.find(m => m.type.includes("GCS"))?.text ? `GCS recorded as ${measurements.find(m => m.type.includes("GCS"))?.text}` : (hasCriticalCue ? "Acuity and clinical stability require urgent senior evaluation" : "Routine ward vital sign monitoring ongoing");
+
+  let keyTask = "";
+  if (hasCriticalCue) {
+    keyTask = "CRITICAL ALERT: Urgent medical team review required; note indicates acute deterioration concern.";
+  } else if (pendingTasks.length > 0) {
+    keyTask = `Key priority is to follow up on ${pendingTasks[0].task.toLowerCase()}.`;
+  } else {
+    keyTask = "Patient remains under routine nursing surveillance with no acute deterioration noted.";
+  }
+
+  const execSummary = `${pName} (${pBed}, ${pAge}${pDoc !== "Medical Team" ? ', under ' + pDoc : ''}) admitted for management of ${primaryReason}. ${obsStatus}. ${keyTask}`;
 
   // 14. ISBAR Framework
+  const isbarSituation = [];
+  if (activeSymptoms.length > 0) {
+    isbarSituation.push(`Current Clinical Presentation: Acute ${activeSymptoms.slice(0, 3).map(s => s.normalized).join(", ")}`);
+  } else if (uncertainFindings.length > 0) {
+    isbarSituation.push(`Current Clinical Presentation: Suspected / Query ${uncertainFindings.slice(0, 2).map(x => x.normalized).join(", ")}`);
+  } else if (activeConditions.length > 0) {
+    isbarSituation.push(`Current Admission Reason: Management of ${activeConditions[0].normalized}`);
+  } else if (historicalFindings.length > 0) {
+    isbarSituation.push(`Current Ward Presentation: Observation following resolved ${historicalFindings[0].normalized} ('${historicalFindings[0].text}')`);
+  } else {
+    isbarSituation.push("Admitted to ward for clinical observation and symptomatic management.");
+  }
+
+  if (negatedFindings.length > 0) {
+    isbarSituation.push(`Pertinent Negatives (Explicitly Denied / Absent): ${negatedFindings.slice(0, 3).map(n => n.text).join(", ")}`);
+  }
+  if (hasCriticalCue) {
+    isbarSituation.push("CRITICAL ACUITY ALERT: Immediate clinical deterioration concern noted in handover narrative.");
+  }
+  for (const ev of events) {
+    if (ev.type.toLowerCase().includes("admission") || ev.type.toLowerCase().includes("presentation")) {
+      isbarSituation.push(`Context: ${ev.event}`);
+      break;
+    }
+  }
+
+  const isbarAssessment = [
+    ...(measurements.map(m => `${m.type}: ${m.text}`)),
+    ...(treatments.map(t => `Care Status: ${t.normalized} (${t.text})`)),
+    ...(investigations.map(i => `Diagnostic Finding: ${i.normalized}${i.is_planned ? ' [Planned]' : ''}`))
+  ];
+  if (hasCriticalCue) {
+    isbarAssessment.push("CRITICAL: Patient status requires immediate clinical review; note indicates acute instability risk.");
+  } else if (isbarAssessment.length === 0) {
+    isbarAssessment.push("Routine vital sign monitoring ongoing; acute assessment findings not explicitly documented.");
+  }
+
+  const isbarRecommendation = [];
+  if (hasCriticalCue) {
+    isbarRecommendation.push("[Urgent Priority] Immediate medical team bedside review and acute resuscitation assessment.");
+  }
+  isbarRecommendation.push(...pendingTasks.map(t => `[${t.priority} Priority] ${t.task}`));
+  isbarRecommendation.push(...followUp.map(f => `Follow-Up: ${f.action}`));
+  if (isbarRecommendation.length === 0) {
+    isbarRecommendation.push("Continue routine vital observations and supportive nursing care.");
+  }
+
   const isbar = {
     identify: [
       `Patient: ${pName}`,
@@ -660,37 +924,49 @@ export function analyzeLocalEngine({ reportId, rawText }) {
       `Demographics: ${pAge} | ${ptDict["Gender / Sex"] || "Sex not documented"}`,
       `Consultant: ${pDoc}`
     ],
-    situation: [
-      `Current Admission Presentation: ${primaryReason}`,
-      ...events.filter(e => e.type.includes("Admission")).map(e => `Context: ${e.event}`)
-    ],
+    situation: isbarSituation,
     background: [
-      ...(conditions.length > 0 ? conditions.map(c => `Documented Condition: ${c.normalized}`) : ["No prior chronic conditions documented."])
+      ...(activeConditions.length > 0 ? activeConditions.map(c => `Documented Condition: ${c.normalized}`) : []),
+      ...historicalFindings.map(h => `Past Shift Episode (Resolved): ${h.normalized} ('${h.text}')`),
+      ...(activeConditions.length === 0 && historicalFindings.length === 0 ? ["No prior chronic conditions documented in shift handover."] : [])
     ],
-    assessment: [
-      ...(measurements.map(m => `${m.type}: ${m.text}`)),
-      ...(treatments.map(t => `Care Status: ${t.normalized} (${t.text})`)),
-      ...(investigations.map(i => `Diagnostic Finding: ${i.normalized}`))
-    ],
-    recommendation: [
-      ...(pendingTasks.map(t => `[${t.priority} Priority] ${t.task}`)),
-      ...(followUp.map(f => `Follow-Up: ${f.action}`))
-    ]
+    assessment: isbarAssessment,
+    recommendation: isbarRecommendation
   };
 
   // 15. Standard 9 Categories
+  const currentCondList = [];
+  for (const s of symptoms) {
+    if (s.is_negated) {
+      currentCondList.push(`Pertinent Negative (Explicitly Denied / Absent): ${s.normalized} ('${s.text}')`);
+    } else if (s.is_historical) {
+      currentCondList.push(`Past Shift Episode (Resolved): ${s.normalized} ('${s.text}')`);
+    } else if (s.is_uncertain) {
+      currentCondList.push(`Suspected / Query Symptom: ${s.normalized}`);
+    } else {
+      currentCondList.push(`Acute Symptom: ${s.normalized}`);
+    }
+  }
+  for (const m of measurements) {
+    currentCondList.push(`Vital Assessment: ${m.type} — ${m.text}`);
+  }
+  if (currentCondList.length === 0) {
+    currentCondList.push("Current condition stable; no acute distressing symptoms documented.");
+  }
+
   const structuredHandover = {
     patient_information: patientInfo.map(p => `${p.field}: ${p.value}`),
-    current_condition: [
-      ...symptoms.map(s => `Acute Symptom: ${s.normalized}`),
-      ...measurements.map(m => `Vital Assessment: ${m.type} — ${m.text}`)
-    ],
-    medical_history: conditions.map(c => `Documented History: ${c.normalized}`),
+    current_condition: currentCondList,
+    medical_history: conditions.map(c => {
+      if (c.is_negated) return `Ruled Out / Denied: ${c.normalized} ('${c.text}')`;
+      if (c.is_uncertain) return `Suspected / Differential: ${c.normalized}`;
+      return `Documented History: ${c.normalized}`;
+    }),
     medications_treatment: [
-      ...medications.map(m => `${m.normalized} — Dose: ${m.dosage}, Route: ${m.route}, Freq: ${m.frequency}`),
+      ...medications.map(m => m.is_negated ? `${m.normalized} — Not administered / Ceased` : `${m.normalized} — Dose: ${m.dosage}, Route: ${m.route}, Freq: ${m.frequency}`),
       ...treatments.map(t => `Care Level: ${t.normalized} (${t.text})`)
     ],
-    investigations: investigations.map(i => `Investigation: ${i.normalized}`),
+    investigations: investigations.map(i => `Investigation${i.is_planned ? ' (Planned / Scheduled)' : ''}: ${i.normalized}`),
     clinical_events: events.map(e => `${e.event} (${e.type})`),
     temporal_information: temporal.map(t => `Time: '${t.expression}' (${t.type}) → ${t.associated_event}`),
     pending_tasks: pendingTasks.map(p => `[${p.priority} Priority] ${p.task} (${p.type})`),
@@ -739,9 +1015,9 @@ export function analyzeLocalEngine({ reportId, rawText }) {
     clinical_risks: clinicalRisks,
     evidence,
     model_metadata: {
-      pipeline: "PULSE Client/Cloud Hybrid Clinical Pipeline",
-      nlp_paradigm: "Dictionary, Pattern, and Contextual Rule Engine",
-      planned_future_model: "Bio_ClinicalBERT (Candidate backbone)",
+      pipeline: (engine === 'rule') ? "PULSE Deterministic Rule Baseline (Client Engine)" : "PULSE Hybrid Clinical Engine (Client Fallback)",
+      nlp_paradigm: (engine === 'rule') ? "Deterministic Regex and Lexical Rules" : "Contextual Assertion Scoping & Clinical Rules",
+      candidate_backbone: "Bio_ClinicalBERT (Trained in Phase C)",
       evaluation_reference: "Synthetic Nursing Handover Reference Corpus (101 Documents)"
     }
   };

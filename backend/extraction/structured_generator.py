@@ -16,13 +16,16 @@ class StructuredHandoverGenerator:
     def __init__(self):
         # Patterns for Pending Tasks (urgent or shift-level actions)
         self.pending_task_patterns = [
+            (r"\b([a-zA-Z\s]+?\s+is\s+planned\s+for\s+[^.,;]+)", "Scheduled Investigation / Procedure"),
+            (r"\b(?:is\s+planned\s+for|planned\s+for)\s+([^.,;]+)", "Scheduled Investigation / Procedure"),
             (r"\b(?:needs\s+another|rescheduled|needs|waiting\s+for|awaiting)\s+([^.,;]+)", "Diagnostic Scheduling Pending"),
             (r"\b(?:still\s+for\s+referral\s+to|referral\s+to)\s+([^.,;]+)", "Allied Health / Specialist Referral"),
             (r"\b(?:still\s+need\s+(?:the\s+)?team\s+to\s+review|still\s+for\s+review|needs?\s+review)\s*([^.,;]*)", "Medical Team Review Pending"),
             (r"\b(?:just\s+ask\s+the\s+doctor\s+for\s+the\s+next\s+dose|ask\s+doctor)\b", "Medication Dosing Clarification Required"),
             (r"\b(?:needs?\s+assistance|needs?\s+help)\b", "Patient Care Assistance Required"),
             (r"\b(?:still\s+under\s+monitoring|continuous\s+monitoring)\b", "Ongoing Active Monitoring Required"),
-            (r"\b(?:is\s+for\s+([a-zA-Z\s]+?)(?:,|\.|\sbut|\she))", "Scheduled Investigation / Procedure")
+            (r"\b(?:is\s+for\s+([a-zA-Z\s]+?)(?:,|\.|\sbut|\she))", "Scheduled Investigation / Procedure"),
+            (r"\b(?:(?:test\s+for|for\s+test|testing)\s+([^.,;\n]+?)(?=\s+and\b|\s+after\b|\s+for\b|[.,;\n]|$))", "Diagnostic Investigation Pending")
         ]
 
         # Patterns for Follow-Up (future evaluations, repeat tests, discharge planning)
@@ -32,19 +35,15 @@ class StructuredHandoverGenerator:
             (r"\b(?:follow-?up\s+(?:appointment|with|by)|outpatient\s+clinic)\b", "Outpatient Follow-Up"),
             (r"\b(?:monitor\s+(?:bgl|bp|blood\s*pressure|vital\s*signs|sats))\b", "Targeted Parameter Monitoring"),
             (r"\b(?:referral\s+to\s+([a-zA-Z\s]+))\b", "Specialist Consultation Follow-Up"),
-            (r"\b(?:needs\s+another\s+carotid\s+doppler\s+appointment)\b", "Ultrasound Unit Rescheduling")
+            (r"\b(?:needs\s+another\s+carotid\s+doppler\s+appointment)\b", "Ultrasound Unit Rescheduling"),
+            (r"\b(?:(?:patient\s+)?(?:have\s+to\s+|has\s+to\s+|should\s+|to\s+)?(?:come|return|meet(?:\s+me)?|follow[- ]?up|attend|review)(?:\s+(?:back|again))?\s+(?:after|in)\s+(\d+\s*(?:days?|weeks?|months?))(?:\s+after\s+[^.,;\n]+)?)\b", "Scheduled Clinical Review / Follow-Up"),
+            (r"\b(?:meet(?:\s+me)?\s+(?:after|in)\s+(\d+\s*(?:days?|weeks?|months?)))\b", "Scheduled Clinical Review / Follow-Up"),
+            (r"\b(?:after\s+(\d+\s*(?:days?|weeks?|months?))(?:\s+after\s+testing[^.,;\n]*)?)\b", "Scheduled Diagnostic Follow-Up")
         ]
 
     def _split_into_sentences(self, text: str) -> List[Tuple[str, int, int]]:
-        sentence_spans = []
-        pattern = re.compile(r'([^.!?]+(?:[.!?]+|$))', re.MULTILINE)
-        for match in pattern.finditer(text):
-            sent = match.group().strip()
-            if sent:
-                sentence_spans.append((sent, match.start(), match.end()))
-        if not sentence_spans and text:
-            sentence_spans.append((text, 0, len(text)))
-        return sentence_spans
+        from backend.extraction.context_extractor import clinical_context_extractor
+        return clinical_context_extractor.split_sentences_protected(text)
 
     def _find_source_sentence(self, match_start: int, sentence_spans: List[Tuple[str, int, int]]) -> str:
         for sent_text, s_start, s_end in sentence_spans:
@@ -130,38 +129,100 @@ class StructuredHandoverGenerator:
                         "end_char": pt.get("end_char", 0)
                     })
 
-        return follow_up
+        # Deduplicate overlapping or substring follow-up items
+        deduped = []
+        for fu in follow_up:
+            act_lower = fu["action"].lower()
+            is_sub = False
+            for idx, existing in enumerate(deduped):
+                ex_lower = existing["action"].lower()
+                if act_lower in ex_lower:
+                    is_sub = True
+                    break
+                elif ex_lower in act_lower:
+                    deduped[idx] = fu
+                    is_sub = True
+                    break
+            if not is_sub:
+                deduped.append(fu)
 
-    def generate_executive_summary(self, patient_dict: Dict[str, str], conditions: List[Any], symptoms: List[Any], pending_tasks: List[Any], measurements: List[Any]) -> str:
+        return deduped
+
+    def generate_executive_summary(
+        self,
+        patient_dict: Dict[str, str],
+        conditions: List[Any],
+        symptoms: List[Any],
+        pending_tasks: List[Any],
+        measurements: List[Any],
+        raw_text: str = ""
+    ) -> str:
         """
         Synthesizes a realistic, highly coherent 2-3 sentence executive clinical shift handover brief.
+        Guarantees that negated, historical, or uncertain findings are never fabricated into active diagnoses,
+        and severe deterioration warnings are never obscured by false stability claims.
         """
         name = patient_dict.get("Patient Name", "Patient")
         bed = patient_dict.get("Bed / Room", "Ward")
         age = patient_dict.get("Age", "")
         doc = patient_dict.get("Attending Consultant", "Medical Team")
 
-        # Admission reason / primary symptom
-        prim_cond = conditions[0]["normalized"] if conditions else (symptoms[0]["normalized"] if symptoms else "clinical observation")
-        
-        # Vital status
-        meas_summary = "Vital signs stable"
+        # Partition findings by assertion and temporality
+        active_conditions = [c for c in conditions if not c.get("is_negated") and not c.get("is_historical") and not c.get("is_uncertain")]
+        active_symptoms = [s for s in symptoms if not s.get("is_negated") and not s.get("is_historical") and not s.get("is_uncertain")]
+        uncertain_findings = [x for x in (conditions + symptoms) if x.get("is_uncertain")]
+        negated_findings = [x for x in (symptoms + conditions) if x.get("is_negated")]
+        historical_findings = [x for x in (symptoms + conditions) if x.get("is_historical")]
+
+        # Determine primary condition/reason
+        if active_conditions:
+            prim_cond = active_conditions[0]["normalized"]
+        elif active_symptoms:
+            prim_cond = active_symptoms[0]["normalized"]
+        elif uncertain_findings:
+            prim_cond = f"suspected {uncertain_findings[0]['normalized']}"
+        elif negated_findings:
+            prim_cond = f"clinical observation and symptom exclusion (denies {negated_findings[0]['text']})"
+        elif historical_findings:
+            prim_cond = f"ward observation following prior {historical_findings[0]['normalized']} (now resolved)"
+        else:
+            prim_cond = "clinical observation"
+
+        # Check for concerning acuity cues in source text without inferring confirmed diagnoses
+        text_lower = raw_text.lower()
+        critical_cues = ["may die", "critical", "arrest", "deteriorat", "unstable", "emergency", "code blue", "in extremis", "life-threatening"]
+        matched_cues = [cue for cue in critical_cues if cue in text_lower]
+        has_critical_cue = len(matched_cues) > 0
+
+        # Vital status synthesis
+        meas_summary = None
         for m in measurements:
             if "gcs" in m.get("type", "").lower() or "15" in m.get("text", ""):
-                meas_summary = f"GCS stable ({m.get('text')})"
+                meas_summary = f"GCS recorded as {m.get('text')}"
                 break
             elif "bp" in m.get("type", "").lower():
                 meas_summary = f"BP recorded as {m.get('text')}"
+                break
 
-        # Pending action
-        if pending_tasks:
+        if not meas_summary:
+            if has_critical_cue:
+                cues_disp = ", ".join(repr(c) for c in matched_cues)
+                meas_summary = f"Acuity unverified from note alone ({cues_disp})"
+            else:
+                meas_summary = "Routine ward vital sign monitoring ongoing"
+
+        # Pending action / acuity directive
+        if has_critical_cue:
+            cues_disp = ", ".join(repr(c) for c in matched_cues)
+            action_phrase = f"CRITICAL ALERT: Note records concerning statement ({cues_disp}) requiring clinician review and verification; objective clinical deterioration not established."
+        elif pending_tasks:
             top_task = pending_tasks[0].get("task")
             action_phrase = f"Key handover priority is to follow up on {top_task.lower()}."
         else:
             action_phrase = "Patient remains under routine nursing surveillance with no acute deterioration noted."
 
         intro = f"{name} ({bed}, {age}{', under ' + doc if doc != 'Medical Team' else ''}) admitted for management of {prim_cond}."
-        second = f"{meas_summary}; currently under active ward observation."
+        second = f"{meas_summary}; currently under active ward observation." if not has_critical_cue else f"{meas_summary}."
         return f"{intro} {second} {action_phrase}"
 
     def generate_isbar(
@@ -170,7 +231,8 @@ class StructuredHandoverGenerator:
         entities: Dict[str, Any],
         events: List[Dict[str, Any]],
         pending_tasks: List[Dict[str, Any]],
-        follow_up: List[Dict[str, Any]]
+        follow_up: List[Dict[str, Any]],
+        text: str = ""
     ) -> Dict[str, Any]:
         """
         Synthesizes ISBAR (Identify, Situation, Background, Assessment, Recommendation),
@@ -184,16 +246,46 @@ class StructuredHandoverGenerator:
             f"Consultant: {patient_dict.get('Attending Consultant', 'Medical Team')}"
         ]
 
+        text_lower = text.lower()
+        critical_cues = ["may die", "critical", "arrest", "deteriorat", "unstable", "emergency", "code blue", "in extremis", "life-threatening"]
+        matched_cues = [cue for cue in critical_cues if cue in text_lower]
+        has_critical_cue = len(matched_cues) > 0
+
+        # Categorize entity findings
+        all_symptoms = entities.get("symptoms", [])
+        all_conditions = entities.get("conditions", [])
+
+        active_symptoms = [s for s in all_symptoms if not s.get("is_negated") and not s.get("is_historical") and not s.get("is_uncertain")]
+        active_conditions = [c for c in all_conditions if not c.get("is_negated") and not c.get("is_historical") and not c.get("is_uncertain")]
+        uncertain_findings = [x for x in (all_symptoms + all_conditions) if x.get("is_uncertain")]
+        negated_findings = [x for x in (all_symptoms + all_conditions) if x.get("is_negated")]
+        historical_findings = [x for x in (all_symptoms + all_conditions) if x.get("is_historical")]
+
         # S - Situation
         situation_items = []
-        if entities.get("symptoms"):
-            symptom_names = ", ".join([s["normalized"] for s in entities["symptoms"][:3]])
-            situation_items.append(f"Current Clinical Presentation: Acute {symptom_names}")
-        elif entities.get("conditions"):
-            situation_items.append(f"Current Admission Reason: Management of {entities['conditions'][0]['normalized']}")
+        if active_symptoms:
+            symptom_names = ", ".join([s["normalized"] for s in active_symptoms[:3]])
+            has_explicit_acute = any("acute" in s.get("text", "").lower() for s in active_symptoms[:3]) or "acute" in text_lower
+            prefix = "Acute " if has_explicit_acute else ""
+            situation_items.append(f"Current Clinical Presentation: {prefix}{symptom_names}")
+        elif uncertain_findings:
+            unc_names = ", ".join([x["normalized"] for x in uncertain_findings[:2]])
+            situation_items.append(f"Current Clinical Presentation: Suspected / Query {unc_names}")
+        elif active_conditions:
+            situation_items.append(f"Current Admission Reason: Management of {active_conditions[0]['normalized']}")
+        elif historical_findings:
+            situation_items.append(f"Current Ward Presentation: Observation following resolved {historical_findings[0]['normalized']} ('{historical_findings[0]['text']}')")
         else:
             situation_items.append("Admitted to ward for clinical observation and symptomatic management.")
-        
+
+        if negated_findings:
+            neg_names = ", ".join([n["text"] for n in negated_findings[:3]])
+            situation_items.append(f"Pertinent Negatives (Explicitly Denied / Absent): {neg_names}")
+
+        if has_critical_cue:
+            cues_str = ", ".join([repr(c) for c in matched_cues])
+            situation_items.append(f"CRITICAL NOTE ALERT: Concerning phrase recorded in source note: {cues_str} (Requires clinician review and verification; not an objective clinical deterioration finding)")
+
         for ev in events:
             if "admission" in ev.get("type", "").lower() or "presentation" in ev.get("type", "").lower():
                 situation_items.append(f"Presentation Context: {ev.get('event')}")
@@ -201,9 +293,13 @@ class StructuredHandoverGenerator:
 
         # B - Background
         background_items = []
-        if entities.get("conditions"):
-            for c in entities["conditions"]:
-                background_items.append(f"Documented Condition: {c['normalized']}")
+        for c in active_conditions:
+            background_items.append(f"Documented Condition: {c['normalized']}")
+        for c in [c for c in all_conditions if c.get("is_uncertain")]:
+            background_items.append(f"Suspected Condition: {c['normalized']} (Under evaluation)")
+        for h in historical_findings:
+            background_items.append(f"Past Shift Episode (Resolved): {h['normalized']} ('{h['text']}')")
+
         if not background_items:
             background_items.append("No prior chronic medical conditions recorded in shift handover.")
 
@@ -214,12 +310,22 @@ class StructuredHandoverGenerator:
         for trt in entities.get("treatments", []):
             assessment_items.append(f"Clinical Care / Mobility: {trt['normalized']} ({trt['text']})")
         for inv in entities.get("investigations", []):
-            assessment_items.append(f"Diagnostic Finding: {inv['normalized']}")
-        if not assessment_items:
-            assessment_items.append("Patient alert, orientated, and clinically stable on ward baseline.")
+            status = " [Planned]" if inv.get("is_planned") else ""
+            assessment_items.append(f"Diagnostic Finding: {inv['normalized']}{status}")
+
+        if has_critical_cue:
+            cues_str = ", ".join([repr(c) for c in matched_cues])
+            assessment_items.append(f"Unverified Acuity Cue: Clinician noted {cues_str} — unconfirmed by objective vitals; requires bedside clinical evaluation.")
+        elif not assessment_items:
+            # Safe non-fabricated assessment default
+            assessment_items.append("Routine vital sign monitoring ongoing; acute assessment findings not explicitly documented.")
 
         # R - Recommendation
         recommendation_items = []
+        if has_critical_cue:
+            cues_str = ", ".join([repr(c) for c in matched_cues])
+            recommendation_items.append(f"[Priority] Bedside clinician review to evaluate concerning statement in note: {cues_str}.")
+
         if pending_tasks:
             for pt in pending_tasks:
                 recommendation_items.append(f"[{pt.get('priority', 'Medium')} Priority] {pt['task']}")
@@ -265,25 +371,44 @@ class StructuredHandoverGenerator:
         # 2. Current Condition
         current_condition_list = []
         for s in entities.get("symptoms", []):
-            occ = f" (reported {s['occurrences']}x)" if s.get('occurrences', 1) > 1 else ""
-            current_condition_list.append(f"Acute Symptom: {s.get('normalized')}{occ}")
+            occ = f" (reported {s.get('occurrences', 1)}x)" if s.get('occurrences', 1) > 1 else ""
+            if s.get("is_negated"):
+                current_condition_list.append(f"Pertinent Negative (Explicitly Denied / Absent): {s.get('normalized')} ('{s.get('text')}')")
+            elif s.get("is_historical"):
+                current_condition_list.append(f"Past Shift Episode (Resolved): {s.get('normalized')} ('{s.get('text')}')")
+            elif s.get("is_uncertain"):
+                current_condition_list.append(f"Suspected / Query Symptom: {s.get('normalized')}{occ}")
+            else:
+                has_explicit_acute = "acute" in s.get("text", "").lower()
+                prefix = "Acute Symptom: " if has_explicit_acute else "Active Symptom: "
+                current_condition_list.append(f"{prefix}{s.get('normalized')}{occ}")
+
         for m in entities.get("measurements", []):
             current_condition_list.append(f"Vital Assessment: {m.get('type')} — {m.get('text')}")
+
         if not current_condition_list:
             current_condition_list.append("Current condition stable; no acute distressing symptoms documented.")
 
         # 3. Medical History
         history_list = []
         for c in entities.get("conditions", []):
-            history_list.append(f"Documented History: {c.get('normalized')}")
+            if c.get("is_negated"):
+                history_list.append(f"Ruled Out / Denied: {c.get('normalized')} ('{c.get('text')}')")
+            elif c.get("is_uncertain"):
+                history_list.append(f"Suspected / Differential: {c.get('normalized')}")
+            else:
+                history_list.append(f"Documented History / Active: {c.get('normalized')}")
         if not history_list:
             history_list.append("No significant past medical history documented in report.")
 
         # 4. Medications / Treatment
         med_treatment_list = []
         for med in entities.get("medications", []):
-            dose_info = f"Dose: {med.get('dosage')}" if med.get('dosage') != "Standard ward dose" else "Dose: As charted"
-            med_treatment_list.append(f"{med.get('normalized')} — {dose_info}, Route: {med.get('route')}, Frequency: {med.get('frequency')}")
+            if med.get("is_negated"):
+                med_treatment_list.append(f"{med.get('normalized')} — Not administered / Ceased")
+            else:
+                dose_info = f"Dose: {med.get('dosage')}" if med.get('dosage') not in ["Standard ward dose", "Unspecified dose in text"] else "Dose: As charted"
+                med_treatment_list.append(f"{med.get('normalized')} — {dose_info}, Route: {med.get('route')}, Frequency: {med.get('frequency')}")
         for trt in entities.get("treatments", []):
             med_treatment_list.append(f"Care Level: {trt.get('normalized')} ({trt.get('text')})")
         if not med_treatment_list:
@@ -292,7 +417,8 @@ class StructuredHandoverGenerator:
         # 5. Investigations
         investigations_list = []
         for inv in entities.get("investigations", []):
-            investigations_list.append(f"Investigation: {inv.get('normalized')}")
+            status = " (Planned / Scheduled)" if inv.get("is_planned") else ""
+            investigations_list.append(f"Investigation{status}: {inv.get('normalized')}")
         if not investigations_list:
             investigations_list.append("No diagnostic investigations recorded in current report.")
 
@@ -332,7 +458,8 @@ class StructuredHandoverGenerator:
             conditions=entities.get("conditions", []),
             symptoms=entities.get("symptoms", []),
             pending_tasks=pending_tasks,
-            measurements=entities.get("measurements", [])
+            measurements=entities.get("measurements", []),
+            raw_text=text
         )
 
         # ISBAR Protocol
@@ -341,7 +468,8 @@ class StructuredHandoverGenerator:
             entities=entities,
             events=events,
             pending_tasks=pending_tasks,
-            follow_up=follow_up
+            follow_up=follow_up,
+            text=text
         )
 
         return {

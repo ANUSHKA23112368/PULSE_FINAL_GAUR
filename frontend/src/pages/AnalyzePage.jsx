@@ -41,6 +41,7 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
   // Navigation & Sub-views
   const [activeTab, setActiveTab] = useState('structured'); 
   const [handoverFormat, setHandoverFormat] = useState('isbar'); // 'isbar' | '9categories'
+  const [selectedEngine, setSelectedEngine] = useState('hybrid'); // 'hybrid' | 'clinical_bert' | 'rule'
   const [copied, setCopied] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
@@ -152,24 +153,14 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
     try {
       setAnalyzing(true);
       setError(null);
-      setPipelineStep(1);
-
-      const stepTimer1 = setTimeout(() => setPipelineStep(2), 250);
-      const stepTimer2 = setTimeout(() => setPipelineStep(3), 500);
-      const stepTimer3 = setTimeout(() => setPipelineStep(4), 750);
-
       const result = await analyzeHandover({
         reportId: chosenReportId,
-        rawText: inputText
+        rawText: inputText,
+        engine: selectedEngine
       });
-
-      clearTimeout(stepTimer1);
-      clearTimeout(stepTimer2);
-      clearTimeout(stepTimer3);
 
       setAnalysisResult(result);
       if (onStoreResults) onStoreResults(result);
-      setPipelineStep(5);
     } catch (err) {
       console.error("Analysis failed:", err);
       setError(err.message || "An unexpected error occurred during pipeline analysis.");
@@ -468,26 +459,38 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
             </button>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem' }}>
-            <span className="chip" style={{ background: 'rgba(99, 102, 241, 0.15)', borderColor: 'rgba(99, 102, 241, 0.4)', color: '#a5b4fc' }}>
-              Engine: Hybrid Clinical NLP
-            </span>
-            <span className="chip" style={{ background: 'rgba(6, 182, 212, 0.1)', borderColor: 'rgba(6, 182, 212, 0.3)', color: '#67e8f9' }}>
-              Target: Bio_ClinicalBERT
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.78rem', color: '#94a3b8', fontWeight: 600 }}>Inference Engine:</span>
+            <select
+              className="pulse-select"
+              value={selectedEngine}
+              onChange={(e) => setSelectedEngine(e.target.value)}
+              style={{ padding: '0.4rem 0.75rem', fontSize: '0.78rem', minWidth: '220px' }}
+              title="Select NLP extraction engine"
+            >
+              <option value="hybrid">Hybrid (Bio_ClinicalBERT + ConText Rules)</option>
+              <option value="clinical_bert">Bio_ClinicalBERT (Pure Neural)</option>
+              <option value="rule">Rule Baseline (Deterministic Regex/Dict)</option>
+            </select>
+            <span className="chip" style={{ 
+              background: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)', 
+              borderColor: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(99, 102, 241, 0.4)', 
+              color: selectedEngine === 'rule' ? '#fde68a' : '#a5b4fc',
+              fontSize: '0.72rem'
+            }}>
+              {selectedEngine === 'rule' ? 'Deterministic Baseline' : 'Neural Token Classification'}
             </span>
           </div>
         </div>
 
-        {/* Pipeline Execution Animation */}
+        {/* Authentic Pipeline Execution Status Indicator */}
         {analyzing && (
           <div style={{ marginTop: '1.25rem', padding: '1rem', background: 'rgba(6, 182, 212, 0.08)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
-              <div className="pulse-anim" style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#06b6d4' }} />
-              Executing Clinical Pipeline:
-              {pipelineStep === 1 && " Step 1: Preprocessing & formatting normalization (preserving @, +, _)..."}
-              {pipelineStep === 2 && " Step 2: Clinical entity & demographic extraction..."}
-              {pipelineStep === 3 && " Step 3: Event & temporal relationship extraction..."}
-              {pipelineStep === 4 && " Step 4: Synthesizing ISBAR & 9-category structured clinical summary..."}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
+              <div className="pulse-anim" style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#06b6d4', flexShrink: 0 }} />
+              <span>
+                Executing <strong>{selectedEngine === 'rule' ? 'Deterministic Rule Baseline' : (selectedEngine === 'clinical_bert' ? 'Bio_ClinicalBERT Token Classifier' : 'Hybrid Pipeline (Bio_ClinicalBERT + ConText)')}</strong>: Normalizing clinical formatting, extracting entities, evaluating assertion contexts, and structuring handover...
+              </span>
             </div>
           </div>
         )}
