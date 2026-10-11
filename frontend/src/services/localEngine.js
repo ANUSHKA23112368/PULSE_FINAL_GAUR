@@ -1321,6 +1321,44 @@ export function getLocalPatientNotes(patientId) {
   if (stored) {
     try {
       notes = JSON.parse(stored);
+      if (Array.isArray(notes)) {
+        notes = notes.map(n => {
+          // Normalize extraction for UI components
+          if (!n.extraction) {
+            const ext = n.latest_extraction || (n.extractions && n.extractions[0]);
+            if (ext) {
+              n.extraction = {
+                id: ext.id,
+                engine_used: ext.engine_used,
+                extracted_at: ext.created_at || ext.extracted_at,
+                data: ext.data || ext.extracted_data
+              };
+            }
+          }
+          if (n.extraction?.data && !n.extracted_data) {
+            n.extracted_data = n.extraction.data;
+          }
+          // Normalize review for UI components
+          if (!n.review) {
+            const rev = n.latest_review || (n.reviews && n.reviews[0]);
+            if (rev) {
+              n.review = {
+                id: rev.id,
+                reviewer_identifier: rev.reviewer_identifier,
+                reviewed_data: rev.reviewed_data || rev.data,
+                review_notes: rev.review_notes,
+                reviewed_at: rev.created_at || rev.reviewed_at
+              };
+              n.reviewer_identifier = rev.reviewer_identifier;
+              n.reviewed_at = rev.created_at || rev.reviewed_at;
+            }
+          }
+          if (!n.review_history && n.reviews) {
+            n.review_history = n.reviews;
+          }
+          return n;
+        });
+      }
     } catch (e) {
       notes = [];
     }
@@ -1346,7 +1384,10 @@ export function createLocalPatientNote(patientId, rawText, authorIdentifier) {
     extractions: [],
     reviews: [],
     latest_extraction: null,
-    latest_review: null
+    latest_review: null,
+    extraction: null,
+    review: null,
+    review_history: []
   };
   notes.unshift(newNote);
   storageSet(key, JSON.stringify(notes));
@@ -1362,34 +1403,44 @@ export function processLocalPatientNote(patientId, noteId) {
   }
   const note = notes[noteIndex];
   const analysis = analyzeLocalEngine({ rawText: note.raw_text });
+  const extractedData = {
+    isbar: analysis.isbar,
+    entities: analysis.entities,
+    events: analysis.events,
+    temporal_information: analysis.temporal_information,
+    pending_tasks: analysis.pending_tasks,
+    follow_up: analysis.follow_up,
+    structured_handover: analysis.structured_handover,
+    executive_summary: analysis.executive_summary,
+    evidence: analysis.evidence,
+    model_metadata: {
+      pipeline: "PULSE Hybrid Clinical Engine (Client Cloud)",
+      nlp_paradigm: "Client-side Contextual Clinical Extraction & ISBAR Structuring",
+      model_active: false,
+      disclaimer: "Client-side static execution for clinical demonstration"
+    }
+  };
   const extraction = {
     id: Date.now(),
     note_id: note.id,
     engine_used: "PULSE Hybrid Clinical Engine (Client Cloud)",
     created_at: new Date().toISOString(),
-    extracted_data: {
-      isbar: analysis.isbar,
-      entities: analysis.entities,
-      events: analysis.events,
-      temporal_information: analysis.temporal_information,
-      pending_tasks: analysis.pending_tasks,
-      follow_up: analysis.follow_up,
-      structured_handover: analysis.structured_handover,
-      executive_summary: analysis.executive_summary,
-      evidence: analysis.evidence,
-      model_metadata: {
-        pipeline: "PULSE Hybrid Clinical Engine (Client Cloud)",
-        nlp_paradigm: "Client-side Contextual Clinical Extraction & ISBAR Structuring",
-        model_active: false,
-        disclaimer: "Client-side static execution for clinical demonstration"
-      }
-    }
+    extracted_data: extractedData
   };
+  const formattedExtraction = {
+    id: extraction.id,
+    engine_used: extraction.engine_used,
+    extracted_at: extraction.created_at,
+    data: extractedData
+  };
+
   note.status = 'Processed';
   note.updated_at = new Date().toISOString();
   if (!note.extractions) note.extractions = [];
   note.extractions.unshift(extraction);
   note.latest_extraction = extraction;
+  note.extraction = formattedExtraction;
+  note.extracted_data = extractedData;
   notes[noteIndex] = note;
   storageSet(key, JSON.stringify(notes));
   return note;
@@ -1416,12 +1467,23 @@ export function reviewLocalPatientNote(patientId, noteId, reviewedData, reviewer
   if (!note.reviews) note.reviews = [];
   note.reviews.unshift(review);
   note.latest_review = review;
+  note.review = review;
+  note.reviewer_identifier = review.reviewer_identifier;
+  note.reviewed_at = review.created_at;
+  note.review_history = note.reviews;
   notes[noteIndex] = note;
   storageSet(key, JSON.stringify(notes));
   return {
     message: "Clinician review recorded successfully",
+    note_id: note.id,
+    review_id: review.id,
+    reviewer_identifier: review.reviewer_identifier,
+    review_notes: review.review_notes,
+    reviewed_at: review.created_at,
+    status: "Reviewed",
     review,
     note
   };
 }
+
 

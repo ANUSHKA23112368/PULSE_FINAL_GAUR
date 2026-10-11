@@ -65,7 +65,8 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
       const data = await fetchPatientNotes(selectedPatient.display_id || selectedPatient.id);
       // Support both Processed and Reviewed notes
       const validNotes = (data.notes || []).filter(
-        n => (n.status === 'Processed' || n.status === 'Reviewed') && n.extraction?.data
+        n => (n.status === 'Processed' || n.status === 'Reviewed') &&
+             (n.extraction?.data || n.extracted_data || n.latest_extraction?.extracted_data || n.latest_extraction?.data)
       );
       setNotes(validNotes);
       if (validNotes.length > 0) {
@@ -93,7 +94,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     setSaveSuccess(null);
 
     // If human review exists, initialize from latest review, else from AI extraction
-    const sourceData = note.review?.reviewed_data || note.extraction?.data || {};
+    const sourceData = note.review?.reviewed_data || note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data || {};
     const isbarData = sourceData.isbar || sourceData.structured_handover?.isbar || {};
     const conditionsData = sourceData.entities?.conditions || sourceData.conditions || [];
     const medicationsData = sourceData.entities?.medications || sourceData.medications || [];
@@ -321,7 +322,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   }
 
   const activeNote = notes.find(n => n.id === selectedNoteId);
-  const originalExt = activeNote?.extraction?.data || {};
+  const originalExt = activeNote?.extraction?.data || activeNote?.extracted_data || activeNote?.latest_extraction?.extracted_data || activeNote?.latest_extraction?.data || {};
   const isReviewed = activeNote?.status === 'Reviewed';
   const latestReview = activeNote?.review;
 

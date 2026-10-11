@@ -300,9 +300,9 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
               const isDraft = note.status === 'Draft';
               const isProcessed = note.status === 'Processed';
               const isReviewed = note.status === 'Reviewed';
-              const hasExtraction = !!note.extraction?.data;
+              const hasExtraction = !!(note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data);
               const isExpanded = !!expandedExtraction[note.id];
-              const ext = note.extraction?.data;
+              const ext = note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data;
 
               const borderLeftColor = isReviewed ? '4px solid #059669' : isProcessed ? '4px solid #0284c7' : '4px solid #94a3b8';
               const statusBg = isReviewed ? '#ecfdf5' : isProcessed ? '#e0f2fe' : '#f1f5f9';
