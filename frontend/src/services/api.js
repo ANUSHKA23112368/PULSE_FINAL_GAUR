@@ -10,29 +10,38 @@ import {
   getLocalReports, 
   getLocalReport, 
   preprocessTextLocal, 
-  analyzeLocalEngine 
+  analyzeLocalEngine,
+  getLocalPatients,
+  getLocalPatient,
+  createLocalPatient,
+  getLocalPatientNotes,
+  createLocalPatientNote,
+  processLocalPatientNote,
+  reviewLocalPatientNote
 } from './localEngine';
 
 const API_BASE = '/api';
 
 export async function fetchHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
+    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) throw new Error("Backend not responding");
     return await res.json();
   } catch (err) {
     // Return healthy client-side engine response on Vercel
     const stats = getLocalStats();
+    const patientsData = getLocalPatients();
     return {
       status: "healthy (Cloud Client Engine)",
       system: "PULSE (Patient Update & Log Structuring Engine)",
       version: "1.0.0-prototype",
       dataset_loaded: true,
       total_reports: stats.total_reports,
+      total_patients: patientsData.total_count,
       model_status: {
-        current_engine: "Hybrid Clinical Information Extraction Pipeline",
+        current_engine: "PULSE Hybrid Clinical Engine (Client Cloud)",
         candidate_backbone: "Bio_ClinicalBERT",
-        candidate_status: "Planned for experimental fine-tuning evaluation"
+        candidate_status: "Active (Client-side assertion scoping & ISBAR generator)"
       },
       disclaimer: "PULSE is an AI-assisted clinical information-organization prototype. It does not diagnose, prescribe treatment, or replace professional clinical judgment."
     };
@@ -127,106 +136,123 @@ export async function fetchHistory() {
 export async function fetchPatients(search = '') {
   try {
     const url = search ? `${API_BASE}/patients?search=${encodeURIComponent(search)}` : `${API_BASE}/patients`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Failed to fetch patients list");
     return await res.json();
   } catch (err) {
-    console.warn("fetchPatients error:", err);
-    // Fallback: return default synthetic demo patients list
-    return { total_count: 0, patients: [] };
+    return getLocalPatients(search);
   }
 }
 
 export async function fetchPatient(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_BASE}/patients/${patientId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Patient ${patientId} not found`);
     return await res.json();
   } catch (err) {
-    console.warn("fetchPatient error:", err);
-    return null;
+    return getLocalPatient(patientId);
   }
 }
 
 export async function createPatient(patientData) {
-  const res = await fetch(`${API_BASE}/patients`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(patientData),
-    signal: AbortSignal.timeout(8000)
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: "Failed to create synthetic demo patient" }));
-    throw new Error(errorData.detail || "Failed to create synthetic demo patient");
+  try {
+    const res = await fetch(`${API_BASE}/patients`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patientData),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: "Failed to create synthetic demo patient" }));
+      throw new Error(errorData.detail || "Failed to create synthetic demo patient");
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Backend patient creation unavailable, saving to client storage:", err);
+    return createLocalPatient(patientData);
   }
-  return await res.json();
 }
 
 export async function fetchPatientNotes(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Failed to fetch notes for patient ${patientId}`);
     return await res.json();
   } catch (err) {
-    console.warn("fetchPatientNotes error:", err);
-    return { total_notes: 0, notes: [] };
+    return getLocalPatientNotes(patientId);
   }
 }
 
 export async function createPatientNote(patientId, rawText, authorIdentifier = "Staff Clinician (Demo)") {
-  const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ raw_text: rawText, author_identifier: authorIdentifier }),
-    signal: AbortSignal.timeout(8000)
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: "Failed to save note" }));
-    throw new Error(errorData.detail || "Failed to save note");
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ raw_text: rawText, author_identifier: authorIdentifier }),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: "Failed to save note" }));
+      throw new Error(errorData.detail || "Failed to save note");
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Backend note creation unavailable, saving to client storage:", err);
+    return createLocalPatientNote(patientId, rawText, authorIdentifier);
   }
-  return await res.json();
 }
 
 export async function processPatientNote(patientId, noteId) {
-  const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/process`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    signal: AbortSignal.timeout(30000)
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: "Failed to process note" }));
-    throw new Error(errorData.detail || "Failed to process note");
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(15000)
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: "Failed to process note" }));
+      throw new Error(errorData.detail || "Failed to process note");
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Backend note processor unavailable, processing via client clinical NLP engine:", err);
+    return processLocalPatientNote(patientId, noteId);
   }
-  return await res.json();
 }
 
 export async function fetchPatientNote(patientId, noteId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}`, { signal: AbortSignal.timeout(5000) });
+    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Note ${noteId} not found`);
     return await res.json();
   } catch (err) {
-    console.warn("fetchPatientNote error:", err);
-    return null;
+    const { notes } = getLocalPatientNotes(patientId);
+    return notes.find(n => String(n.id) === String(noteId)) || null;
   }
 }
 
 export async function reviewPatientNote(patientId, noteId, reviewedData, reviewerIdentifier = "Staff Clinician (Demo)", reviewNotes = null) {
-  const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/review`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      reviewed_data: reviewedData,
-      reviewer_identifier: reviewerIdentifier,
-      review_notes: reviewNotes
-    }),
-    signal: AbortSignal.timeout(10000)
-  });
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({ detail: "Failed to persist clinician review" }));
-    throw new Error(errorData.detail || "Failed to persist clinician review");
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/review`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reviewed_data: reviewedData,
+        reviewer_identifier: reviewerIdentifier,
+        review_notes: reviewNotes
+      }),
+      signal: AbortSignal.timeout(6000)
+    });
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: "Failed to persist clinician review" }));
+      throw new Error(errorData.detail || "Failed to persist clinician review");
+    }
+    return await res.json();
+  } catch (err) {
+    console.warn("Backend review endpoint unavailable, saving to client storage:", err);
+    return reviewLocalPatientNote(patientId, noteId, reviewedData, reviewerIdentifier, reviewNotes);
   }
-  return await res.json();
 }
+
 
 

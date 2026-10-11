@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Activity, 
-  Layers, 
-  FileText, 
-  History, 
-  HeartPulse, 
-  CheckCircle2, 
+import {
+  Users,
+  Activity,
+  Layers,
+  FileText,
+  History,
+  HeartPulse,
+  CheckCircle2,
   ShieldAlert,
   Info
 } from 'lucide-react';
@@ -82,35 +82,35 @@ export function App() {
 
           {/* Primary Hospital Navigation (Parts A & B) */}
           <nav className="hospital-nav">
-            <button 
+            <button
               className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
               onClick={() => setActiveTab('dashboard')}
             >
               <Users size={16} /> Patient Dashboard
             </button>
 
-            <button 
+            <button
               className={`nav-item ${activeTab === 'vitals' ? 'active' : ''}`}
               onClick={() => setActiveTab('vitals')}
             >
               <Activity size={16} /> Vitals
             </button>
 
-            <button 
+            <button
               className={`nav-item ${activeTab === 'notes' ? 'active' : ''}`}
               onClick={() => setActiveTab('notes')}
             >
               <FileText size={16} /> Clinical Notes
             </button>
 
-            <button 
+            <button
               className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
               onClick={() => setActiveTab('summary')}
             >
               <Layers size={16} /> Handover Summary
             </button>
 
-            <button 
+            <button
               className={`nav-item ${activeTab === 'history' ? 'active' : ''}`}
               onClick={() => setActiveTab('history')}
             >
@@ -123,7 +123,7 @@ export function App() {
       {/* Active Workstation Body */}
       <main className="main-viewport">
         {activeTab === 'dashboard' && (
-          <PatientDashboardPage 
+          <PatientDashboardPage
             selectedPatient={selectedPatient}
             onSelectPatient={handleSelectPatient}
             onNavigate={(tab) => setActiveTab(tab)}
@@ -132,7 +132,7 @@ export function App() {
         )}
 
         {activeTab === 'vitals' && (
-          <VitalsPage 
+          <VitalsPage
             selectedPatient={selectedPatient}
             onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
@@ -140,7 +140,7 @@ export function App() {
         )}
 
         {activeTab === 'notes' && (
-          <ClinicalNotesPage 
+          <ClinicalNotesPage
             selectedPatient={selectedPatient}
             onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
@@ -148,7 +148,7 @@ export function App() {
         )}
 
         {activeTab === 'summary' && (
-          <HandoverSummaryPage 
+          <HandoverSummaryPage
             selectedPatient={selectedPatient}
             onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
@@ -156,7 +156,7 @@ export function App() {
         )}
 
         {activeTab === 'history' && (
-          <HistoryPage 
+          <HistoryPage
             selectedPatient={selectedPatient}
             onSwitchPatient={handleSwitchPatient}
             onNavigate={(tab) => setActiveTab(tab)}
@@ -170,15 +170,24 @@ export function App() {
           <div className="footer-info">
             <strong>PULSE Prototype</strong> • Hospital Handover Intelligence Engine
             <span className="footer-muted"> (Synthetic demonstration corpus • {totalPatients != null ? `${totalPatients} registered demo patients` : 'registered demo patients'})</span>
+
           </div>
 
           <div className="footer-status">
             <span className="status-indicator">
               <CheckCircle2 size={13} color="#059669" />
-              <span>{systemHealth ? 'FastAPI Backend Ready' : 'Backend Connecting'}</span>
+              <span>
+                {systemHealth?.status?.includes('Cloud') 
+                  ? 'Cloud Client Engine (Vercel Ready)' 
+                  : (systemHealth ? 'FastAPI Backend Ready' : 'Backend Connecting')}
+              </span>
             </span>
             <span className="status-separator">•</span>
-            <span className="status-engine">Model: Bio_ClinicalBERT (Uncalibrated Softmax)</span>
+            <span className="status-engine">
+              {systemHealth?.status?.includes('Cloud')
+                ? 'Model: Bio_ClinicalBERT Rules Fallback'
+                : 'Model: Bio_ClinicalBERT (Uncalibrated Softmax)'}
+            </span>
           </div>
         </div>
       </footer>

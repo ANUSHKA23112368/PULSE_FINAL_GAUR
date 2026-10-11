@@ -1059,3 +1059,369 @@ export function getLocalReport(reportId) {
     philosophy_note: prep.philosophy_note
   };
 }
+
+// ==========================================
+// CLIENT-SIDE PATIENT & NOTE WORKFLOW ENGINE
+// (Enables complete standalone demo on Vercel)
+// ==========================================
+
+export const INITIAL_DEMO_PATIENTS = [
+  {
+    id: 1,
+    display_id: "PULSE-DEMO-001",
+    name: "Michael I Wu",
+    age: "48 years",
+    gender: "Male",
+    ward: "Neurology (Demo Ward A)",
+    bed_number: "Bed 8",
+    consultant: "Dr. Hanlen",
+    admitting_diagnosis: "Headache and vertigo (Synthetic demonstration narrative from Report 0)",
+    vitals: { hr: 78, spo2: 98, bp_sys: 124, bp_dia: 82, rr: 16, temperature: 36.8, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    display_id: "PULSE-DEMO-002",
+    name: "Vera Abbott",
+    age: "93 years",
+    gender: "Female",
+    ward: "Cardiology (Demo Ward B)",
+    bed_number: "Bed 4",
+    consultant: "Dr. Liu",
+    admitting_diagnosis: "Chest pain evaluation (Synthetic demonstration narrative from Report 1)",
+    vitals: { hr: 84, spo2: 96, bp_sys: 138, bp_dia: 86, rr: 18, temperature: 37.0, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 3,
+    display_id: "PULSE-DEMO-003",
+    name: "Leila Sonya Da Silva",
+    age: "34 years",
+    gender: "Female",
+    ward: "Endocrinology (Demo Ward C)",
+    bed_number: "Bed 5",
+    consultant: "Dr. Liu",
+    admitting_diagnosis: "Diabetes management (Synthetic demonstration narrative from Report 12)",
+    vitals: { hr: 76, spo2: 99, bp_sys: 118, bp_dia: 76, rr: 14, temperature: 36.6, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 4,
+    display_id: "PULSE-DEMO-004",
+    name: "Pierre Cox",
+    age: "77 years",
+    gender: "Male",
+    ward: "Vascular Surgery (Demo Ward A)",
+    bed_number: "Bed 2",
+    consultant: "Dr. Gregor",
+    admitting_diagnosis: "Right leg pain and swelling query embolism (Synthetic demonstration narrative from Report 15)",
+    vitals: { hr: 88, spo2: 95, bp_sys: 142, bp_dia: 88, rr: 20, temperature: 37.2, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 5,
+    display_id: "PULSE-DEMO-005",
+    name: "Frank Morgan Montgomery",
+    age: "78 years",
+    gender: "Male",
+    ward: "Cardiothoracic (Demo Ward B)",
+    bed_number: "Bed 5",
+    consultant: "Dr. Sanchez",
+    admitting_diagnosis: "Shortness of breath and post-op tiredness (Synthetic demonstration narrative from Report 22)",
+    vitals: { hr: 92, spo2: 94, bp_sys: 130, bp_dia: 80, rr: 22, temperature: 36.9, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 6,
+    display_id: "PULSE-DEMO-006",
+    name: "Nina Maria Carey",
+    age: "67 years",
+    gender: "Female",
+    ward: "Respiratory (Demo Ward C)",
+    bed_number: "Bed 1",
+    consultant: "Dr. Jaime",
+    admitting_diagnosis: "Bronchitis, fever and cough (Synthetic demonstration narrative from Report 35)",
+    vitals: { hr: 96, spo2: 93, bp_sys: 126, bp_dia: 78, rr: 24, temperature: 38.4, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 7,
+    display_id: "PULSE-DEMO-007",
+    name: "Matt Owen",
+    age: "43 years",
+    gender: "Male",
+    ward: "Transplant Unit (Demo Ward A)",
+    bed_number: "Bed 3",
+    consultant: "Dr. Kenzie",
+    admitting_diagnosis: "Post lung transplant recovery (Synthetic demonstration narrative from Report 48)",
+    vitals: { hr: 82, spo2: 97, bp_sys: 122, bp_dia: 78, rr: 16, temperature: 37.1, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 8,
+    display_id: "PULSE-DEMO-008",
+    name: "Dave McKenzie",
+    age: "72 years",
+    gender: "Male",
+    ward: "Psychogeriatric (Demo Ward D)",
+    bed_number: "Bed 3",
+    consultant: "Dr. Jorge De Silva",
+    admitting_diagnosis: "Acute confusion and dementia monitoring (Synthetic demonstration narrative from Report 56)",
+    vitals: { hr: 74, spo2: 98, bp_sys: 132, bp_dia: 82, rr: 15, temperature: 36.7, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 9,
+    display_id: "PULSE-DEMO-009",
+    name: "Lisa Kerr",
+    age: "62 years",
+    gender: "Female",
+    ward: "Neurology (Demo Ward A)",
+    bed_number: "Bed 6",
+    consultant: "Dr. Laine",
+    admitting_diagnosis: "Cerebral haemorrhage evaluation (Synthetic demonstration narrative from Report 75)",
+    vitals: { hr: 70, spo2: 98, bp_sys: 148, bp_dia: 92, rr: 14, temperature: 36.9, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 10,
+    display_id: "PULSE-DEMO-010",
+    name: "Evan Stephenson",
+    age: "22 years",
+    gender: "Male",
+    ward: "Renal & Trauma (Demo Ward B)",
+    bed_number: "Bed 3",
+    consultant: "Dr. Medical Officer",
+    admitting_diagnosis: "Post-fall rhabdomyolysis and renal monitoring (Synthetic demonstration narrative from Report 90)",
+    vitals: { hr: 80, spo2: 99, bp_sys: 116, bp_dia: 74, rr: 16, temperature: 36.8, recorded_at: new Date().toISOString(), data_source: "Simulated Demonstration Data" },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+const memoryStorage = {};
+
+function storageGet(key) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      return window.localStorage.getItem(key);
+    }
+  } catch (e) {
+    // ignore
+  }
+  return memoryStorage[key] || null;
+}
+
+function storageSet(key, value) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(key, value);
+      return;
+    }
+  } catch (e) {
+    // ignore
+  }
+  memoryStorage[key] = value;
+}
+
+export function getLocalPatients(search = '') {
+  let stored = storageGet('pulse_demo_patients');
+  let patients = [];
+  if (!stored) {
+    patients = [...INITIAL_DEMO_PATIENTS];
+    storageSet('pulse_demo_patients', JSON.stringify(patients));
+  } else {
+    try {
+      patients = JSON.parse(stored);
+      if (!Array.isArray(patients) || patients.length === 0) {
+        patients = [...INITIAL_DEMO_PATIENTS];
+        storageSet('pulse_demo_patients', JSON.stringify(patients));
+      }
+    } catch (e) {
+      patients = [...INITIAL_DEMO_PATIENTS];
+      storageSet('pulse_demo_patients', JSON.stringify(patients));
+    }
+  }
+
+  if (search && search.trim()) {
+    const q = search.trim().toLowerCase();
+    patients = patients.filter(p =>
+      (p.name && p.name.toLowerCase().includes(q)) ||
+      (p.display_id && p.display_id.toLowerCase().includes(q)) ||
+      (p.ward && p.ward.toLowerCase().includes(q)) ||
+      (p.bed_number && p.bed_number.toLowerCase().includes(q)) ||
+      (p.consultant && p.consultant.toLowerCase().includes(q)) ||
+      (p.admitting_diagnosis && p.admitting_diagnosis.toLowerCase().includes(q))
+    );
+  }
+
+  return {
+    total_count: patients.length,
+    total_patients: patients.length,
+    patients
+  };
+}
+
+export function getLocalPatient(patientId) {
+  const { patients } = getLocalPatients();
+  const p = patients.find(item =>
+    String(item.id) === String(patientId) ||
+    String(item.display_id).toLowerCase() === String(patientId).toLowerCase()
+  );
+  return p || null;
+}
+
+export function createLocalPatient(patientData) {
+  const currentList = getLocalPatients().patients;
+  const nextId = currentList.length > 0 ? Math.max(...currentList.map(p => Number(p.id) || 0)) + 1 : 1;
+  const displayId = patientData.display_id || `PULSE-DEMO-${String(nextId).padStart(3, '0')}`;
+
+  const newPatient = {
+    id: nextId,
+    display_id: displayId,
+    name: patientData.name,
+    age: patientData.age || "Unspecified",
+    gender: patientData.gender || "Unspecified",
+    ward: patientData.ward || "General Ward",
+    bed_number: patientData.bed_number || "Unassigned",
+    consultant: patientData.consultant || "Attending Medical Officer",
+    admitting_diagnosis: patientData.admitting_diagnosis || "Observation",
+    vitals: patientData.vitals || {
+      hr: 76,
+      spo2: 98,
+      bp_sys: 120,
+      bp_dia: 80,
+      rr: 16,
+      temperature: 36.8,
+      recorded_at: new Date().toISOString(),
+      data_source: "Simulated Demonstration Data"
+    },
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  currentList.push(newPatient);
+  storageSet('pulse_demo_patients', JSON.stringify(currentList));
+  return newPatient;
+}
+
+export function getLocalPatientNotes(patientId) {
+  const key = `pulse_notes_${patientId}`;
+  const stored = storageGet(key);
+  let notes = [];
+  if (stored) {
+    try {
+      notes = JSON.parse(stored);
+    } catch (e) {
+      notes = [];
+    }
+  }
+  return {
+    total_notes: notes.length,
+    notes
+  };
+}
+
+export function createLocalPatientNote(patientId, rawText, authorIdentifier) {
+  const key = `pulse_notes_${patientId}`;
+  const { notes } = getLocalPatientNotes(patientId);
+  const nextId = notes.length > 0 ? Math.max(...notes.map(n => Number(n.id) || 0)) + 1 : 1;
+  const newNote = {
+    id: nextId,
+    patient_id: patientId,
+    raw_text: rawText,
+    status: 'Draft',
+    author_identifier: authorIdentifier || 'Staff Nurse / Clinician (Demo)',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    extractions: [],
+    reviews: [],
+    latest_extraction: null,
+    latest_review: null
+  };
+  notes.unshift(newNote);
+  storageSet(key, JSON.stringify(notes));
+  return newNote;
+}
+
+export function processLocalPatientNote(patientId, noteId) {
+  const key = `pulse_notes_${patientId}`;
+  const { notes } = getLocalPatientNotes(patientId);
+  const noteIndex = notes.findIndex(n => String(n.id) === String(noteId));
+  if (noteIndex === -1) {
+    throw new Error(`Note #${noteId} not found`);
+  }
+  const note = notes[noteIndex];
+  const analysis = analyzeLocalEngine({ rawText: note.raw_text });
+  const extraction = {
+    id: Date.now(),
+    note_id: note.id,
+    engine_used: "PULSE Hybrid Clinical Engine (Client Cloud)",
+    created_at: new Date().toISOString(),
+    extracted_data: {
+      isbar: analysis.isbar,
+      entities: analysis.entities,
+      events: analysis.events,
+      temporal_information: analysis.temporal_information,
+      pending_tasks: analysis.pending_tasks,
+      follow_up: analysis.follow_up,
+      structured_handover: analysis.structured_handover,
+      executive_summary: analysis.executive_summary,
+      evidence: analysis.evidence,
+      model_metadata: {
+        pipeline: "PULSE Hybrid Clinical Engine (Client Cloud)",
+        nlp_paradigm: "Client-side Contextual Clinical Extraction & ISBAR Structuring",
+        model_active: false,
+        disclaimer: "Client-side static execution for clinical demonstration"
+      }
+    }
+  };
+  note.status = 'Processed';
+  note.updated_at = new Date().toISOString();
+  if (!note.extractions) note.extractions = [];
+  note.extractions.unshift(extraction);
+  note.latest_extraction = extraction;
+  notes[noteIndex] = note;
+  storageSet(key, JSON.stringify(notes));
+  return note;
+}
+
+export function reviewLocalPatientNote(patientId, noteId, reviewedData, reviewerIdentifier, reviewNotes) {
+  const key = `pulse_notes_${patientId}`;
+  const { notes } = getLocalPatientNotes(patientId);
+  const noteIndex = notes.findIndex(n => String(n.id) === String(noteId));
+  if (noteIndex === -1) {
+    throw new Error(`Note #${noteId} not found`);
+  }
+  const note = notes[noteIndex];
+  const review = {
+    id: Date.now(),
+    note_id: note.id,
+    reviewer_identifier: reviewerIdentifier || "Staff Clinician (Review)",
+    review_notes: reviewNotes,
+    created_at: new Date().toISOString(),
+    reviewed_data: reviewedData
+  };
+  note.status = 'Reviewed';
+  note.updated_at = new Date().toISOString();
+  if (!note.reviews) note.reviews = [];
+  note.reviews.unshift(review);
+  note.latest_review = review;
+  notes[noteIndex] = note;
+  storageSet(key, JSON.stringify(notes));
+  return {
+    message: "Clinician review recorded successfully",
+    review,
+    note
+  };
+}
+
