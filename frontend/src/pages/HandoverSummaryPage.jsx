@@ -44,6 +44,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   const [editedExecutiveSummary, setEditedExecutiveSummary] = useState('');
   const [editedConditions, setEditedConditions] = useState([]);
   const [editedMedications, setEditedMedications] = useState([]);
+  const [editedInvestigations, setEditedInvestigations] = useState([]);
   const [editedTasks, setEditedTasks] = useState([]);
 
   // Submission state
@@ -96,36 +97,55 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     // If human review exists, initialize from latest review, else from AI extraction
     const sourceData = note.review?.reviewed_data || note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data || {};
     const isbarData = sourceData.isbar || sourceData.structured_handover?.isbar || {};
-    const conditionsData = sourceData.entities?.conditions || sourceData.conditions || [];
+    const conditionsList = sourceData.entities?.conditions || sourceData.conditions || [];
+    const symptomsList = sourceData.entities?.symptoms || sourceData.symptoms || [];
+    const combinedConditions = [...conditionsList, ...symptomsList];
     const medicationsData = sourceData.entities?.medications || sourceData.medications || [];
+    const investigationsData = sourceData.entities?.investigations || sourceData.investigations || [];
     const tasksData = sourceData.pending_tasks || [];
 
+    const formatSection = (val) => Array.isArray(val) ? val.join('\n') : (val || '');
+
     setEditedIsbar({
-      situation: isbarData.situation || '',
-      background: isbarData.background || '',
-      assessment: isbarData.assessment || '',
-      recommendation: isbarData.recommendation || ''
+      situation: formatSection(isbarData.situation),
+      background: formatSection(isbarData.background),
+      assessment: formatSection(isbarData.assessment),
+      recommendation: formatSection(isbarData.recommendation)
     });
 
     setEditedExecutiveSummary(
       sourceData.executive_summary || sourceData.structured_handover?.executive_summary || ''
     );
 
-    setEditedConditions(
-      conditionsData.map(c => ({
-        text: typeof c === 'string' ? c : c.text || '',
-        status: c.is_negated ? 'negated' : c.is_historical ? 'historical' : 'active',
-        source_sentence: c.source_sentence || ''
-      }))
-    );
+    let initialConditions = combinedConditions.map(c => ({
+      text: typeof c === 'string' ? c : c.text || c.normalized || '',
+      status: c.is_negated ? 'negated' : c.is_historical ? 'historical' : 'active',
+      source_sentence: c.source_sentence || ''
+    }));
+    if (initialConditions.length === 0 && selectedPatient?.admitting_diagnosis) {
+      initialConditions = [{
+        text: selectedPatient.admitting_diagnosis,
+        status: 'active',
+        source_sentence: 'Admitting Presentation'
+      }];
+    }
+    setEditedConditions(initialConditions);
 
     setEditedMedications(
       medicationsData.map(m => ({
-        text: typeof m === 'string' ? m : m.text || '',
+        text: typeof m === 'string' ? m : m.text || m.normalized || '',
         dosage: m.dosage || '',
         frequency: m.frequency || '',
         route: m.route || '',
         source_sentence: m.source_sentence || ''
+      }))
+    );
+
+    setEditedInvestigations(
+      investigationsData.map(i => ({
+        text: typeof i === 'string' ? i : i.text || i.normalized || '',
+        status: i.is_planned ? 'planned' : 'completed',
+        source_sentence: i.source_sentence || ''
       }))
     );
 
@@ -136,11 +156,15 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
       }))
     );
 
+    const defaultReviewer = selectedPatient?.consultant 
+      ? `${selectedPatient.consultant} (Attending Consultant)` 
+      : 'Dr. Khurana (Attending Consultant)';
+
     if (note.review) {
-      setReviewerIdentifier(note.review.reviewer_identifier || 'Dr. Hanlen, MD (Attending Consultant)');
+      setReviewerIdentifier(note.review.reviewer_identifier || defaultReviewer);
       setReviewNotes(note.review.review_notes || '');
     } else {
-      setReviewerIdentifier('Dr. Hanlen, MD (Attending Consultant)');
+      setReviewerIdentifier(defaultReviewer);
       setReviewNotes('');
     }
   }
@@ -154,33 +178,45 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
 
   function handleResetToAI() {
     if (!activeNote) return;
-    const aiData = activeNote.extraction?.data || {};
+    const aiData = activeNote.extraction?.data || activeNote.extracted_data || {};
     const isbarData = aiData.isbar || aiData.structured_handover?.isbar || {};
-    const conditionsData = aiData.entities?.conditions || [];
+    const conditionsList = aiData.entities?.conditions || [];
+    const symptomsList = aiData.entities?.symptoms || [];
+    const combinedConditions = [...conditionsList, ...symptomsList];
     const medicationsData = aiData.entities?.medications || [];
+    const investigationsData = aiData.entities?.investigations || [];
     const tasksData = aiData.pending_tasks || [];
 
+    const formatSection = (val) => Array.isArray(val) ? val.join('\n') : (val || '');
+
     setEditedIsbar({
-      situation: isbarData.situation || '',
-      background: isbarData.background || '',
-      assessment: isbarData.assessment || '',
-      recommendation: isbarData.recommendation || ''
+      situation: formatSection(isbarData.situation),
+      background: formatSection(isbarData.background),
+      assessment: formatSection(isbarData.assessment),
+      recommendation: formatSection(isbarData.recommendation)
     });
     setEditedExecutiveSummary(aiData.executive_summary || aiData.structured_handover?.executive_summary || '');
     setEditedConditions(
-      conditionsData.map(c => ({
-        text: c.text || '',
+      combinedConditions.map(c => ({
+        text: c.text || c.normalized || '',
         status: c.is_negated ? 'negated' : c.is_historical ? 'historical' : 'active',
         source_sentence: c.source_sentence || ''
       }))
     );
     setEditedMedications(
       medicationsData.map(m => ({
-        text: m.text || '',
+        text: m.text || m.normalized || '',
         dosage: m.dosage || '',
         frequency: m.frequency || '',
         route: m.route || '',
         source_sentence: m.source_sentence || ''
+      }))
+    );
+    setEditedInvestigations(
+      investigationsData.map(i => ({
+        text: i.text || i.normalized || '',
+        status: i.is_planned ? 'planned' : 'completed',
+        source_sentence: i.source_sentence || ''
       }))
     );
     setEditedTasks(
@@ -212,6 +248,16 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   }
   function handleMedicationChange(index, field, value) {
     setEditedMedications(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  }
+
+  function handleAddInvestigation() {
+    setEditedInvestigations(prev => [...prev, { text: '', status: 'planned', source_sentence: '' }]);
+  }
+  function handleRemoveInvestigation(index) {
+    setEditedInvestigations(prev => prev.filter((_, i) => i !== index));
+  }
+  function handleInvestigationChange(index, field, value) {
+    setEditedInvestigations(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
   }
 
   function handleAddTask() {
@@ -262,6 +308,11 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
           frequency: m.frequency,
           route: m.route,
           source_sentence: m.source_sentence || ''
+        })),
+        investigations: editedInvestigations.map(inv => ({
+          text: inv.text,
+          is_planned: inv.status === 'planned',
+          source_sentence: inv.source_sentence || ''
         }))
       },
       pending_tasks: editedTasks.map(t => ({
@@ -607,7 +658,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                       placeholder="Current patient clinical situation..."
                     />
                   ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
                       {editedIsbar.situation || 'Patient under observation.'}
                     </div>
                   )}
@@ -628,7 +679,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                       placeholder="Clinical background and context..."
                     />
                   ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
                       {editedIsbar.background || 'Clinical history referenced in handover narrative.'}
                     </div>
                   )}
@@ -649,7 +700,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                       placeholder="Ongoing shift assessment and vitals..."
                     />
                   ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
                       {editedIsbar.assessment || 'Ongoing shift observations and clinical monitoring.'}
                     </div>
                   )}
@@ -670,7 +721,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                       placeholder="Next steps, monitoring, pending tasks..."
                     />
                   ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5' }}>
+                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
                       {editedIsbar.recommendation || 'Continue routine care and observe.'}
                     </div>
                   )}
@@ -834,6 +885,77 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                   )}
                 </div>
 
+                {/* Investigations & Diagnostic Tests */}
+                <div className="hospital-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Activity size={16} color="#0d9488" /> Investigations & Diagnostic Tests
+                    </h3>
+                    {isEditing && (
+                      <button 
+                        onClick={handleAddInvestigation}
+                        className="btn btn-outline"
+                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', gap: '2px' }}
+                      >
+                        <Plus size={12} /> Add Test
+                      </button>
+                    )}
+                  </div>
+
+                  {editedInvestigations.length === 0 ? (
+                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>None recorded.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {editedInvestigations.map((inv, i) => (
+                        <div key={i} style={{ background: '#f8fafc', padding: '0.5rem 0.6rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                          {isEditing ? (
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                              <input
+                                type="text"
+                                value={inv.text}
+                                onChange={(e) => handleInvestigationChange(i, 'text', e.target.value)}
+                                className="form-input"
+                                style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
+                                placeholder="Investigation name (e.g. Serum Calcium Test)"
+                              />
+                              <select
+                                value={inv.status}
+                                onChange={(e) => handleInvestigationChange(i, 'status', e.target.value)}
+                                className="form-input"
+                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', width: '105px' }}
+                              >
+                                <option value="planned">Planned / Ordered</option>
+                                <option value="completed">Completed</option>
+                              </select>
+                              <button
+                                onClick={() => handleRemoveInvestigation(i)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}
+                                title="Remove investigation"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontWeight: 600, color: '#1e293b' }}>{inv.text}</span>
+                              <span style={{
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                padding: '1px 6px',
+                                borderRadius: '3px',
+                                background: inv.status === 'planned' ? '#fef3c7' : '#dcfce7',
+                                color: inv.status === 'planned' ? '#92400e' : '#166534'
+                              }}>
+                                {inv.status === 'planned' ? 'Planned / Ordered' : 'Completed'}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
                 {/* Pending Actions & Tasks */}
                 <div className="hospital-card">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -972,33 +1094,41 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                   <strong style={{ fontSize: '0.8rem', color: '#0369a1', display: 'block', marginBottom: '4px' }}>[S] Situation:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{originalExt.isbar?.situation || 'None'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
+                    {Array.isArray(originalExt.isbar?.situation) ? originalExt.isbar.situation.join('\n') : (originalExt.isbar?.situation || 'None')}
+                  </div>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                   <strong style={{ fontSize: '0.8rem', color: '#4338ca', display: 'block', marginBottom: '4px' }}>[B] Background:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{originalExt.isbar?.background || 'None'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
+                    {Array.isArray(originalExt.isbar?.background) ? originalExt.isbar.background.join('\n') : (originalExt.isbar?.background || 'None')}
+                  </div>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                   <strong style={{ fontSize: '0.8rem', color: '#0f766e', display: 'block', marginBottom: '4px' }}>[A] Assessment:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{originalExt.isbar?.assessment || 'None'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
+                    {Array.isArray(originalExt.isbar?.assessment) ? originalExt.isbar.assessment.join('\n') : (originalExt.isbar?.assessment || 'None')}
+                  </div>
                 </div>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                   <strong style={{ fontSize: '0.8rem', color: '#b45309', display: 'block', marginBottom: '4px' }}>[R] Recommendation:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{originalExt.isbar?.recommendation || 'None'}</div>
+                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
+                    {Array.isArray(originalExt.isbar?.recommendation) ? originalExt.isbar.recommendation.join('\n') : (originalExt.isbar?.recommendation || 'None')}
+                  </div>
                 </div>
               </div>
 
-              {/* Conditions & Medications AI Original */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem' }}>
+              {/* Conditions, Medications, Investigations & Tasks AI Original */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem' }}>
                 <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#0284c7', display: 'block', marginBottom: '6px' }}>Extracted Conditions:</strong>
-                  {(originalExt.entities?.conditions || []).length === 0 ? (
+                  <strong style={{ fontSize: '0.8rem', color: '#0284c7', display: 'block', marginBottom: '6px' }}>Extracted Conditions & Symptoms:</strong>
+                  {[...(originalExt.entities?.conditions || []), ...(originalExt.entities?.symptoms || [])].length === 0 ? (
                     <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {originalExt.entities.conditions.map((c, i) => (
+                      {[...(originalExt.entities?.conditions || []), ...(originalExt.entities?.symptoms || [])].map((c, i) => (
                         <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
-                          • {c.text} {c.is_negated ? '(Negated)' : c.is_historical ? '(Historical)' : '(Active)'}
+                          • {c.text || c.normalized} {c.is_negated ? '(Negated)' : c.is_historical ? '(Historical)' : '(Active)'}
                         </div>
                       ))}
                     </div>
@@ -1013,7 +1143,37 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                       {originalExt.entities.medications.map((m, i) => (
                         <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
-                          • {m.text} {m.dosage ? `[${m.dosage}]` : ''} {m.frequency ? `[${m.frequency}]` : ''}
+                          • {m.text || m.normalized} {m.dosage ? `[${m.dosage}]` : ''} {m.frequency ? `[${m.frequency}]` : ''}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <strong style={{ fontSize: '0.8rem', color: '#0d9488', display: 'block', marginBottom: '6px' }}>Extracted Investigations:</strong>
+                  {(originalExt.entities?.investigations || []).length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {originalExt.entities.investigations.map((inv, i) => (
+                        <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
+                          • {inv.text || inv.normalized} {inv.is_planned ? '[Planned / Pending]' : '[Completed]'}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                  <strong style={{ fontSize: '0.8rem', color: '#d97706', display: 'block', marginBottom: '6px' }}>Extracted Pending Tasks:</strong>
+                  {(originalExt.pending_tasks || []).length === 0 ? (
+                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {originalExt.pending_tasks.map((pt, i) => (
+                        <div key={i} style={{ fontSize: '0.825rem', color: '#92400e' }}>
+                          • [{pt.priority || 'Medium'}] {pt.task}
                         </div>
                       ))}
                     </div>

@@ -179,11 +179,15 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:ondansetron|maxolon|metoclopramide)\b", "Antiemetic Agent"),
             (r"\b(?:laxative[s]?|coloxyl|senna|movicol)\b", "Aperient / Bowel Management"),
             (r"\b(?:combiflam|ibuprofen|advil|brufen|nurofen)\b", "Combiflam (Ibuprofen / Paracetamol Analgesia)"),
-            (r"\b(?:(?:some\s+)?medicines?(?:\s+for\s+relief\s+of\s+pain)?|pain\s*relief\s*medicines?|medicines?\s+for\s+pain|analgesics?)\b", "Analgesic / Unspecified Medication")
+            (r"\b(?:pain\s*killer[s]?|painkiller[s]?|pain\s*medication[s]?|(?:some\s+)?medicines?(?:\s+for\s+relief\s+of\s+pain)?|pain\s*relief\s*medicines?|medicines?\s+for\s+pain|analgesics?)\b", "Analgesic / Pain Killer"),
+            (r"\b(?:calcium\s*(?:tablets?|supplements?|syrup)|vitamin\s*d[3]?\s*(?:tablets?|supplements?|capsules?|drops?)|calcium\s*(?:and|&)\s*vitamin\s*d)\b", "Calcium & Vitamin D Supplements")
         ]
 
         # Investigations
         self.investigation_patterns = [
+            (r"\b(?:test\s+(?:of|for)\s+(?:serum\s+)?calcium|calcium\s+test|calcium\s+level[s]?)\b", "Serum Calcium Test"),
+            (r"\b(?:test\s+(?:of|for)\s+vitamin\s*d|vitamin\s*d\s*test|vitamin\s*d\s*level[s]?|\bvitamin\s*d\b)\b", "Vitamin D Test"),
+            (r"\b(?:test\s+(?:of|for)\s+calcium\s+(?:and|&)\s+vitamin\s*d)\b", "Serum Calcium & Vitamin D Lab Panel"),
             (r"\b(?:renal\s*biopsy|biopsy)\b", "Renal Biopsy / Diagnostic Tissue Biopsy"),
             (r"\b(?:brain\s*mri|mri(?:\s*scan)?)\b", "Brain Magnetic Resonance Imaging (MRI)"),
             (r"\b(?:carotid\s*doppler|doppler\s*ultrasound|carotid\s*ultrasound)\b", "Carotid Doppler Ultrasound"),

@@ -319,7 +319,7 @@ function analyzeAssertion(entityText, startChar, endChar, fullText, sList) {
 }
 
 // Entity & Event Extraction
-export function analyzeLocalEngine({ reportId, rawText, engine }) {
+export function analyzeLocalEngine({ reportId, rawText, engine, patientContext }) {
   let text = rawText || "";
   if (reportId && !text.trim()) {
     const found = datasetData.reports.find(r => String(r.report_id) === String(reportId));
@@ -483,7 +483,8 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
     [/\b(?:unsteady\s*(?:at\s*times)?|ataxia|unsteadiness|falls?|loss\s*of\s*balance)\b/gi, "Gait Unsteadiness / Ataxia"],
     [/\b(?:almost\s*blind|blind|impaired\s*vision|poor\s*vision)\b/gi, "Severe Visual Impairment"],
     [/\b(?:fever|febrile|pyrexia)\b/gi, "Febrile Episode / Fever"],
-    [/\b(?:pain|ache)\b/gi, "Pain"]
+    [/\b(?:joint\s*pain[s]?|knee\s*pain|elbow\s*pain|back\s*pain|abdominal\s*pain)\b/gi, "Joint / Musculoskeletal Pain"],
+    [/\b(?:pain|ache)(?!\s*(?:killer|medication|relief|tablets?))\b/gi, "Pain"]
   ];
   const symptomsMap = {};
   for (const [pat, norm] of sympPatterns) {
@@ -520,11 +521,14 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
 
   // 4. Medications
   const medPatterns = [
+    [/\b(?:combiflam|ibuprofen|advil|brufen|nurofen)\b/gi, "Combiflam (Analgesic)"],
+    [/\b(?:pain\s*killer[s]?|painkiller[s]?|pain\s*medication[s]?|analgesic[s]?|pain\s*relief(?:\s*medicines?)?|medicines?\s+for\s+(?:relief\s+of\s+)?pain)\b/gi, "Analgesic / Pain Killer"],
+    [/\b(?:calcium\s*(?:and|&)\s*vitamin\s*d|calcium(?:\s*(?:tablets?|supplements?))?|vitamin\s*d[3]?|vit\s*d|multivitamin[s]?)\b/gi, "Calcium & Vitamin D Supplements"],
     [/\b(?:nitro|nitros|nitroglycerin|gtn)\b/gi, "Glyceryl Trinitrate (GTN / Nitro)"],
     [/\b(?:sliding\s*scale\s*insulin|variable\s*dose(?:\s*insulin)?|insulin|lantus|novorapid|actrapid)\b/gi, "Insulin (Subcutaneous Regimen)"],
     [/\b(?:antibiotic[s]?|ceftriaxone|augmentin|amoxicillin)\b/gi, "Antibiotic Therapy"],
-    [/\b(?:paracetamol|panadol)\b/gi, "Paracetamol (Analgesia)"],
-    [/\b(?:morphine|endone|oxycodone)\b/gi, "Opioid Analgesic"]
+    [/\b(?:paracetamol|panadol|tylenol|acetaminophen)\b/gi, "Paracetamol (Analgesia)"],
+    [/\b(?:morphine|endone|oxycodone|tramadol|codeine)\b/gi, "Opioid Analgesic"]
   ];
   const medsMap = {};
   for (const [pat, norm] of medPatterns) {
@@ -542,9 +546,9 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
           category: "Medication",
           text: m[0],
           normalized: norm,
-          dosage: doseM ? doseM[0] : "Unspecified dose in text",
-          frequency: freqM ? freqM[0].toUpperCase() : "Per protocol",
-          route: routeM ? routeM[0].toUpperCase() : "PO / Ward route",
+          dosage: doseM ? doseM[0] : "Prescribed / Administered",
+          frequency: freqM ? freqM[0].toUpperCase() : "As directed",
+          route: routeM ? routeM[0].toUpperCase() : "Oral",
           assertion: ctx.assertion,
           temporality: ctx.temporality,
           is_negated: ctx.is_negated,
@@ -566,12 +570,19 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
 
   // 5. Investigations
   const invPatterns = [
+    [/\b(?:test\s+(?:of|for)\s+calcium\s+(?:and|&)\s+vitamin\s*d|test\s+(?:of|for)\s+calcium|calcium\s+test|calcium\s+level[s]?)\b/gi, "Serum Calcium Test"],
+    [/\b(?:test\s+(?:of|for)\s+vitamin\s*d|vitamin\s*d\s*test|vitamin\s*d\s*level[s]?)\b/gi, "Vitamin D Test"],
+    [/\b(?:full\s*body\s*checkup|routine\s*checkup|health\s*checkup|checkup)\b/gi, "Full Body Health Checkup"],
+    [/\b(?:wbc|white\s*blood\s*(?:cells?|count))\b/gi, "White Blood Cell Count (WBC)"],
+    [/\b(?:rbc|red\s*blood\s*(?:cells?|count))\b/gi, "Red Blood Cell Count (RBC)"],
+    [/\b(?:platelets?|platelettes?)\b/gi, "Platelet Count"],
     [/\b(?:brain\s*mri|mri(?:\s*scan)?)\b/gi, "Brain Magnetic Resonance Imaging (MRI)"],
     [/\b(?:carotid\s*doppler|doppler\s*ultrasound|carotid\s*ultrasound)\b/gi, "Carotid Doppler Ultrasound"],
     [/\b(?:ct(?:\s*scan)?|computed\s*tomography)\b/gi, "Computed Tomography (CT Scan)"],
     [/\b(?:ecg|electrocardiogram|telemetry)\b/gi, "12-Lead ECG / Telemetry"],
     [/\b(?:chest\s*x-?ray|cxr|x-?ray)\b/gi, "Chest Radiography (CXR)"],
     [/\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b/gi, "Blood Glucose Monitoring (BGL)"],
+    [/\b(?:blood\s*test[s]?|pathology|fbc|full\s*blood\s*count|urine\s*test|urinalysis)\b/gi, "Pathology / Laboratory Analysis"],
     [/\b(?:renal\s*biopsy|biopsy)\b/gi, "Renal Biopsy / Diagnostic Tissue Biopsy"]
   ];
   const invMap = {};
@@ -589,7 +600,7 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
           temporality: ctx.temporality,
           is_negated: ctx.is_negated,
           is_uncertain: ctx.is_uncertain,
-          is_planned: ctx.is_planned,
+          is_planned: true, // Default investigations ordered in clinical handover notes are planned
           confidence: "High (Clinical Lexicon)",
           source_sentence: findSentence(m.index, sList),
           start_char: m.index,
@@ -739,6 +750,11 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
   // 11. Pending Tasks & Follow-up
   const pendingTasks = [];
   const pendingPats = [
+    [/\b(?:told\s+patient\s+to\s+(?:take\s+)?test\s+(?:of|for)\s+[^.,;\n]+|take\s+test\s+(?:of|for)\s+[^.,;\n]+|order\s+test\s+(?:of|for)\s+[^.,;\n]+|test\s+(?:of|for)\s+[^.,;\n]+)\b/gi, "Diagnostic Lab Investigation Ordered", "High"],
+    [/\b(?:doctor\s+advised\s+to\s+take\s+rest|advised\s+to\s+take\s+rest|take\s+rest|bed\s*rest|adequate\s+rest)\b/gi, "Rest & Clinical Recovery Directive", "Medium"],
+    [/\b(?:(?:do\s+)?walk\s+and\s+exercise(?:\s+in\s+(?:the\s+)?morning)?|morning\s+walk(?:\s+and\s+exercise)?|exercise\s+in\s+(?:the\s+)?morning)\b/gi, "Physical Activity & Morning Exercise Directive", "Routine"],
+    [/\b(?:advised\s+to\s+take\s+fresh\s*(?:air|hair)|take\s+fresh\s*(?:air|hair)|fresh\s*(?:air|hair))\b/gi, "Fresh Air & Ambulation Advice", "Routine"],
+    [/\b(?:doctor\s+advised\s+to\s+[^.,;\n]+|advised\s+to\s+[^.,;\n]+|told\s+(?:him|her|patient)\s+to\s+[^.,;\n]+)\b/gi, "Clinician Care Advice / Directive", "Medium"],
     [/\b([a-zA-Z\s]+?\s+is\s+planned\s+for\s+[^.,;]+)/gi, "Scheduled Investigation / Procedure", "Medium"],
     [/\b(?:is\s+planned\s+for|planned\s+for)\s+([^.,;]+)/gi, "Scheduled Investigation / Procedure", "Medium"],
     [/\b(?:needs\s+another|rescheduled|needs|waiting\s+for)\s+([^.,;]+)/gi, "Diagnostic Scheduling Pending", "High"],
@@ -751,23 +767,27 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
     let m;
     while ((m = pat.exec(clean)) !== null) {
       const src = findSentence(m.index, sList);
-      pendingTasks.push({
-        task: m[0].charAt(0).toUpperCase() + m[0].slice(1),
-        type,
-        priority: prio,
-        source_sentence: src,
-        start_char: m.index,
-        end_char: m.index + m[0].length
-      });
+      const taskStr = m[0].trim();
+      if (!pendingTasks.some(pt => pt.task.toLowerCase() === taskStr.toLowerCase())) {
+        pendingTasks.push({
+          task: taskStr.charAt(0).toUpperCase() + taskStr.slice(1),
+          type,
+          priority: prio,
+          source_sentence: src,
+          start_char: m.index,
+          end_char: m.index + m[0].length
+        });
+      }
     }
   }
 
   const followUp = [];
   for (const pt of pendingTasks) {
-    if (pt.task.toLowerCase().includes('referral') || pt.task.toLowerCase().includes('review') || pt.task.toLowerCase().includes('appointment')) {
+    const tLower = pt.task.toLowerCase();
+    if (tLower.includes('referral') || tLower.includes('review') || tLower.includes('appointment') || tLower.includes('exercise') || tLower.includes('walk') || tLower.includes('test') || tLower.includes('rest')) {
       followUp.push({
         action: pt.task,
-        type: "Specialist / Multidisciplinary Follow-Up",
+        type: "Care Plan / Multidisciplinary Follow-Up",
         source_sentence: pt.source_sentence,
         start_char: pt.start_char,
         end_char: pt.end_char
@@ -850,7 +870,16 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
   const hasCriticalCue = criticalCues.some(cue => lower.includes(cue));
 
   const ptDict = {};
-  for (const p of patientInfo) ptDict[p.field] = p.value;
+  if (patientContext) {
+    if (patientContext.name) ptDict["Patient Name"] = patientContext.name;
+    if (patientContext.bed_number || patientContext.ward) ptDict["Bed / Room"] = `${patientContext.ward || ''} (${patientContext.bed_number || ''})`.trim();
+    if (patientContext.age) ptDict["Age"] = patientContext.age;
+    if (patientContext.gender) ptDict["Gender / Sex"] = patientContext.gender;
+    if (patientContext.consultant) ptDict["Attending Consultant"] = patientContext.consultant;
+  }
+  for (const p of patientInfo) {
+    if (!ptDict[p.field]) ptDict[p.field] = p.value;
+  }
   const pName = ptDict["Patient Name"] || "Patient";
   const pBed = ptDict["Bed / Room"] || "Ward Bed";
   const pAge = ptDict["Age"] || "";
@@ -871,6 +900,9 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
 
   // 14. ISBAR Framework
   const isbarSituation = [];
+  if (patientContext?.admitting_diagnosis) {
+    isbarSituation.push(`Admitting Presentation: ${patientContext.admitting_diagnosis}`);
+  }
   if (activeSymptoms.length > 0) {
     isbarSituation.push(`Current Clinical Presentation: Acute ${activeSymptoms.slice(0, 3).map(s => s.normalized).join(", ")}`);
   } else if (uncertainFindings.length > 0) {
@@ -879,7 +911,7 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
     isbarSituation.push(`Current Admission Reason: Management of ${activeConditions[0].normalized}`);
   } else if (historicalFindings.length > 0) {
     isbarSituation.push(`Current Ward Presentation: Observation following resolved ${historicalFindings[0].normalized} ('${historicalFindings[0].text}')`);
-  } else {
+  } else if (!patientContext?.admitting_diagnosis) {
     isbarSituation.push("Admitted to ward for clinical observation and symptomatic management.");
   }
 
@@ -898,8 +930,9 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
 
   const isbarAssessment = [
     ...(measurements.map(m => `${m.type}: ${m.text}`)),
+    ...(medications.map(m => `Administered / Prescribed: ${m.normalized} (Dose: ${m.dosage || 'Prescribed'}, Route: ${m.route || 'Oral'}, Freq: ${m.frequency || 'As directed'})`)),
     ...(treatments.map(t => `Care Status: ${t.normalized} (${t.text})`)),
-    ...(investigations.map(i => `Diagnostic Finding: ${i.normalized}${i.is_planned ? ' [Planned]' : ''}`))
+    ...(investigations.map(i => `Diagnostic Finding / Ordered: ${i.normalized}${i.is_planned ? ' [Planned / Pending]' : ''}`))
   ];
   if (hasCriticalCue) {
     isbarAssessment.push("CRITICAL: Patient status requires immediate clinical review; note indicates acute instability risk.");
@@ -926,9 +959,11 @@ export function analyzeLocalEngine({ reportId, rawText, engine }) {
     ],
     situation: isbarSituation,
     background: [
+      ...(patientContext?.admitting_diagnosis ? [`Admitting Diagnosis / Presentation: ${patientContext.admitting_diagnosis}`] : []),
+      ...(patientContext?.ward ? [`Location: ${patientContext.ward} (${patientContext.bed_number || 'Bed'}) • Consultant: ${patientContext.consultant || 'Medical Officer'}`] : []),
       ...(activeConditions.length > 0 ? activeConditions.map(c => `Documented Condition: ${c.normalized}`) : []),
       ...historicalFindings.map(h => `Past Shift Episode (Resolved): ${h.normalized} ('${h.text}')`),
-      ...(activeConditions.length === 0 && historicalFindings.length === 0 ? ["No prior chronic conditions documented in shift handover."] : [])
+      ...(activeConditions.length === 0 && historicalFindings.length === 0 && !patientContext?.admitting_diagnosis ? ["No prior chronic conditions documented in shift handover."] : [])
     ],
     assessment: isbarAssessment,
     recommendation: isbarRecommendation
@@ -1402,7 +1437,8 @@ export function processLocalPatientNote(patientId, noteId) {
     throw new Error(`Note #${noteId} not found`);
   }
   const note = notes[noteIndex];
-  const analysis = analyzeLocalEngine({ rawText: note.raw_text });
+  const patient = getLocalPatient(patientId);
+  const analysis = analyzeLocalEngine({ rawText: note.raw_text, patientContext: patient });
   const extractedData = {
     isbar: analysis.isbar,
     entities: analysis.entities,

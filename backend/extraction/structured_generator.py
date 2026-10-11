@@ -16,6 +16,11 @@ class StructuredHandoverGenerator:
     def __init__(self):
         # Patterns for Pending Tasks (urgent or shift-level actions)
         self.pending_task_patterns = [
+            (r"\b(?:told\s+patient\s+to\s+(?:take\s+)?test\s+(?:of|for)\s+[^.,;\n]+|take\s+test\s+(?:of|for)\s+[^.,;\n]+|order\s+test\s+(?:of|for)\s+[^.,;\n]+)\b", "Diagnostic Lab Investigation Ordered"),
+            (r"\b(?:doctor\s+advised\s+to\s+take\s+rest|advised\s+to\s+take\s+rest|take\s+rest|bed\s*rest|adequate\s+rest)\b", "Rest & Clinical Recovery Directive"),
+            (r"\b(?:(?:do\s+)?walk\s+and\s+exercise(?:\s+in\s+(?:the\s+)?morning)?|morning\s+walk(?:\s+and\s+exercise)?|exercise\s+in\s+(?:the\s+)?morning)\b", "Physical Activity & Morning Exercise Directive"),
+            (r"\b(?:advised\s+to\s+take\s+fresh\s*(?:air|hair)|take\s+fresh\s*(?:air|hair)|fresh\s*(?:air|hair))\b", "Fresh Air & Ambulation Advice"),
+            (r"\b(?:doctor\s+advised\s+to\s+[^.,;\n]+|advised\s+to\s+[^.,;\n]+|told\s+(?:him|her|patient)\s+to\s+[^.,;\n]+)\b", "Clinician Care Advice / Directive"),
             (r"\b([a-zA-Z\s]+?\s+is\s+planned\s+for\s+[^.,;]+)", "Scheduled Investigation / Procedure"),
             (r"\b(?:is\s+planned\s+for|planned\s+for)\s+([^.,;]+)", "Scheduled Investigation / Procedure"),
             (r"\b(?:needs\s+another|rescheduled|needs|waiting\s+for|awaiting)\s+([^.,;]+)", "Diagnostic Scheduling Pending"),
@@ -307,6 +312,9 @@ class StructuredHandoverGenerator:
         assessment_items = []
         for m in entities.get("measurements", []):
             assessment_items.append(f"{m['type']}: {m['text']}")
+        for med in entities.get("medications", []):
+            dose_str = f" ({med.get('dosage')})" if med.get('dosage') else ""
+            assessment_items.append(f"Administered / Prescribed: {med['normalized']}{dose_str}")
         for trt in entities.get("treatments", []):
             assessment_items.append(f"Clinical Care / Mobility: {trt['normalized']} ({trt['text']})")
         for inv in entities.get("investigations", []):
