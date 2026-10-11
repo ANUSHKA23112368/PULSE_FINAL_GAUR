@@ -180,7 +180,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:laxative[s]?|coloxyl|senna|movicol)\b", "Aperient / Bowel Management"),
             (r"\b(?:combiflam|ibuprofen|advil|brufen|nurofen)\b", "Combiflam (Ibuprofen / Paracetamol Analgesia)"),
             (r"\b(?:pain\s*killer[s]?|painkiller[s]?|pain\s*medication[s]?|(?:some\s+)?medicines?(?:\s+for\s+relief\s+of\s+pain)?|pain\s*relief\s*medicines?|medicines?\s+for\s+pain|analgesics?)\b", "Analgesic / Pain Killer"),
-            (r"\b(?:calcium\s*(?:tablets?|supplements?|syrup)|vitamin\s*d[3]?\s*(?:tablets?|supplements?|capsules?|drops?)|calcium\s*(?:and|&)\s*vitamin\s*d)\b", "Calcium & Vitamin D Supplements")
+            (r"\b(?:calcium\s*(?:tablets?|supplements?|syrup)|vitamin\s*d[3]?\s*(?:tablets?|supplements?|capsules?|drops?)|calcium\s*(?:and|&)\s*vitamin\s*d\s*(?:tablets?|supplements?|capsules?|drops?)|multivitamin[s]?)\b", "Calcium & Vitamin D Supplements")
         ]
 
         # Investigations

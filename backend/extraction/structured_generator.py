@@ -96,7 +96,14 @@ class StructuredHandoverGenerator:
                         "end_char": ev.get("end_char", 0)
                     })
 
-        return pending_tasks
+        # Deduplicate tasks
+        deduped = []
+        for pt in pending_tasks:
+            t_low = pt["task"].lower()
+            if not any(t_low == existing["task"].lower() for existing in deduped):
+                deduped.append(pt)
+
+        return deduped
 
     def extract_follow_up(self, text: str, pending_tasks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         if not text:
