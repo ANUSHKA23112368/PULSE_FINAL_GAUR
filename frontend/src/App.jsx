@@ -8,13 +8,19 @@ import {
   HeartPulse,
   CheckCircle2,
   ShieldAlert,
-  Info
+  Info,
+  GitCompare,
+  ListTodo,
+  BarChart3
 } from 'lucide-react';
 import { PatientDashboardPage } from './pages/PatientDashboardPage';
 import { VitalsPage } from './pages/VitalsPage';
 import { ClinicalNotesPage } from './pages/ClinicalNotesPage';
 import { HandoverSummaryPage } from './pages/HandoverSummaryPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { WhatChangedPage } from './pages/WhatChangedPage';
+import { PendingActionsPage } from './pages/PendingActionsPage';
+import { ResearchEvaluationPage } from './pages/ResearchEvaluationPage';
 import { fetchHealth, fetchPatients } from './services/api';
 
 export function App() {
@@ -80,7 +86,7 @@ export function App() {
             </div>
           </div>
 
-          {/* Primary Hospital Navigation (Parts A & B) */}
+          {/* Primary Hospital Navigation */}
           <nav className="hospital-nav">
             <button
               className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`}
@@ -104,6 +110,20 @@ export function App() {
             </button>
 
             <button
+              className={`nav-item ${activeTab === 'changes' ? 'active' : ''}`}
+              onClick={() => setActiveTab('changes')}
+            >
+              <GitCompare size={16} /> What Changed?
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'tasks' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tasks')}
+            >
+              <ListTodo size={16} /> Pending Actions
+            </button>
+
+            <button
               className={`nav-item ${activeTab === 'summary' ? 'active' : ''}`}
               onClick={() => setActiveTab('summary')}
             >
@@ -115,6 +135,13 @@ export function App() {
               onClick={() => setActiveTab('history')}
             >
               <History size={16} /> History
+            </button>
+
+            <button
+              className={`nav-item ${activeTab === 'evaluation' ? 'active' : ''}`}
+              onClick={() => setActiveTab('evaluation')}
+            >
+              <BarChart3 size={16} /> Evaluation
             </button>
           </nav>
         </div>
@@ -147,6 +174,22 @@ export function App() {
           />
         )}
 
+        {activeTab === 'changes' && (
+          <WhatChangedPage
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
+
+        {activeTab === 'tasks' && (
+          <PendingActionsPage
+            selectedPatient={selectedPatient}
+            onSwitchPatient={handleSwitchPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
+
         {activeTab === 'summary' && (
           <HandoverSummaryPage
             selectedPatient={selectedPatient}
@@ -159,6 +202,12 @@ export function App() {
           <HistoryPage
             selectedPatient={selectedPatient}
             onSwitchPatient={handleSwitchPatient}
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
+
+        {activeTab === 'evaluation' && (
+          <ResearchEvaluationPage
             onNavigate={(tab) => setActiveTab(tab)}
           />
         )}

@@ -17,7 +17,12 @@ import {
   getLocalPatientNotes,
   createLocalPatientNote,
   processLocalPatientNote,
-  reviewLocalPatientNote
+  reviewLocalPatientNote,
+  getLocalPatientTasks,
+  saveLocalPatientTask,
+  updateLocalPatientTaskStatus,
+  compareLocalPatientHandovers,
+  getLocalResearchEvaluation
 } from './localEngine';
 
 const API_BASE = '/api';
@@ -254,5 +259,84 @@ export async function reviewPatientNote(patientId, noteId, reviewedData, reviewe
   }
 }
 
+export async function fetchPatientTasks(patientId) {
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error(`Failed to fetch tasks for patient ${patientId}`);
+    return await res.json();
+  } catch (err) {
+    return getLocalPatientTasks(patientId);
+  }
+}
 
+export async function createPatientTask(patientId, taskData) {
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(taskData),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) throw new Error("Failed to create task");
+    return await res.json();
+  } catch (err) {
+    return saveLocalPatientTask(patientId, taskData);
+  }
+}
 
+export async function updatePatientTask(patientId, taskId, updateData) {
+  try {
+    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updateData),
+      signal: AbortSignal.timeout(4000)
+    });
+    if (!res.ok) throw new Error("Failed to update task");
+    return await res.json();
+  } catch (err) {
+    return updateLocalPatientTaskStatus(patientId, taskId, updateData.status, updateData.evidence);
+  }
+}
+
+export async function comparePatientHandovers(patientId, priorNoteId, currentNoteId) {
+  try {
+    let url = `${API_BASE}/patients/${patientId}/compare-handovers`;
+    if (priorNoteId && currentNoteId) {
+      url += `?prior_note_id=${priorNoteId}&current_note_id=${currentNoteId}`;
+    }
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) throw new Error("Failed to compare handovers");
+    return await res.json();
+  } catch (err) {
+    const { notes } = getLocalPatientNotes(patientId);
+    const chrono = [...notes].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    let priorNote = null;
+    let currentNote = null;
+    if (priorNoteId && currentNoteId) {
+      priorNote = chrono.find(n => String(n.id) === String(priorNoteId));
+      currentNote = chrono.find(n => String(n.id) === String(currentNoteId));
+    } else if (chrono.length >= 2) {
+      priorNote = chrono[chrono.length - 2];
+      currentNote = chrono[chrono.length - 1];
+    }
+    if (!priorNote || !currentNote) {
+      return {
+        comparison_available: false,
+        message: "Need at least two clinical notes to compare consecutive handovers."
+      };
+    }
+    const comp = compareLocalPatientHandovers(priorNote, currentNote);
+    return { comparison_available: true, ...comp };
+  }
+}
+
+export async function fetchResearchEvaluation() {
+  try {
+    const res = await fetch(`${API_BASE}/research/evaluation`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error("Failed to fetch research evaluation");
+    return await res.json();
+  } catch (err) {
+    return getLocalResearchEvaluation();
+  }
+}

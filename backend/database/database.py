@@ -132,6 +132,27 @@ class Database:
                 )
             """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_vitals_patient_id ON simulated_vitals(patient_id)")
+
+            # 8. Patient tasks table (persistent pending actions tracking)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS patient_tasks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    task TEXT NOT NULL,
+                    type TEXT DEFAULT 'Clinical Pending Action',
+                    priority TEXT DEFAULT 'Medium',
+                    source_note_id INTEGER,
+                    source_sentence TEXT,
+                    recorded_time TEXT,
+                    due_time TEXT,
+                    status TEXT DEFAULT 'Pending',
+                    evidence TEXT,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL,
+                    FOREIGN KEY (patient_id) REFERENCES patients(id) ON DELETE CASCADE
+                )
+            """)
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_tasks_patient_id ON patient_tasks(patient_id)")
             conn.commit()
 
         # Seed synthetic demo patients idempotently
@@ -743,6 +764,70 @@ class Database:
             "reviewed_at": now,
             "note": updated_note
         }
+
+    def list_patient_tasks(self, patient_id: int) -> List[Dict[str, Any]]:
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT id, patient_id, task, type, priority, source_note_id, source_sentence,
+                       recorded_time, due_time, status, evidence, created_at, updated_at
+                FROM patient_tasks
+                WHERE patient_id = ?
+                ORDER BY id DESC
+            """, (patient_id,))
+            rows = cursor.fetchall()
+            return [dict(r) for r in rows]
+
+    def create_patient_task(self, patient_id: int, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        now = datetime.now().isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO patient_tasks (
+                    patient_id, task, type, priority, source_note_id, source_sentence,
+                    recorded_time, due_time, status, evidence, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                patient_id,
+                task_data["task"],
+                task_data.get("type", "Clinical Pending Action"),
+                task_data.get("priority", "Medium"),
+                task_data.get("source_note_id"),
+                task_data.get("source_sentence", ""),
+                task_data.get("recorded_time", now),
+                task_data.get("due_time"),
+                task_data.get("status", "Pending"),
+                task_data.get("evidence", f"Sourced from: \"{task_data.get('source_sentence', '')}\"" if task_data.get("source_sentence") else None),
+                now,
+                now
+            ))
+            conn.commit()
+            task_id = cursor.lastrowid
+            cursor.execute("SELECT * FROM patient_tasks WHERE id = ?", (task_id,))
+            return dict(cursor.fetchone())
+
+    def update_patient_task(self, patient_id: int, task_id: int, status: str, evidence: Optional[str] = None) -> Dict[str, Any]:
+        now = datetime.now().isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            if evidence:
+                cursor.execute("""
+                    UPDATE patient_tasks
+                    SET status = ?, evidence = ?, updated_at = ?
+                    WHERE id = ? AND patient_id = ?
+                """, (status, evidence, now, task_id, patient_id))
+            else:
+                cursor.execute("""
+                    UPDATE patient_tasks
+                    SET status = ?, updated_at = ?
+                    WHERE id = ? AND patient_id = ?
+                """, (status, now, task_id, patient_id))
+            conn.commit()
+            cursor.execute("SELECT * FROM patient_tasks WHERE id = ? AND patient_id = ?", (task_id, patient_id))
+            row = cursor.fetchone()
+            if not row:
+                raise KeyError(f"Task {task_id} not found for patient {patient_id}.")
+            return dict(row)
 
     def sync_reports_cache(self, reports: List[Dict[str, Any]]):
         now = datetime.now().isoformat()

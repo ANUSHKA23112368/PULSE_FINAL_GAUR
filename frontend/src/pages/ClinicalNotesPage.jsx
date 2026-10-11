@@ -17,13 +17,16 @@ import {
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, createPatientNote, processPatientNote } from '../services/api';
 
-// Pre-packaged demonstration narratives mapped from sample reports for one-click testing
 const DEMO_TEMPLATES = {
   "PULSE-DEMO-001": "Bed eight, Michael I Wu. Forty-eight years under Dr Hanlen. He came in with headache and vertigo. He's got a history of headache, tinnitus, Bell's Palsy, severe neck pain. He is waiting for a CT scan of the head. Vitals: BP 124/82 mmHg, HR 78 bpm, afebrile. Digoxin 0.25mg mane. Plan neuro review in morning.",
   "PULSE-DEMO-002": "Vera Abbott, 93, bed four, under Dr Liu came in with chest pain with a history of stroke and previous chest pains, asthma, cataract and glaucoma. Given GTN sublingual with relief. Repeat troponin ordered for 0600. Keep on continuous ECG monitoring.",
   "PULSE-DEMO-003": "Leila sonya Da silva, bed 5, 34 under Dr Liu, came in for management of her diabetes. With history of type 1 DM since childhood and HPN. Blood glucose currently 11.4 mmol/L. Subcut Actrapid 6 units with dinner. Check BGL 2200.",
-  "PULSE-DEMO-004": "Pierre cox, 77 years old under Dr Gregor, bed 2, came in with pain and swelling of the right leg query embolism. With a history of coronary artery disease. Ultrasound doppler scheduled for 0900. Clexane 80mg subcut commenced."
+  "PULSE-DEMO-004": "Pierre cox, 77 years old under Dr Gregor, bed 2, came in with pain and swelling of the right leg query embolism. With a history of coronary artery disease. Ultrasound doppler scheduled for 0900. Clexane 80mg subcut commenced.",
+  "PULSE-DEMO-011": "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM."
 };
+
+const RAHUL_MORNING_NOTE = "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM.";
+const RAHUL_EVENING_NOTE = "At 12 PM, Rahul's temperature was 100°F. Blood report received. Doctor reviewed the report and advised continued monitoring. Patient's cough persists.";
 
 export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate }) {
   const [noteText, setNoteText] = useState('');
@@ -58,7 +61,20 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
     const template = DEMO_TEMPLATES[selectedPatient?.display_id] || 
       `Handover note for ${selectedPatient?.name || 'patient'}. Admitted under ${selectedPatient?.consultant || 'team'} for observation. Vitals stable overnight. Continue planned care.`;
     setNoteText(template);
+    setAuthor('Staff Nurse (Shift Handover)');
     setFeedback({ type: 'info', message: 'Demonstration handover narrative loaded into editor.' });
+  }
+
+  function handleLoadRahulMorning() {
+    setNoteText(RAHUL_MORNING_NOTE);
+    setAuthor('Morning Shift Nurse (8:00 AM Handover)');
+    setFeedback({ type: 'info', message: "Loaded Rahul's Morning Handover note (Temp 102°F, Paracetamol 8 AM, Blood pending, Recheck 12 PM)." });
+  }
+
+  function handleLoadRahulEvening() {
+    setNoteText(RAHUL_EVENING_NOTE);
+    setAuthor('Evening Shift Nurse (12:30 PM Handover)');
+    setFeedback({ type: 'info', message: "Loaded Rahul's Evening Handover note (Temp 100°F at 12 PM, Blood received, Doctor reviewed, Cough persists)." });
   }
 
   async function handleSaveDraft(e) {
@@ -162,15 +178,37 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button 
+              type="button" 
+              className="btn btn-outline"
+              onClick={handleLoadRahulMorning}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', fontWeight: 600 }}
+              title="Rahul 55yo Morning Handover: Temp 102°F, Paracetamol 8 AM, Blood pending, Recheck 12 PM"
+            >
+              <Sparkles size={13} style={{ marginRight: '4px' }} />
+              Rahul Morning (8 AM)
+            </button>
+
+            <button 
+              type="button" 
+              className="btn btn-outline"
+              onClick={handleLoadRahulEvening}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', background: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe', fontWeight: 600 }}
+              title="Rahul 55yo Evening Handover: Temp 100°F at 12 PM, Blood received, Doctor reviewed, Cough persists"
+            >
+              <Sparkles size={13} style={{ marginRight: '4px' }} />
+              Rahul Evening (12 PM)
+            </button>
+
             <button 
               type="button" 
               className="btn btn-outline"
               onClick={handleLoadTemplate}
-              style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem' }}
             >
               <Copy size={13} style={{ marginRight: '4px' }} />
-              Load Sample Demo Narrative
+              Load Sample Narrative
             </button>
           </div>
         </div>
