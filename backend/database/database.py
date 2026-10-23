@@ -780,8 +780,24 @@ class Database:
 
     def create_patient_task(self, patient_id: int, task_data: Dict[str, Any]) -> Dict[str, Any]:
         now = datetime.now().isoformat()
+        task_name = (task_data.get("task") or "").strip()
+        priority_val = task_data.get("priority")
+        if not priority_val:
+            priority_val = "Unassigned / Awaiting Clinician Triage"
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
+            # Prevent duplicate active pending tasks when the same task appears in consecutive notes
+            if task_name:
+                cursor.execute("""
+                    SELECT * FROM patient_tasks
+                    WHERE patient_id = ? AND LOWER(TRIM(task)) = LOWER(TRIM(?)) AND status = 'Pending'
+                    ORDER BY id DESC LIMIT 1
+                """, (patient_id, task_name))
+                existing = cursor.fetchone()
+                if existing:
+                    return dict(existing)
+
             cursor.execute("""
                 INSERT INTO patient_tasks (
                     patient_id, task, type, priority, source_note_id, source_sentence,
@@ -789,9 +805,9 @@ class Database:
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 patient_id,
-                task_data["task"],
+                task_name,
                 task_data.get("type", "Clinical Pending Action"),
-                task_data.get("priority", "Medium"),
+                priority_val,
                 task_data.get("source_note_id"),
                 task_data.get("source_sentence", ""),
                 task_data.get("recorded_time", now),

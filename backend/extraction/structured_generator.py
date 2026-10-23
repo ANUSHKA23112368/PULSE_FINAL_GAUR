@@ -21,8 +21,9 @@ class StructuredHandoverGenerator:
             (r"\b(?:(?:do\s+)?walk\s+and\s+exercise(?:\s+in\s+(?:the\s+)?morning)?|morning\s+walk(?:\s+and\s+exercise)?|exercise\s+in\s+(?:the\s+)?morning)\b", "Physical Activity & Morning Exercise Directive"),
             (r"\b(?:advised\s+to\s+take\s+fresh\s*(?:air|hair)|take\s+fresh\s*(?:air|hair)|fresh\s*(?:air|hair))\b", "Fresh Air & Ambulation Advice"),
             (r"\b(?:doctor\s+advised\s+to\s+[^.,;\n]+|advised\s+to\s+[^.,;\n]+|told\s+(?:him|her|patient)\s+to\s+[^.,;\n]+)\b", "Clinician Care Advice / Directive"),
-            (r"\b([a-zA-Z\s]+?\s+is\s+planned\s+for\s+[^.,;]+)", "Scheduled Investigation / Procedure"),
-            (r"\b(?:is\s+planned\s+for|planned\s+for)\s+([^.,;]+)", "Scheduled Investigation / Procedure"),
+            (r"\b([a-zA-Z\s]+?)\s+(?:is\s+)?planned\s+for\s+([a-zA-Z0-9\s]+)", "Scheduled Clinical Action / Procedure"),
+            (r"\b([a-zA-Z\s]+?(?:ct|mri|scan|x-?ray|ultrasound|doppler|blood\s*test|pathology|biopsy|culture[s]?|report))\s+(?:is\s+)?pending\b", "Pending Diagnostic Investigation"),
+            (r"\b(?:awaiting|waiting\s+for)\s+([a-zA-Z\s]+?(?:results?|report|findings?))\b", "Pending Diagnostic Investigation"),
             (r"\b(?:needs\s+another|rescheduled|needs|waiting\s+for|awaiting)\s+([^.,;]+)", "Diagnostic Scheduling Pending"),
             (r"\b(?:still\s+for\s+referral\s+to|referral\s+to)\s+([^.,;]+)", "Allied Health / Specialist Referral"),
             (r"\b(?:still\s+need\s+(?:the\s+)?team\s+to\s+review|still\s+for\s+review|needs?\s+review)\s*([^.,;]*)", "Medical Team Review Pending"),
@@ -56,7 +57,7 @@ class StructuredHandoverGenerator:
                 return sent_text
         return sentence_spans[0][0] if sentence_spans else ""
 
-    def extract_pending_tasks(self, text: str, events: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def extract_pending_tasks(self, text: str, events: List[Dict[str, Any]], entities: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
         if not text:
             return []
 
@@ -64,22 +65,72 @@ class StructuredHandoverGenerator:
         pending_tasks = []
         seen = set()
 
+        from backend.extraction.context_extractor import clinical_context_extractor
+
         for pattern, task_type in self.pending_task_patterns:
             for m in re.finditer(pattern, text, re.IGNORECASE):
                 matched_item = m.group(0).strip()
                 source_sentence = self._find_source_sentence(m.start(), sentence_spans)
+
+                # Filter out negated items
+                ctx = clinical_context_extractor.analyze_assertion(matched_item, m.start(), m.end(), text)
+                if ctx["is_negated"]:
+                    continue
+
+                groups = m.groups()
+                timing = None
+                task_status = "Pending"
+                if len(groups) == 2 and "planned" in pattern:
+                    action_part = groups[0].strip()
+                    timing_part = groups[1].strip()
+                    task_title = f"{action_part.capitalize()} (Planned for {timing_part})"
+                    timing = timing_part
+                    task_status = "Planned"
+                    if "review" in action_part.lower():
+                        task_type = "Scheduled Clinical Review / Consultation"
+                elif "pending" in pattern or "is pending" in matched_item.lower():
+                    task_title = matched_item.capitalize()
+                    task_status = "Pending"
+                else:
+                    task_title = matched_item.capitalize()
+
                 key = (task_type, source_sentence.lower())
                 if key not in seen:
                     seen.add(key)
-                    priority = "High" if any(w in matched_item.lower() for w in ["review", "dose", "another", "rescheduled"]) else "Medium"
+                    is_urgent = any(w in matched_item.lower() or w in source_sentence.lower() for w in ["urgent", "urgently", "stat", "emergency", "critical", "immediate", "code blue"])
+                    priority = "High" if is_urgent else "Unassigned / Awaiting Clinician Triage"
                     pending_tasks.append({
-                        "task": matched_item.capitalize(),
+                        "task": task_title,
                         "type": task_type,
                         "priority": priority,
+                        "status": task_status,
+                        "timing": timing,
                         "source_sentence": source_sentence,
                         "start_char": m.start(),
                         "end_char": m.end()
                     })
+
+        # Also inspect entities for pending or awaiting investigations
+        if entities:
+            for inv in entities.get("investigations", []):
+                if inv.get("is_negated"):
+                    continue
+                if inv.get("status") in ["Pending", "Awaiting Results"]:
+                    key = ("Pending Diagnostic Investigation", inv.get("source_sentence", "").lower())
+                    if key not in seen and not any(inv.get("text", "").lower() in t["task"].lower() for t in pending_tasks):
+                        seen.add(key)
+                        is_urgent = any(w in inv.get("source_sentence", "").lower() for w in ["urgent", "urgently", "stat", "emergency", "critical", "immediate", "code blue"])
+                        priority = "High" if is_urgent else "Unassigned / Awaiting Clinician Triage"
+                        pending_tasks.append({
+                            "task": f"{inv.get('text', '').capitalize()} is pending",
+                            "type": "Pending Diagnostic Investigation",
+                            "priority": priority,
+                            "status": "Pending",
+                            "timing": None,
+                            "source_sentence": inv.get("source_sentence", ""),
+                            "start_char": inv.get("start_char", 0),
+                            "end_char": inv.get("end_char", 0)
+                        })
 
         # Also inspect events for pending or rescheduled status
         for ev in events:
@@ -87,10 +138,14 @@ class StructuredHandoverGenerator:
                 key = ("Event Pending", ev.get("source_sentence", "").lower())
                 if key not in seen:
                     seen.add(key)
+                    is_urgent = any(w in ev.get("event", "").lower() or w in ev.get("source_sentence", "").lower() for w in ["urgent", "urgently", "stat", "emergency", "critical", "immediate", "code blue"])
+                    priority = "High" if is_urgent else "Unassigned / Awaiting Clinician Triage"
                     pending_tasks.append({
                         "task": ev.get("event"),
                         "type": ev.get("type"),
-                        "priority": "High" if "rescheduled" in ev.get("type", "").lower() or "review" in ev.get("type", "").lower() else "Medium",
+                        "priority": priority,
+                        "status": "Pending",
+                        "timing": ev.get("time") if ev.get("time") != "Not specified" else None,
                         "source_sentence": ev.get("source_sentence"),
                         "start_char": ev.get("start_char", 0),
                         "end_char": ev.get("end_char", 0)
@@ -136,6 +191,9 @@ class StructuredHandoverGenerator:
                     follow_up.append({
                         "action": pt.get("task"),
                         "type": "Specialist / Multi-disciplinary Follow-Up",
+                        "priority": pt.get("priority", "Unassigned / Awaiting Clinician Triage"),
+                        "status": pt.get("status", "Pending"),
+                        "timing": pt.get("timing"),
                         "source_sentence": pt.get("source_sentence"),
                         "start_char": pt.get("start_char", 0),
                         "end_char": pt.get("end_char", 0)
@@ -277,7 +335,7 @@ class StructuredHandoverGenerator:
         situation_items = []
         if active_symptoms:
             symptom_names = ", ".join([s["normalized"] for s in active_symptoms[:3]])
-            has_explicit_acute = any("acute" in s.get("text", "").lower() for s in active_symptoms[:3]) or "acute" in text_lower
+            has_explicit_acute = any("acute" in s.get("text", "").lower() for s in active_symptoms[:3])
             prefix = "Acute " if has_explicit_acute else ""
             situation_items.append(f"Current Clinical Presentation: {prefix}{symptom_names}")
         elif uncertain_findings:
@@ -318,7 +376,8 @@ class StructuredHandoverGenerator:
         # A - Assessment
         assessment_items = []
         for m in entities.get("measurements", []):
-            assessment_items.append(f"{m['type']}: {m['text']}")
+            m_label = m.get("type") or m.get("normalized") or "Measurement"
+            assessment_items.append(f"{m_label}: {m['text']}")
         for med in entities.get("medications", []):
             dose_str = f" ({med.get('dosage')})" if med.get('dosage') else ""
             assessment_items.append(f"Administered / Prescribed: {med['normalized']}{dose_str}")
@@ -327,6 +386,10 @@ class StructuredHandoverGenerator:
         for inv in entities.get("investigations", []):
             status = " [Planned]" if inv.get("is_planned") else ""
             assessment_items.append(f"Diagnostic Finding: {inv['normalized']}{status}")
+
+        for unc in entities.get("unclassified_candidates", []):
+            s_text = unc.get("source_text") or unc.get("text")
+            assessment_items.append(f"Unclassified Note Statement (For Review): \"{s_text}\"")
 
         if has_critical_cue:
             cues_str = ", ".join([repr(c) for c in matched_cues])
@@ -343,7 +406,9 @@ class StructuredHandoverGenerator:
 
         if pending_tasks:
             for pt in pending_tasks:
-                recommendation_items.append(f"[{pt.get('priority', 'Medium')} Priority] {pt['task']}")
+                p_label = pt.get('priority', 'Unassigned / Awaiting Clinician Triage')
+                priority_str = f"[{p_label} Priority]" if p_label in ["High", "Medium", "Low"] else f"[{p_label}]"
+                recommendation_items.append(f"{priority_str} {pt['task']}")
         if follow_up:
             for fu in follow_up:
                 if fu['action'] not in [pt['task'] for pt in pending_tasks]:
@@ -432,8 +497,17 @@ class StructuredHandoverGenerator:
         # 5. Investigations
         investigations_list = []
         for inv in entities.get("investigations", []):
-            status = " (Planned / Scheduled)" if inv.get("is_planned") else ""
-            investigations_list.append(f"Investigation{status}: {inv.get('normalized')}")
+            inv_st = inv.get("status")
+            if inv.get("is_negated"):
+                status = " (Not Ordered / Denied)"
+            elif inv_st and inv_st != "Unspecified":
+                status = f" ({inv_st})"
+            elif inv.get("is_planned"):
+                status = " (Planned / Scheduled)"
+            else:
+                status = ""
+            name_part = f"{inv.get('normalized')} ('{inv.get('text')}')" if inv.get('text') and inv.get('text').lower() != inv.get('normalized', '').lower() else inv.get('normalized')
+            investigations_list.append(f"Investigation{status}: {name_part}")
         if not investigations_list:
             investigations_list.append("No diagnostic investigations recorded in current report.")
 
@@ -456,7 +530,9 @@ class StructuredHandoverGenerator:
         # 8. Pending Tasks
         pending_list = []
         for pt in pending_tasks:
-            pending_list.append(f"[{pt.get('priority', 'Medium')} Priority] {pt.get('task')} ({pt.get('type')})")
+            p_label = pt.get('priority', 'Unassigned / Awaiting Clinician Triage')
+            priority_str = f"[{p_label} Priority]" if p_label in ["High", "Medium", "Low"] else f"[{p_label}]"
+            pending_list.append(f"{priority_str} {pt.get('task')} ({pt.get('type')})")
         if not pending_list:
             pending_list.append("No outstanding pending tasks recorded for upcoming shift.")
 
@@ -487,6 +563,13 @@ class StructuredHandoverGenerator:
             text=text
         )
 
+        unclassified_obs = []
+        for unc in entities.get("unclassified_candidates", []):
+            s_text = unc.get("source_text") or unc.get("text")
+            m_method = unc.get("extraction_method", "open_vocabulary")
+            r_stat = unc.get("review_status", "flagged_for_review")
+            unclassified_obs.append(f"\"{s_text}\" (Method: {m_method}, Review Status: {r_stat})")
+
         return {
             "patient_information": patient_info_list,
             "current_condition": current_condition_list,
@@ -498,7 +581,8 @@ class StructuredHandoverGenerator:
             "pending_tasks": pending_list,
             "follow_up": follow_up_list,
             "executive_summary": exec_summary,
-            "isbar": isbar
+            "isbar": isbar,
+            "unclassified_observations": unclassified_obs
         }
 
 # Global singleton instance

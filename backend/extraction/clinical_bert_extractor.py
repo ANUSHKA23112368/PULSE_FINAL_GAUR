@@ -13,6 +13,7 @@ import torch
 from transformers import BertTokenizerFast, AutoModelForTokenClassification
 
 from backend.extraction.context_extractor import clinical_context_extractor
+from backend.extraction.contract import ClinicalEntity, BaseClinicalExtractor, ExtractorRegistry
 
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "clinical_bert"))
 
@@ -63,12 +64,13 @@ ANATOMICAL_LOCATIONS = {
 }
 
 
-class ClinicalBERTExtractor:
+class ClinicalBERTExtractor(BaseClinicalExtractor):
     """
     Neural clinical entity extraction engine using fine-tuned Bio_ClinicalBERT.
     Provides subword alignment, span decoding, and assertion scoping.
     """
     def __init__(self, model_path: Optional[str] = None):
+        super().__init__(name="clinical_bert", version="1.0.0", supports_open_vocabulary=True)
         self.model_path = model_path or MODEL_DIR
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.tokenizer = None
@@ -572,8 +574,23 @@ class ClinicalBERTExtractor:
         # Compute clinical risks safely
         entities["clinical_risks"] = clinical_entity_extractor._extract_clinical_risks(text, entities)
 
+        # Standardize all entities through ClinicalEntity contract
+        all_standardized = []
+        for cat_k in ["patient_information", "conditions", "symptoms", "medications", "investigations", "treatments", "measurements"]:
+            standardized_list = []
+            for item in entities.get(cat_k, []):
+                c_ent = ClinicalEntity.from_dict(item, default_method="bio_clinicalbert")
+                c_dict = c_ent.to_dict()
+                standardized_list.append(c_dict)
+                all_standardized.append(c_dict)
+            entities[cat_k] = standardized_list
+
+        entities["unclassified_candidates"] = rule_entities.get("unclassified_candidates", [])
+        entities["all_entities"] = all_standardized + entities["unclassified_candidates"]
+
         return entities
 
 
 # Global singleton instance
 clinical_bert_extractor = ClinicalBERTExtractor()
+ExtractorRegistry.register("clinical_bert", clinical_bert_extractor)

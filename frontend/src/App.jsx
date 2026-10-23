@@ -226,8 +226,8 @@ export function App() {
             <span className="status-indicator">
               <CheckCircle2 size={13} color="#059669" />
               <span>
-                {systemHealth?.status?.includes('Cloud') 
-                  ? 'Cloud Client Engine (Vercel Ready)' 
+                {systemHealth?.status?.includes('Cloud')
+                  ? 'Cloud Client Engine (Vercel Ready)'
                   : (systemHealth ? 'FastAPI Backend Ready' : 'Backend Connecting')}
               </span>
             </span>

@@ -49,13 +49,33 @@ class RuleBasedEventExtractor(EventExtractor):
                 "type": "Medication Regimen Management",
                 "template": "Medication regimen adjusted / sliding scale management"
             },
-            # 3. Investigation Performed / Returned
+            # 3. Investigation Performed / Returned / Completed
             {
                 "pattern": r"\b(?:just\s+came\s+back\s+from|returned\s+from|completed|had\s+a)\s+([^.,;]*(?:mri|scan|ct|x-?ray|doppler|ultrasound)[^.,;]*)",
                 "type": "Investigation Completed",
                 "template": "Completed investigation: {0}"
             },
+            {
+                "pattern": r"\b([a-zA-Z\s]*(?:mri|scan|ct|x-?ray|doppler|ultrasound)[a-zA-Z\s]*)\s+(?:completed|done)\b",
+                "type": "Investigation Completed",
+                "template": "Completed investigation: {0}"
+            },
             # 4. Investigation Scheduled / Rescheduled / Pending
+            {
+                "pattern": r"\b([a-zA-Z\s]*(?:mri|scan|ct|x-?ray|doppler|ultrasound|blood\s*test|pathology|biopsy|culture[s]?)[a-zA-Z\s]*)\s+(?:is\s+pending|pending|awaited)\b",
+                "type": "Investigation Pending",
+                "template": "Pending investigation: {0}"
+            },
+            {
+                "pattern": r"\b(?:awaiting|waiting\s+for)\s+([a-zA-Z\s]*(?:results?|report|findings?))\b",
+                "type": "Investigation Results Awaited",
+                "template": "Awaiting investigation results: {0}"
+            },
+            {
+                "pattern": r"\b([a-zA-Z\s]*(?:blood\s*cultures?|blood\s*test|specimen|swab|sample))\s+(?:sent(?:\s+off|\s+to\s+lab)?|collected)\b",
+                "type": "Investigation Specimen Sent",
+                "template": "Specimen sent for testing: {0}"
+            },
             {
                 "pattern": r"\b(?:is\s+planned\s+for|planned\s+for|is\s+for|scheduled\s+for|supposed\s+to\s+have|booked\s+for)\s+([^.,;]*(?:biopsy|renal\s+biopsy|carotid\s+doppler|mri|ct|doppler|scan|procedure|surgery|blood\s*test)[^.,;]*)",
                 "type": "Investigation / Procedure Scheduled",
@@ -129,8 +149,14 @@ class RuleBasedEventExtractor(EventExtractor):
         events = []
         seen_events = set()
 
+        from backend.extraction.context_extractor import clinical_context_extractor
         for rule in self.event_rules:
             for m in re.finditer(rule["pattern"], text, re.IGNORECASE):
+                # Filter out negated event statements
+                ctx = clinical_context_extractor.analyze_assertion(m.group(0), m.start(), m.end(), text)
+                if ctx["is_negated"]:
+                    continue
+
                 matched_groups = [g.strip() if g else "" for g in m.groups()] if m.groups() else [""]
                 try:
                     event_desc = rule["template"].format(*matched_groups).strip()
@@ -153,15 +179,16 @@ class RuleBasedEventExtractor(EventExtractor):
 
         # If no explicit action pattern matched, synthesize admission reason if available
         if not events and entities and entities.get("conditions"):
-            top_cond = entities["conditions"][0]
-            events.append({
-                "event": f"Patient presented with {top_cond.get('text', 'clinical symptoms')}",
-                "type": "Admission / Presentation",
-                "time": "On admission",
-                "source_sentence": top_cond.get("source_sentence", ""),
-                "start_char": top_cond.get("start_char", 0),
-                "end_char": top_cond.get("end_char", 0)
-            })
+            top_cond = next((c for c in entities["conditions"] if not c.get("is_negated") and not c.get("is_historical")), None)
+            if top_cond:
+                events.append({
+                    "event": f"Patient presented with {top_cond.get('text', 'clinical symptoms')}",
+                    "type": "Admission / Presentation",
+                    "time": "On admission",
+                    "source_sentence": top_cond.get("source_sentence", ""),
+                    "start_char": top_cond.get("start_char", 0),
+                    "end_char": top_cond.get("end_char", 0)
+                })
 
         return events
 

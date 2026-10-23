@@ -103,12 +103,13 @@ class ClinicalContextExtractor:
         if not text:
             return []
 
-        # Replace protected abbreviation periods with unique token
-        placeholder = "§DOT§"
-        safe = self.abbr_pattern.sub(lambda m: m.group(1) + placeholder, text)
+        # Replace protected abbreviation periods and decimal points with length-preserving 1-char tokens
+        abbr_token = "\uE000"
+        dec_token = "\uE001"
+        safe = self.abbr_pattern.sub(lambda m: m.group(1) + abbr_token, text)
         
-        # Also protect decimal numbers (e.g. 12.5)
-        safe = re.sub(r'(\d+)\.(\d+)', r'\1§DEC§\2', safe)
+        # Also protect decimal numbers (e.g. 12.5) with exact 1-to-1 character length
+        safe = re.sub(r'(\d+)\.(\d+)', r'\g<1>' + dec_token + r'\g<2>', safe)
 
         pattern = re.compile(r'([^.!?]+(?:[.!?]+|$))', re.MULTILINE)
         sentence_spans = []
@@ -116,7 +117,7 @@ class ClinicalContextExtractor:
         for match in pattern.finditer(safe):
             orig_match = match.group()
             # Restore protected characters
-            restored = orig_match.replace(placeholder, ".").replace("§DEC§", ".").strip()
+            restored = orig_match.replace(abbr_token, ".").replace(dec_token, ".").strip()
             if restored:
                 s_start = match.start()
                 s_end = match.end()

@@ -12,12 +12,16 @@ import re
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List, Optional, Tuple
 from backend.extraction.context_extractor import clinical_context_extractor
+from backend.extraction.contract import ClinicalEntity, BaseClinicalExtractor, ExtractorRegistry
 
-class ClinicalEntityExtractor(ABC):
+class ClinicalEntityExtractor(BaseClinicalExtractor):
     """
-    Abstract Base Class for Clinical Entity Extraction.
+    Abstract Base Class for Clinical Entity Extraction, conforming to BaseClinicalExtractor.
     Future fine-tuned Bio_ClinicalBERT or SciSpacy models must implement this interface.
     """
+    def __init__(self, name: str = "clinical_entity_extractor", version: str = "1.0.0", supports_open_vocabulary: bool = False):
+        super().__init__(name=name, version=version, supports_open_vocabulary=supports_open_vocabulary)
+
     @abstractmethod
     def extract(self, text: str) -> Dict[str, Any]:
         pass
@@ -64,6 +68,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
     """
 
     def __init__(self):
+        super().__init__(name="hybrid_rule", version="2.0.0", supports_open_vocabulary=True)
         self._init_dictionaries()
 
     def _init_dictionaries(self):
@@ -163,6 +168,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
 
         # Medications
         self.medication_patterns = [
+            (r"\b(?:digoxin|lanoxin)\b", "Digoxin (Cardiac Glycoside)"),
             (r"\b(?:nitro|nitros|nitroglycerin|gtn|glyceryl\s*trinitrate)\b", "Glyceryl Trinitrate (GTN / Nitro)"),
             (r"\b(?:sliding\s*scale\s*insulin|variable\s*dose(?:\s*insulin)?|insulin|lantus|novorapid|actrapid|humalog)\b", "Insulin (Subcutaneous Regimen)"),
             (r"\b(?:antibiotic[s]?|ceftriaxone|augmentin|amoxicillin|flucloxacillin|gentamicin|tazocin)\b", "Antibiotic Therapy"),
@@ -191,14 +197,14 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:renal\s*biopsy|biopsy)\b", "Renal Biopsy / Diagnostic Tissue Biopsy"),
             (r"\b(?:brain\s*mri|mri(?:\s*scan)?)\b", "Brain Magnetic Resonance Imaging (MRI)"),
             (r"\b(?:carotid\s*doppler|doppler\s*ultrasound|carotid\s*ultrasound)\b", "Carotid Doppler Ultrasound"),
-            (r"\b(?:ct(?:\s*scan)?|computed\s*tomography)\b", "Computed Tomography (CT Scan)"),
+            (r"\b(?:ct(?:\s*(?:head|brain|chest|abdomen|pelvis|scan))?|computed\s*tomography(?:\s*(?:head|brain|chest|abdomen|pelvis))?)\b", "Computed Tomography (CT Scan)"),
             (r"\b(?:ecg|electrocardiogram|telemetry|cardiac\s*monitor(?:ing)?)\b", "12-Lead ECG / Telemetry"),
             (r"\b(?:wbc|white\s*blood\s*(?:cells?|count))\b", "White Blood Cell Count (WBC)"),
             (r"\b(?:rbc|red\s*blood\s*(?:cells?|count))\b", "Red Blood Cell Count (RBC)"),
             (r"\b(?:platelets?|platelettes?)\b", "Platelet Count"),
             (r"\b(?:chest\s*x-?ray|cxr|x-?ray)\b", "Chest Radiography (CXR)"),
             (r"\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b", "Blood Glucose Monitoring (BGL)"),
-            (r"\b(?:blood\s*test[s]?|pathology|fbc|full\s*blood\s*count|uec|lfts?|inr|troponin|blood\s*cultures?)\b", "Pathology / Blood Analysis"),
+            (r"\b(?:blood\s*test[s]?|pathology|fbc|full\s*blood\s*count|uec|lfts?|inr|troponin|blood\s*cultures?(?:\s*results?)?)\b", "Pathology / Blood Analysis"),
             (r"\b(?:urine\s*test|urinalysis|midstream\s*urine|msu)\b", "Urinalysis (MSU)"),
             (r"\b(?:ultrasound|uss)\b", "Ultrasound Sonography"),
             (r"\b(?:echo|echocardiogram)\b", "Transthoracic Echocardiogram"),
@@ -251,7 +257,9 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "treatments": [],
                 "measurements": [],
                 "abbreviations": [],
-                "clinical_risks": []
+                "clinical_risks": [],
+                "unclassified_candidates": [],
+                "all_entities": []
             }
 
         sentence_spans = self._split_into_sentences(text)
@@ -265,7 +273,9 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             "treatments": [],
             "measurements": [],
             "abbreviations": [],
-            "clinical_risks": []
+            "clinical_risks": [],
+            "unclassified_candidates": [],
+            "all_entities": []
         }
 
         # 1. Patient Information Extraction
@@ -292,7 +302,45 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
         # 8. Clinical Abbreviations Catalog
         self._extract_abbreviations(text, sentence_spans, entities["abbreviations"])
 
-        # 9. Clinical Safety & Risk Alerts
+        # 9. Open-Vocabulary Candidate Extraction & Unclassified Narrative Preservation
+        from backend.extraction.open_vocabulary_extractor import open_vocabulary_extractor
+
+        known_med_spans = {(m["start_char"], m["end_char"]) for m in entities["medications"] if "start_char" in m and "end_char" in m}
+        candidate_meds = open_vocabulary_extractor.extract_candidate_medications(text, sentence_spans, known_med_spans)
+        for cm in candidate_meds:
+            entities["medications"].append(cm.to_dict())
+
+        known_inv_spans = {(inv["start_char"], inv["end_char"]) for inv in entities["investigations"] if "start_char" in inv and "end_char" in inv}
+        candidate_invs = open_vocabulary_extractor.extract_candidate_investigations(text, sentence_spans, known_inv_spans)
+        for ci in candidate_invs:
+            entities["investigations"].append(ci.to_dict())
+
+        # Collect all matched spans across dictionary and candidate entities
+        all_matched_spans = set()
+        for cat_k in ["conditions", "symptoms", "medications", "investigations", "treatments", "measurements"]:
+            for item in entities[cat_k]:
+                st = item.get("start_char") or item.get("source_start")
+                en = item.get("end_char") or item.get("source_end")
+                if st is not None and en is not None:
+                    all_matched_spans.add((st, en))
+
+        unclassified = open_vocabulary_extractor.extract_unclassified_clauses(text, sentence_spans, all_matched_spans)
+        entities["unclassified_candidates"] = [u.to_dict() for u in unclassified]
+
+        # 10. Standardize every entity record through ClinicalEntity contract
+        all_standardized = []
+        for cat_k in ["patient_information", "conditions", "symptoms", "medications", "investigations", "treatments", "measurements", "unclassified_candidates"]:
+            standardized_list = []
+            for item in entities[cat_k]:
+                c_ent = ClinicalEntity.from_dict(item, default_method="deterministic_rule")
+                c_dict = c_ent.to_dict()
+                standardized_list.append(c_dict)
+                all_standardized.append(c_dict)
+            entities[cat_k] = standardized_list
+
+        entities["all_entities"] = all_standardized
+
+        # 11. Clinical Safety & Risk Alerts
         entities["clinical_risks"] = self._extract_clinical_risks(text, entities)
 
         return entities
@@ -407,6 +455,35 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "end_char": doc_m.end(1)
             })
 
+    def _determine_investigation_status(self, matched_text: str, start: int, end: int, source_sent: str, is_negated: bool) -> str:
+        if is_negated:
+            return "Not Ordered / Denied"
+
+        s_lower = source_sent.lower()
+
+        # 1. Awaiting Results (check before generic pending)
+        if (
+            re.search(r"\b(?:awaiting|waiting\s+for)\b.*?\b(?:results?|reports?|findings?)\b", s_lower)
+            or re.search(r"\b(?:awaiting|waiting\s+for)\b", s_lower)
+            or re.search(r"\b(?:results?|reports?|findings?)\s+(?:are\s+)?(?:awaited|pending)\b", s_lower)
+        ):
+            return "Awaiting Results"
+
+        # 2. Sent / Specimen Collected (sent to lab, results not yet available)
+        if re.search(r"\b(?:sent(?:\s+off|\s+to\s+lab|\s+for\s+testing)?|collected)\b", s_lower) and not re.search(r"\b(?:completed|returned|received)\b", s_lower):
+            return "Sent"
+
+        # 3. Completed (explicitly documented as completed/done/returned)
+        if re.search(r"\b(?:completed|done|returned\s+from|came\s+back\s+from|had\s+a)\b", s_lower) and not re.search(r"\b(?:is\s+pending|pending|planned(?:\s+for)?|scheduled(?:\s+for)?|booked(?:\s+for)?)\b", s_lower):
+            return "Completed"
+
+        # 4. Pending / Scheduled / Ordered
+        if re.search(r"\b(?:is\s+pending|pending|planned(?:\s+for)?|scheduled(?:\s+for)?|booked(?:\s+for)?|to\s+be\s+done|needs\s+another|ordered|order\s+test)\b", s_lower):
+            return "Pending"
+
+        # 5. Documented without explicit status
+        return "Unspecified"
+
     def _extract_pattern_category(self, text: str, sentence_spans: List[Tuple[str, int, int]], patterns: List[Tuple[str, str]], category_label: str, output_list: List[Dict[str, Any]]):
         matched_dict = {}
         for pat, normalized_name in patterns:
@@ -416,10 +493,12 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 source_sent = self._find_source_sentence(m.start(), sentence_spans)
                 ctx = clinical_context_extractor.analyze_assertion(matched_text, m.start(), m.end(), text)
 
-                # Key preserves assertion and temporality so negated/historical occurrences are not collapsed with active ones
-                dedup_key = (normalized_name, ctx["assertion"], ctx["temporality"])
+                inv_status = self._determine_investigation_status(matched_text, m.start(), m.end(), source_sent, ctx["is_negated"]) if category_label == "Investigation" else None
+
+                # Key preserves assertion, temporality, and investigation status
+                dedup_key = (normalized_name, ctx["assertion"], ctx["temporality"], inv_status) if category_label == "Investigation" else (normalized_name, ctx["assertion"], ctx["temporality"])
                 if dedup_key not in matched_dict:
-                    matched_dict[dedup_key] = {
+                    entity_record = {
                         "category": category_label,
                         "text": matched_text,
                         "normalized": normalized_name,
@@ -442,6 +521,9 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "all_spans": [span],
                         "occurrences": 1
                     }
+                    if category_label == "Investigation":
+                        entity_record["status"] = inv_status
+                    matched_dict[dedup_key] = entity_record
                 else:
                     matched_dict[dedup_key]["all_spans"].append(span)
                     matched_dict[dedup_key]["occurrences"] += 1
@@ -451,20 +533,86 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
 
     def _extract_medications(self, text: str, sentence_spans: List[Tuple[str, int, int]], output_list: List[Dict[str, Any]]):
         matched_meds = {}
+
+        # 1. Collect all raw medication matches across text
+        raw_matches = []
         for pat, norm in self.medication_patterns:
             for m in re.finditer(pat, text, re.IGNORECASE):
-                start, end = m.start(), m.end()
-                matched_med = m.group(0).strip()
-                source_sent = self._find_source_sentence(start, sentence_spans)
+                raw_matches.append({
+                    "start": m.start(),
+                    "end": m.end(),
+                    "text": m.group(0).strip(),
+                    "norm": norm
+                })
+
+        # Deduplicate overlapping matches by preserving longer spans
+        raw_matches.sort(key=lambda x: (x["start"], -(x["end"] - x["start"])))
+        filtered_matches = []
+        for rm in raw_matches:
+            if not any(rm["start"] >= sel["start"] and rm["end"] <= sel["end"] for sel in filtered_matches):
+                filtered_matches.append(rm)
+
+        # 2. Process matches within their local sentence and clause scope to prevent attribute leakage
+        dosage_regex = re.compile(
+            r"(?<!\w)(?:(?:\d+(?:\.\d+)?|\.\d+)\s*(?:mg|mcg|g|gm|grams?|ml|units?|puffs?|dosage|doses?)|variable\s*dose|sliding\s*scale|\d+\s+nitros?)\b",
+            re.IGNORECASE
+        )
+        freq_regex = re.compile(r"\b(qid|bd|tds|prn|daily|mane|nocte|hourly)\b", re.IGNORECASE)
+        route_regex = re.compile(r"\b(iv|oral|po|subcut|sc|topical|sublingual|inhal(?:er|ation))\b", re.IGNORECASE)
+        clause_break_regex = re.compile(r"(?:;\s*|,\s*(?:and\s+)?|\s+and\s+|\s+then\s+|\s*\+\s*)", re.IGNORECASE)
+
+        for sent_text, s_start, s_end in sentence_spans:
+            sent_meds = [m for m in filtered_matches if s_start <= m["start"] < s_end]
+            if not sent_meds:
+                continue
+
+            num_meds = len(sent_meds)
+            for idx, med_info in enumerate(sent_meds):
+                start, end = med_info["start"], med_info["end"]
+                matched_med = med_info["text"]
+                norm = med_info["norm"]
+                rel_start = start - s_start
+                rel_end = end - s_start
+
+                # Determine localized clause boundaries
+                if num_meds == 1:
+                    local_scope = sent_text
+                else:
+                    # Left bound
+                    if idx == 0:
+                        left_idx = 0
+                    else:
+                        prev_rel_end = sent_meds[idx - 1]["end"] - s_start
+                        between_prev = sent_text[prev_rel_end:rel_start]
+                        delims = list(clause_break_regex.finditer(between_prev))
+                        if delims:
+                            left_idx = prev_rel_end + delims[-1].end()
+                        else:
+                            left_idx = prev_rel_end + (rel_start - prev_rel_end) // 2
+
+                    # Right bound
+                    if idx == num_meds - 1:
+                        right_idx = len(sent_text)
+                    else:
+                        next_rel_start = sent_meds[idx + 1]["start"] - s_start
+                        between_next = sent_text[rel_end:next_rel_start]
+                        delim = clause_break_regex.search(between_next)
+                        if delim:
+                            right_idx = rel_end + delim.start()
+                        else:
+                            right_idx = rel_end + (next_rel_start - rel_end) // 2
+
+                    local_scope = sent_text[left_idx:right_idx]
+
                 ctx = clinical_context_extractor.analyze_assertion(matched_med, start, end, text)
 
-                dosage_match = re.search(r"\b(\d+\s*(?:mg|mcg|ml|units?|puffs?|dosage|doses?)|variable\s*dose|sliding\s*scale|\d+\s+nitros?)\b", source_sent, re.IGNORECASE)
+                dosage_match = dosage_regex.search(local_scope)
                 dosage = dosage_match.group(0) if dosage_match else "Unspecified dose in text"
 
-                freq_match = re.search(r"\b(qid|bd|tds|prn|daily|mane|nocte|hourly)\b", source_sent, re.IGNORECASE)
+                freq_match = freq_regex.search(local_scope)
                 frequency = freq_match.group(0).upper() if freq_match else "Unspecified frequency"
 
-                route_match = re.search(r"\b(iv|oral|po|subcut|sc|topical|sublingual|inhal(?:er|ation))\b", source_sent, re.IGNORECASE)
+                route_match = route_regex.search(local_scope)
                 route = route_match.group(0).upper() if route_match else "Unspecified route"
 
                 dedup_key = (norm, ctx["assertion"], ctx["temporality"])
@@ -486,7 +634,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "calibrated": False,
                         "rule_source": "PULSE Medication Lexicon",
                         "matching_method": "Medication Lexicon Matching",
-                        "source_sentence": source_sent,
+                        "source_sentence": sent_text,
                         "start_char": start,
                         "end_char": end,
                         "all_spans": [(start, end)],
@@ -646,3 +794,5 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
 
 # Global singleton instance
 clinical_entity_extractor = HybridClinicalEntityExtractor()
+ExtractorRegistry.register("rule", clinical_entity_extractor)
+ExtractorRegistry.register("hybrid", clinical_entity_extractor)
