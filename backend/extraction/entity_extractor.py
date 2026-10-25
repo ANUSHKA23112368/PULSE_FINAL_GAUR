@@ -113,7 +113,23 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             "RA": "Rheumatoid Arthritis",
             "TKR": "Total Knee Replacement",
             "THR": "Total Hip Replacement",
-            "MET": "Medical Emergency Team"
+            "MET": "Medical Emergency Team",
+            "K/C/O": "Known Case Of",
+            "C/O": "Complaining Of",
+            "S/B": "Seen By",
+            "B/L": "Bilateral",
+            "NAD": "No Abnormality Detected",
+            "RBS": "Random Blood Sugar",
+            "CBC": "Complete Blood Count",
+            "USG": "Ultrasonography (Ultrasound)",
+            "OPD": "Outpatient Department",
+            "OHA": "Oral Hypoglycemic Agent",
+            "OD": "Once Daily (Omni Die)",
+            "BID": "Twice Daily (Bis In Die)",
+            "TID": "Three Times Daily (Ter Die Sumendum)",
+            "SOS": "As Needed (Si Opus Sit)",
+            "HS": "At Bedtime (Hora Somni)",
+            "STAT": "Immediately / Single Dose (Statim)"
         }
 
         # Medical Conditions
@@ -204,9 +220,9 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:platelets?|platelettes?)\b", "Platelet Count"),
             (r"\b(?:chest\s*x-?ray|cxr|x-?ray)\b", "Chest Radiography (CXR)"),
             (r"\b(?:bgl[s]?|blood\s*glucose|blood\s*sugar|bsl)\b", "Blood Glucose Monitoring (BGL)"),
-            (r"\b(?:blood\s*test[s]?|pathology|fbc|full\s*blood\s*count|uec|lfts?|inr|troponin|blood\s*cultures?(?:\s*results?)?)\b", "Pathology / Blood Analysis"),
+            (r"\b(?:blood\s*test[s]?|pathology|fbc|cbc|complete\s*blood\s*count|full\s*blood\s*count|uec|lfts?|inr|troponin|blood\s*cultures?(?:\s*results?)?)\b", "Pathology / Blood Analysis"),
             (r"\b(?:urine\s*test|urinalysis|midstream\s*urine|msu)\b", "Urinalysis (MSU)"),
-            (r"\b(?:ultrasound|uss)\b", "Ultrasound Sonography"),
+            (r"\b(?:ultrasound|uss|usg|ultrasonography)\b", "Ultrasound Sonography"),
             (r"\b(?:echo|echocardiogram)\b", "Transthoracic Echocardiogram"),
             (r"\b(?:angiogram|angiography)\b", "Coronary Angiogram")
         ]
@@ -234,7 +250,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             (r"\b(?:hr|heart\s*rate|pulse)(?:\s*(?:is|was|of)?)?\s*(\d{2,3}(?:\s*bpm)?)\b", "Heart Rate"),
             (r"\b(?:temp|temperature)(?:\s*(?:is|was|of)?)?\s*(\d{2}(?:\.\d)?(?:\s*(?:c|degrees))?)\b", "Core Temperature"),
             (r"\b(?:sats|spo2|oxygen\s*saturation)(?:\s*(?:is|was|of)?)?\s*(\d{2,3}\s*%(?:\s*on\s*air|\s*on\s*oxygen)?)\b", "Pulse Oximetry (SpO2)"),
-            (r"\b(?:bgl|bgls|blood\s*sugar)(?:\s*(?:trend\s*used\s*to\s*be|was|is|running)?)?\s*(high(?:\s*during\s*the\s*am)?|low|normal|\d+(\.\d+)?(?:\s*mmol/l)?)\b", "Blood Glucose Value (BGL)")
+            (r"\b(?:bgl|bgls|rbs|random\s*blood\s*sugar|blood\s*glucose|blood\s*sugar|bsl)(?:\s*(?:trend\s*used\s*to\s*be|was|is|running)?)?\s*(high(?:\s*during\s*the\s*am)?|low|normal|\d+(\.\d+)?(?:\s*(?:mmol/l|mg/dl))?)\b", "Blood Glucose Value (BGL)")
         ]
 
     def _split_into_sentences(self, text: str) -> List[Tuple[str, int, int]]:
@@ -287,6 +303,21 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
         # 3. Symptoms Extraction (Consolidated & deduplicated)
         self._extract_pattern_category(text, sentence_spans, self.symptom_patterns, "Symptom", entities["symptoms"])
 
+        # 3b. Hinglish Clinical Expression Mapping (Roman-Hindi symptoms)
+        from backend.extraction.hinglish_mapper import clinical_hinglish_mapper
+        existing_symptom_spans = {(s["start_char"], s["end_char"]) for s in entities["symptoms"] if "start_char" in s and "end_char" in s}
+        hinglish_symptoms = clinical_hinglish_mapper.extract_hinglish_symptoms(text, sentence_spans)
+        for hs in hinglish_symptoms:
+            h_start = hs.source_start
+            h_end = hs.source_end
+            has_overlap = any(
+                not (h_end <= s_start or h_start >= s_end)
+                for s_start, s_end in existing_symptom_spans
+            )
+            if not has_overlap:
+                entities["symptoms"].append(hs.to_dict())
+                existing_symptom_spans.add((h_start, h_end))
+
         # 4. Medications Extraction
         self._extract_medications(text, sentence_spans, entities["medications"])
 
@@ -324,8 +355,13 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 if st is not None and en is not None:
                     all_matched_spans.add((st, en))
 
+        # Capture unclassified candidate Hinglish complaints
+        candidate_hinglish = clinical_hinglish_mapper.extract_unknown_hinglish_candidates(text, sentence_spans, existing_spans=all_matched_spans)
+        for ch in candidate_hinglish:
+            entities["unclassified_candidates"].append(ch.to_dict())
+
         unclassified = open_vocabulary_extractor.extract_unclassified_clauses(text, sentence_spans, all_matched_spans)
-        entities["unclassified_candidates"] = [u.to_dict() for u in unclassified]
+        entities["unclassified_candidates"].extend([u.to_dict() for u in unclassified])
 
         # 10. Standardize every entity record through ClinicalEntity contract
         all_standardized = []
@@ -437,7 +473,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 "end_char": gender_m.end()
             })
 
-        doc_m = re.search(r"\b(?:under\s+)?(Dr\.?\s+[A-Z][a-zA-Z]+)\b", text)
+        doc_m = re.search(r"\b(?:under\s+|s\s*[\/\.]\s*b\s+|seen\s+by\s+)?(Dr\.?\s+[A-Z][a-zA-Z]+)\b", text, re.IGNORECASE)
         if doc_m:
             output_list.append({
                 "category": "Patient Information",
@@ -609,8 +645,13 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 dosage_match = dosage_regex.search(local_scope)
                 dosage = dosage_match.group(0) if dosage_match else "Unspecified dose in text"
 
-                freq_match = freq_regex.search(local_scope)
-                frequency = freq_match.group(0).upper() if freq_match else "Unspecified frequency"
+                from backend.extraction.shorthand_normalizer import clinical_shorthand_normalizer
+                freq_info = clinical_shorthand_normalizer.extract_medication_frequency(local_scope, text, start, end)
+                if freq_info:
+                    frequency = freq_info["canonical_token"]
+                else:
+                    freq_match = freq_regex.search(local_scope)
+                    frequency = freq_match.group(0).upper() if freq_match else "Unspecified frequency"
 
                 route_match = route_regex.search(local_scope)
                 route = route_match.group(0).upper() if route_match else "Unspecified route"
@@ -648,8 +689,21 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             output_list.append(item)
 
     def _extract_measurements(self, text: str, sentence_spans: List[Tuple[str, int, int]], output_list: List[Dict[str, Any]]):
+        from backend.extraction.shorthand_normalizer import clinical_shorthand_normalizer
+
         seen_meas = set()
+
+        # 1. Structured Glasgow Coma Scale (GCS) notation parser
+        gcs_findings = clinical_shorthand_normalizer.parse_gcs(text, sentence_spans)
+        for gcs in gcs_findings:
+            key = (gcs["type"], gcs["text"].lower())
+            seen_meas.add(key)
+            output_list.append(gcs)
+
+        # 2. General Measurement Patterns (skipping GCS if handled by structured parser)
         for pat, m_type in self.measurement_patterns:
+            if m_type == "Glasgow Coma Scale (GCS)" and gcs_findings:
+                continue
             for m in re.finditer(pat, text, re.IGNORECASE):
                 matched = m.group(0).strip()
                 key = (m_type, matched.lower())
@@ -672,20 +726,10 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                     })
 
     def _extract_abbreviations(self, text: str, sentence_spans: List[Tuple[str, int, int]], output_list: List[Dict[str, Any]]):
-        seen_abbr = set()
-        for abbr, expansion in self.abbreviations_map.items():
-            pattern = rf"\b{re.escape(abbr)}\b"
-            for m in re.finditer(pattern, text):
-                if abbr not in seen_abbr:
-                    seen_abbr.add(abbr)
-                    source_sent = self._find_source_sentence(m.start(), sentence_spans)
-                    output_list.append({
-                        "abbreviation": abbr,
-                        "expansion": expansion,
-                        "source_sentence": source_sent,
-                        "start_char": m.start(),
-                        "end_char": m.end()
-                    })
+        from backend.extraction.shorthand_normalizer import clinical_shorthand_normalizer
+        normalized_abbrs = clinical_shorthand_normalizer.normalize_abbreviations(text, sentence_spans)
+        for item in normalized_abbrs:
+            output_list.append(item)
 
     def _extract_clinical_risks(self, text: str, entities: Dict[str, Any]) -> List[Dict[str, Any]]:
         """

@@ -26,7 +26,8 @@ class ClinicalContextExtractor:
             r"\b(?:negative\s*(?:for)?)\b",
             r"\b(?:absent|free\s*of)\b",
             r"\b(?:no\s+evidence\s+of|no\s+sign\s+of|no\s+history\s+of)\b",
-            r"\b(?:unremarkable\s*(?:for)?)\b"
+            r"\b(?:unremarkable\s*(?:for)?)\b",
+            r"\b(?:nah?i|nahin|koi\s+nah?i|bina)\b"
         ]
 
         # 2. Post-negation triggers (negates preceding entity in clause)
@@ -36,7 +37,8 @@ class ClinicalContextExtractor:
             r"-free\b",
             r"\b(?:resolved|ceased)\b",
             r"\b(?:negative)\b",
-            r"\b(?:was\s+ruled\s+out|ruled\s+out)\b"
+            r"\b(?:was\s+ruled\s+out|ruled\s+out)\b",
+            r"\b(?:nah?i|nahin)\s*(?:hai|tha|thi|the|hona|aa\s*rah[aei]|ho\s*rah[aei]|hua|hui)?\b"
         ]
 
         # 3. Pseudo-negation phrases (phrases containing negation words that do NOT negate the finding)
@@ -58,17 +60,22 @@ class ClinicalContextExtractor:
             r"\b(?:cannot\s+exclude|not\s+excluded)\b",
             r"\b(?:potential|probable|likely)\b",
             r"\b(?:suggestive\s+of|suggests?)\b",
-            r"\b(?:may\s+have|may\s+be|may\s+die)\b"
+            r"\b(?:may\s+have|may\s+be|may\s+die)\b",
+            r"\b(?:shayad|lagta\s+hai|ho\s+sakta\s+hai|shak\s+hai|sandeh)\b"
         ]
 
         # 5. Historical / Past temporality triggers
         self.historical_triggers = [
             r"\b(?:history\s+of|hx\s+of|background\s+of)\b",
+            r"\b(?:k\s*[\/\.]?\s*c\s*[\/\.]?\s*o|kco|known\s+case\s+of)\b",
             r"\b(?:past|previous|previously|prior\s+to)\b",
             r"\b(?:yesterday|earlier|former)\b",
             r"\b(?:\d+\s+(?:days?|weeks?|months?|years?)\s+ago)\b",
             r"\b(?:for\s+the\s+last\s+\d+\s+years)\b",
-            r"\b(?:since\s+childhood)\b"
+            r"\b(?:since\s+childhood)\b",
+            r"\b(?:pehle\s+se|pehle|puran[ai]|pichh?le)\b",
+            r"\b(?:kal)\s*(?:se|ko|raat|subah|shaam)?\b",
+            r"\b(?:hui\s+thi|hua\s+tha|aayi\s+thi|aaya\s+tha|hota\s+tha|hoti\s+thi|hote\s+the|hue\s+the|tha|thi)\b"
         ]
 
         # 6. Planned / Future temporality triggers
@@ -85,7 +92,7 @@ class ClinicalContextExtractor:
 
         # 7. Conjunctions / Scope termination markers
         self.scope_termination_pattern = re.compile(
-            r"\b(?:but|however|although|yet|except|aside\s+from|secondary\s+to|caused\s+by|due\s+to)\b|[,;.!]",
+            r"\b(?:but|however|although|yet|except|aside\s+from|secondary\s+to|caused\s+by|due\s+to|lekin|magar|kintu)\b|[,;.!]",
             re.IGNORECASE
         )
 

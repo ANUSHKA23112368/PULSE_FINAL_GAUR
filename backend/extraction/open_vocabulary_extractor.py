@@ -118,14 +118,19 @@ class OpenVocabularyExtractor(BaseClinicalExtractor):
                 ctx = clinical_context_extractor.analyze_assertion(drug_name, start_c, end_c, text)
 
                 # Search local sentence for dose, route, freq
+                from backend.extraction.shorthand_normalizer import clinical_shorthand_normalizer
                 dose_m = DOSAGE_PATTERN.search(source_sent)
-                freq_m = FREQUENCY_PATTERN.search(source_sent)
+                freq_info = clinical_shorthand_normalizer.extract_medication_frequency(source_sent, text, start_c, end_c)
                 route_m = ROUTE_PATTERN.search(source_sent)
 
                 # Infer oral route from 'tab' or 'tablet'
                 inferred_route = route_m.group(0).upper() if route_m else ("PO" if "tab" in m.group(0).lower() or "cap" in m.group(0).lower() else "Unspecified route")
                 inferred_dose = dose_m.group(0) if dose_m else "Unspecified dose in text"
-                inferred_freq = freq_m.group(0).upper() if freq_m else "Unspecified frequency"
+                if freq_info:
+                    inferred_freq = freq_info["canonical_token"]
+                else:
+                    freq_m = FREQUENCY_PATTERN.search(source_sent)
+                    inferred_freq = freq_m.group(0).upper() if freq_m else "Unspecified frequency"
 
                 seen_spans.add((start_c, end_c))
                 candidates.append(ClinicalEntity(
