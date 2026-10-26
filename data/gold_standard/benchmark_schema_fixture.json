@@ -1,0 +1,901 @@
+{
+  "metadata": {
+    "fixture_name": "PULSE Benchmark Annotation Schema Validation Fixture",
+    "version": "1.0.0",
+    "is_synthetic": true,
+    "synthetic_disclosure": "ALL EXAMPLES IN THIS FIXTURE ARE SYNTHETIC CLINICAL TEXT CREATED FOR SCHEMA VALIDATION AND TECHNICAL PIPELINE TESTING ONLY. NO REAL PATIENT DATA IS INCLUDED.",
+    "spec_reference": "docs/benchmark/annotation_guidelines.md",
+    "total_documents": 7,
+    "specialties_covered": [
+      "General Medicine",
+      "Surgery & Orthopedics",
+      "Pediatrics & NICU",
+      "Obstetrics & Gynecology",
+      "Emergency Care",
+      "Critical Care (ICU)",
+      "General Medicine (Edge Cases)"
+    ]
+  },
+  "documents": [
+    {
+      "document_id": "SYN_MED_001",
+      "specialty": "General Medicine",
+      "raw_text": "Bed 4, Arthur Pendelton. 68 years under Dr Edwards. K/C/O T2DM and HTN. Complains of chakkar aa raha hai and mild shortness of breath. Prescribed Tab Furosemide 40 mg PO daily and Metoprolol 12.5 mg BD. Chest X-Ray is completed. Blood cultures sent off to lab.",
+      "char_count": 260,
+      "is_synthetic": true,
+      "dataset_split": "development",
+      "entities": [
+        {
+          "entity_id": "ent_01",
+          "macro_category": "Demographics_Bed",
+          "source_text": "Bed 4",
+          "start_char": 0,
+          "end_char": 5,
+          "normalized_concept": "Bed 4",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_02",
+          "macro_category": "Demographics_Name",
+          "source_text": "Arthur Pendelton",
+          "start_char": 7,
+          "end_char": 23,
+          "normalized_concept": "Arthur Pendelton",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_03",
+          "macro_category": "Demographics_Age",
+          "source_text": "68 years",
+          "start_char": 25,
+          "end_char": 33,
+          "normalized_concept": "68 years",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_04",
+          "macro_category": "Demographics_Doctor",
+          "source_text": "Dr Edwards",
+          "start_char": 40,
+          "end_char": 50,
+          "normalized_concept": "Dr Edwards",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_05",
+          "macro_category": "Clinical_Condition",
+          "source_text": "T2DM",
+          "start_char": 58,
+          "end_char": 62,
+          "normalized_concept": "Type 2 Diabetes Mellitus",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_06",
+          "macro_category": "Clinical_Condition",
+          "source_text": "HTN",
+          "start_char": 67,
+          "end_char": 70,
+          "normalized_concept": "Hypertension",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_07",
+          "macro_category": "Clinical_Observation",
+          "source_text": "chakkar aa raha hai",
+          "start_char": 85,
+          "end_char": 104,
+          "normalized_concept": "Dizziness",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_08",
+          "macro_category": "Clinical_Observation",
+          "source_text": "shortness of breath",
+          "start_char": 114,
+          "end_char": 133,
+          "normalized_concept": "Dyspnea",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_09",
+          "macro_category": "Medication",
+          "source_text": "Furosemide",
+          "start_char": 150,
+          "end_char": 160,
+          "normalized_concept": "Furosemide",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "40 mg",
+            "route": "PO",
+            "frequency": "daily",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_10",
+          "macro_category": "Medication",
+          "source_text": "Metoprolol",
+          "start_char": 180,
+          "end_char": 190,
+          "normalized_concept": "Metoprolol",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "12.5 mg",
+            "route": null,
+            "frequency": "BD",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_11",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "Chest X-Ray",
+          "start_char": 203,
+          "end_char": 214,
+          "normalized_concept": "Chest Radiograph",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Completed",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_12",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "Blood cultures",
+          "start_char": 229,
+          "end_char": 243,
+          "normalized_concept": "Blood Culture",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Sent",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_MD_01",
+          "ANN_RN_02"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_SR_MED",
+        "adjudication_notes": "Resolved Furosemide dosage link and confirmed Hinglish chakkar normalization to Dizziness."
+      }
+    },
+    {
+      "document_id": "SYN_SUR_002",
+      "specialty": "Surgery & Orthopedics",
+      "raw_text": "Bed 12, POD 2 post-laparoscopic appendectomy. S/B Dr Rao. Abdominal wound is clean, no active bleed. Drain output 50 ml serous. Prescribed Tramadol 50 mg IV SOS for pain. Awaiting potassium results.",
+      "char_count": 198,
+      "is_synthetic": true,
+      "dataset_split": "development",
+      "entities": [
+        {
+          "entity_id": "sur_01",
+          "macro_category": "Demographics_Bed",
+          "source_text": "Bed 12",
+          "start_char": 0,
+          "end_char": 6,
+          "normalized_concept": "Bed 12",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "sur_02",
+          "macro_category": "Clinical_Condition",
+          "source_text": "appendectomy",
+          "start_char": 32,
+          "end_char": 44,
+          "normalized_concept": "Laparoscopic Appendectomy",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "sur_03",
+          "macro_category": "Demographics_Doctor",
+          "source_text": "Dr Rao",
+          "start_char": 50,
+          "end_char": 56,
+          "normalized_concept": "Dr Rao",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "sur_04",
+          "macro_category": "Clinical_Observation",
+          "source_text": "active bleed",
+          "start_char": 87,
+          "end_char": 99,
+          "normalized_concept": "Hemorrhage",
+          "assertion": "Negated",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "sur_05",
+          "macro_category": "Medication",
+          "source_text": "Tramadol",
+          "start_char": 139,
+          "end_char": 147,
+          "normalized_concept": "Tramadol",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "50 mg",
+            "route": "IV",
+            "frequency": "SOS",
+            "prn_indication": "for pain"
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "sur_06",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "potassium",
+          "start_char": 180,
+          "end_char": 189,
+          "normalized_concept": "Serum Potassium",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Awaiting Results",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_MD_01",
+          "ANN_RN_03"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_SR_SURG",
+        "adjudication_notes": "Confirmed active bleed as Negated via 'no active bleed'."
+      }
+    },
+    {
+      "document_id": "SYN_PED_003",
+      "specialty": "Pediatrics & NICU",
+      "raw_text": "Infant of Sunita, 4 months old, weight 5.2 kg. Admitted with acute bronchiolitis. Started on Syrup Paracetamol 75 mg PO TDS and nebulization with 3% saline Q6H. Baby has no fever right now.",
+      "char_count": 189,
+      "is_synthetic": true,
+      "dataset_split": "validation",
+      "entities": [
+        {
+          "entity_id": "ped_01",
+          "macro_category": "Demographics_Name",
+          "source_text": "Infant of Sunita",
+          "start_char": 0,
+          "end_char": 16,
+          "normalized_concept": "Infant of Sunita",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ped_02",
+          "macro_category": "Demographics_Age",
+          "source_text": "4 months",
+          "start_char": 18,
+          "end_char": 26,
+          "normalized_concept": "4 months",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ped_03",
+          "macro_category": "Clinical_Condition",
+          "source_text": "acute bronchiolitis",
+          "start_char": 61,
+          "end_char": 80,
+          "normalized_concept": "Acute Bronchiolitis",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ped_04",
+          "macro_category": "Medication",
+          "source_text": "Paracetamol",
+          "start_char": 99,
+          "end_char": 110,
+          "normalized_concept": "Paracetamol",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "75 mg",
+            "route": "PO",
+            "frequency": "TDS",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ped_05",
+          "macro_category": "Care_Activity",
+          "source_text": "nebulization with 3% saline",
+          "start_char": 128,
+          "end_char": 155,
+          "normalized_concept": "Hypertonic Saline Nebulization",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ped_06",
+          "macro_category": "Clinical_Observation",
+          "source_text": "fever",
+          "start_char": 173,
+          "end_char": 178,
+          "normalized_concept": "Pyrexia",
+          "assertion": "Negated",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_PED_01",
+          "ANN_RN_01"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_PED_CONS",
+        "adjudication_notes": "Confirmed pediatric decimal weight and Paracetamol liquid suspension dosage."
+      }
+    },
+    {
+      "document_id": "SYN_OBG_004",
+      "specialty": "Obstetrics & Gynecology",
+      "raw_text": "G2P1L1 at 38 weeks POG with gestational hypertension. Admitted for elective LSCS tomorrow. FHR 144 bpm, reactive. Tab Labetalol 100 mg BD continued. Pre-op CBC and coagulation profile ordered.",
+      "char_count": 192,
+      "is_synthetic": true,
+      "dataset_split": "validation",
+      "entities": [
+        {
+          "entity_id": "obg_01",
+          "macro_category": "Clinical_Condition",
+          "source_text": "gestational hypertension",
+          "start_char": 28,
+          "end_char": 52,
+          "normalized_concept": "Gestational Hypertension",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "obg_02",
+          "macro_category": "Plan_Goal",
+          "source_text": "elective LSCS tomorrow",
+          "start_char": 67,
+          "end_char": 89,
+          "normalized_concept": "Cesarean Section Plan",
+          "assertion": "Positive",
+          "temporality": "Planned",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "obg_03",
+          "macro_category": "Clinical_Observation",
+          "source_text": "FHR 144 bpm",
+          "start_char": 91,
+          "end_char": 102,
+          "normalized_concept": "Fetal Heart Rate",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "obg_04",
+          "macro_category": "Medication",
+          "source_text": "Labetalol",
+          "start_char": 118,
+          "end_char": 127,
+          "normalized_concept": "Labetalol",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "100 mg",
+            "route": null,
+            "frequency": "BD",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "obg_05",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "CBC",
+          "start_char": 156,
+          "end_char": 159,
+          "normalized_concept": "Complete Blood Count",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Ordered",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "obg_06",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "coagulation profile",
+          "start_char": 164,
+          "end_char": 183,
+          "normalized_concept": "Coagulation Studies",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Ordered",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_OBG_01",
+          "ANN_RN_02"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_OBG_SR",
+        "adjudication_notes": "Confirmed LSCS as a planned intervention and ordered status for pre-op labs."
+      }
+    },
+    {
+      "document_id": "SYN_EMG_005",
+      "specialty": "Emergency Care",
+      "raw_text": "Patient brought to casualty C/O sudden chhati mein dard and tez bukhar. GCS 15/15. Patient denies headache or palpitations. ECG shows ST elevations in V1-V4. Urgent troponin-T scheduled next shift. Suspected acute STEMI.",
+      "char_count": 220,
+      "is_synthetic": true,
+      "dataset_split": "held_out_test",
+      "entities": [
+        {
+          "entity_id": "emg_01",
+          "macro_category": "Clinical_Observation",
+          "source_text": "chhati mein dard",
+          "start_char": 39,
+          "end_char": 55,
+          "normalized_concept": "Chest Pain",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_02",
+          "macro_category": "Clinical_Observation",
+          "source_text": "tez bukhar",
+          "start_char": 60,
+          "end_char": 70,
+          "normalized_concept": "High Fever",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_03",
+          "macro_category": "Clinical_Observation",
+          "source_text": "GCS 15/15",
+          "start_char": 72,
+          "end_char": 81,
+          "normalized_concept": "Glasgow Coma Scale",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_04",
+          "macro_category": "Clinical_Observation",
+          "source_text": "headache",
+          "start_char": 98,
+          "end_char": 106,
+          "normalized_concept": "Cephalea",
+          "assertion": "Negated",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_05",
+          "macro_category": "Clinical_Observation",
+          "source_text": "palpitations",
+          "start_char": 110,
+          "end_char": 122,
+          "normalized_concept": "Palpitations",
+          "assertion": "Negated",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_06",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "ECG",
+          "start_char": 124,
+          "end_char": 127,
+          "normalized_concept": "Electrocardiogram",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Completed",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_07",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "troponin-T",
+          "start_char": 165,
+          "end_char": 175,
+          "normalized_concept": "Cardiac Troponin T",
+          "assertion": "Positive",
+          "temporality": "Planned",
+          "investigation_status": "Pending",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "emg_08",
+          "macro_category": "Clinical_Condition",
+          "source_text": "acute STEMI",
+          "start_char": 208,
+          "end_char": 219,
+          "normalized_concept": "ST-Elevation Myocardial Infarction",
+          "assertion": "Possible",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_EMG_01",
+          "ANN_MD_02"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_EMG_CHIEF",
+        "adjudication_notes": "Confirmed acute STEMI assertion as Possible via 'Suspected' and troponin-T status as Pending."
+      }
+    },
+    {
+      "document_id": "SYN_ICU_006",
+      "specialty": "Critical Care (ICU)",
+      "raw_text": "ICU Bed 3, 54yo male on mechanical ventilation. Inotropic support with Noradrenaline 0.05 mcg/kg/min IV. Start Thyroxine 0.05 mg OD via Ryle's tube. Suspected OD on unknown sedative. Unknown acronym XYZ noted in referral.",
+      "char_count": 221,
+      "is_synthetic": true,
+      "dataset_split": "held_out_test",
+      "entities": [
+        {
+          "entity_id": "icu_01",
+          "macro_category": "Demographics_Bed",
+          "source_text": "ICU Bed 3",
+          "start_char": 0,
+          "end_char": 9,
+          "normalized_concept": "ICU Bed 3",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "icu_02",
+          "macro_category": "Care_Activity",
+          "source_text": "mechanical ventilation",
+          "start_char": 24,
+          "end_char": 46,
+          "normalized_concept": "Mechanical Ventilation Support",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "icu_03",
+          "macro_category": "Medication",
+          "source_text": "Noradrenaline",
+          "start_char": 71,
+          "end_char": 84,
+          "normalized_concept": "Norepinephrine",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "0.05 mcg/kg/min",
+            "route": "IV",
+            "frequency": null,
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "icu_04",
+          "macro_category": "Medication",
+          "source_text": "Thyroxine",
+          "start_char": 111,
+          "end_char": 120,
+          "normalized_concept": "Levothyroxine",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "0.05 mg",
+            "route": null,
+            "frequency": "OD",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "icu_05",
+          "macro_category": "Clinical_Condition",
+          "source_text": "OD",
+          "start_char": 129,
+          "end_char": 131,
+          "normalized_concept": "Drug Overdose",
+          "assertion": "Possible",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "flagged_for_review"
+        },
+        {
+          "entity_id": "icu_06",
+          "macro_category": "Unclassified",
+          "source_text": "XYZ",
+          "start_char": 199,
+          "end_char": 202,
+          "normalized_concept": null,
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "flagged_for_review"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_ICU_01",
+          "ANN_PHARM_01"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_ICU_CHIEF",
+        "adjudication_notes": "Flagged ambiguous acronyms OD (overdose vs once daily) and XYZ for clinical review."
+      }
+    },
+    {
+      "document_id": "SYN_EDGE_007",
+      "specialty": "General Medicine",
+      "raw_text": "Bed 7, 62yo male with diabetic nephropathy. Prescribed Tab Paracetamol 650 mg PO SOS for fever or joint pain. Advised MRI brain, cancelled due to metallic implant; urgent CT head ordered instead. Given injection ceftriaxone, dose unrecorded.",
+      "char_count": 241,
+      "is_synthetic": true,
+      "dataset_split": "development",
+      "entities": [
+        {
+          "entity_id": "edg_01",
+          "macro_category": "Demographics_Bed",
+          "source_text": "Bed 7",
+          "start_char": 0,
+          "end_char": 5,
+          "normalized_concept": "Bed 7",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_02",
+          "macro_category": "Demographics_Age",
+          "source_text": "62yo",
+          "start_char": 7,
+          "end_char": 11,
+          "normalized_concept": "62 years old",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_03",
+          "macro_category": "Demographics_Gender",
+          "source_text": "male",
+          "start_char": 12,
+          "end_char": 16,
+          "normalized_concept": "Male",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_04",
+          "macro_category": "Clinical_Condition",
+          "source_text": "diabetic nephropathy",
+          "start_char": 22,
+          "end_char": 42,
+          "normalized_concept": "Diabetic Nephropathy",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_05",
+          "macro_category": "Medication",
+          "source_text": "Paracetamol",
+          "start_char": 59,
+          "end_char": 70,
+          "normalized_concept": "Paracetamol",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "650 mg",
+            "route": "PO",
+            "frequency": "SOS",
+            "prn_indication": "fever or joint pain"
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_06",
+          "macro_category": "Clinical_Observation",
+          "source_text": "fever",
+          "start_char": 89,
+          "end_char": 94,
+          "normalized_concept": "Fever",
+          "assertion": "Possible",
+          "temporality": "Planned",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_07",
+          "macro_category": "Clinical_Observation",
+          "source_text": "joint pain",
+          "start_char": 98,
+          "end_char": 108,
+          "normalized_concept": "Arthralgia",
+          "assertion": "Possible",
+          "temporality": "Planned",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_08",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "MRI brain",
+          "start_char": 118,
+          "end_char": 127,
+          "normalized_concept": "Brain Magnetic Resonance Imaging",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": "Ordered",
+          "medication_attributes": null,
+          "review_status": "flagged_for_review"
+        },
+        {
+          "entity_id": "edg_09",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "CT head",
+          "start_char": 171,
+          "end_char": 178,
+          "normalized_concept": "Head Computed Tomography",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Ordered",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "edg_10",
+          "macro_category": "Medication",
+          "source_text": "ceftriaxone",
+          "start_char": 212,
+          "end_char": 223,
+          "normalized_concept": "Ceftriaxone",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": null,
+            "route": "injection",
+            "frequency": null,
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_MD_01",
+          "ANN_RN_03"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "ADJ_SR_MED",
+        "adjudication_notes": "Edge cases: multi-indication PRN Paracetamol, cancelled MRI vs replacement CT, unrecorded ceftriaxone dosage."
+      }
+    }
+  ]
+}

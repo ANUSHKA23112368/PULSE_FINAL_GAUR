@@ -1,0 +1,1130 @@
+{
+  "metadata": {
+    "experiment_name": "Statistical Classifier Hyperparameter Tuning (L2 Logistic Regression)",
+    "timestamp": "2026-10-26T04:27:35Z",
+    "dataset": "PULSE 101 Synthetic Handover Corpus",
+    "total_documents": 101,
+    "cross_validation_folds": 5,
+    "partitioning_protocol": "Document-Level Stratified 3-Way Split (Train / Val / Test)",
+    "leak_prevention": "DictVectorizer fitted exclusively on training data; Val fold used solely for hyperparameter selection; Test fold evaluated once per fold.",
+    "primary_selection_metric": "Strict Span F1 on Validation Fold",
+    "hardware_environment": {
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python_version": "3.13.1",
+      "cpu_count": 12,
+      "cuda_available": false,
+      "elapsed_seconds": 73.14
+    }
+  },
+  "hyperparameter_search_space": {
+    "C": [
+      0.01,
+      0.1,
+      1.0,
+      10.0
+    ],
+    "class_weight": [
+      null,
+      "balanced"
+    ],
+    "solver": "lbfgs",
+    "max_iter": 1000,
+    "random_state": 42
+  },
+  "selected_configurations_per_fold": [
+    {
+      "fold": "fold_0",
+      "best_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "val_strict_f1": 47.74
+    },
+    {
+      "fold": "fold_1",
+      "best_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "val_strict_f1": 46.79
+    },
+    {
+      "fold": "fold_2",
+      "best_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "val_strict_f1": 50.8
+    },
+    {
+      "fold": "fold_3",
+      "best_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "val_strict_f1": 60.12
+    },
+    {
+      "fold": "fold_4",
+      "best_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "val_strict_f1": 49.31
+    }
+  ],
+  "overall_test_metrics": {
+    "token_accuracy": {
+      "mean": 78.52,
+      "std": 3.17
+    },
+    "strict_span_metrics": {
+      "precision": {
+        "mean": 47.02,
+        "std": 5.61
+      },
+      "recall": {
+        "mean": 57.52,
+        "std": 3.27
+      },
+      "f1": {
+        "mean": 51.69,
+        "std": 4.62
+      }
+    },
+    "lenient_span_metrics": {
+      "precision": {
+        "mean": 66.79,
+        "std": 5.59
+      },
+      "recall": {
+        "mean": 81.87,
+        "std": 1.67
+      },
+      "f1": {
+        "mean": 73.49,
+        "std": 3.96
+      }
+    }
+  },
+  "per_class_strict_metrics": {
+    "Demographics_Bed": {
+      "f1_mean": 97.34,
+      "f1_std": 1.97,
+      "precision_mean": 94.88,
+      "recall_mean": 100.0
+    },
+    "Demographics_Name": {
+      "f1_mean": 0.68,
+      "f1_std": 1.36,
+      "precision_mean": 1.0,
+      "recall_mean": 0.51
+    },
+    "Demographics_Age": {
+      "f1_mean": 94.14,
+      "f1_std": 2.58,
+      "precision_mean": 92.37,
+      "recall_mean": 96.05
+    },
+    "Demographics_Gender": {
+      "f1_mean": 94.22,
+      "f1_std": 1.06,
+      "precision_mean": 92.31,
+      "recall_mean": 96.28
+    },
+    "Demographics_Doctor": {
+      "f1_mean": 84.47,
+      "f1_std": 7.63,
+      "precision_mean": 87.35,
+      "recall_mean": 81.92
+    },
+    "Clinical_Condition": {
+      "f1_mean": 40.27,
+      "f1_std": 14.37,
+      "precision_mean": 34.03,
+      "recall_mean": 50.66
+    },
+    "Clinical_Observation": {
+      "f1_mean": 37.88,
+      "f1_std": 5.99,
+      "precision_mean": 30.54,
+      "recall_mean": 50.08
+    },
+    "Medication": {
+      "f1_mean": 51.06,
+      "f1_std": 16.47,
+      "precision_mean": 49.94,
+      "recall_mean": 52.59
+    },
+    "Investigation_Procedure": {
+      "f1_mean": 10.9,
+      "f1_std": 3.5,
+      "precision_mean": 10.06,
+      "recall_mean": 12.06
+    },
+    "Plan_Goal": {
+      "f1_mean": 9.79,
+      "f1_std": 3.0,
+      "precision_mean": 7.57,
+      "recall_mean": 14.76
+    },
+    "Care_Activity": {
+      "f1_mean": 46.49,
+      "f1_std": 21.13,
+      "precision_mean": 41.21,
+      "recall_mean": 53.69
+    }
+  },
+  "per_fold_evaluations": [
+    {
+      "fold_name": "fold_0",
+      "selected_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "tuning_history": [
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": null
+          },
+          "val_token_acc": 66.48,
+          "val_strict_f1": 38.12,
+          "val_lenient_f1": 58.09
+        },
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 63.89,
+          "val_strict_f1": 37.07,
+          "val_lenient_f1": 57.62
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": null
+          },
+          "val_token_acc": 75.77,
+          "val_strict_f1": 46.81,
+          "val_lenient_f1": 70.52
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 71.58,
+          "val_strict_f1": 43.01,
+          "val_lenient_f1": 66.36
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": null
+          },
+          "val_token_acc": 78.01,
+          "val_strict_f1": 47.74,
+          "val_lenient_f1": 71.6
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 76.18,
+          "val_strict_f1": 46.51,
+          "val_lenient_f1": 69.47
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": null
+          },
+          "val_token_acc": 77.61,
+          "val_strict_f1": 47.09,
+          "val_lenient_f1": 71.76
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 76.23,
+          "val_strict_f1": 46.29,
+          "val_lenient_f1": 69.44
+        }
+      ],
+      "test_token_accuracy": 76.8,
+      "test_metrics": {
+        "strict": {
+          "precision": 45.26,
+          "recall": 58.19,
+          "f1": 50.92,
+          "tp": 277,
+          "fp": 335,
+          "fn": 199
+        },
+        "lenient": {
+          "precision": 63.4,
+          "recall": 81.51,
+          "f1": 71.32,
+          "tp": 388,
+          "fp": 224,
+          "fn": 88
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 96.43,
+            "recall": 100.0,
+            "f1": 98.18,
+            "tp": 27,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 22,
+            "fn": 41
+          },
+          "Demographics_Age": {
+            "precision": 90.48,
+            "recall": 95.0,
+            "f1": 92.68,
+            "tp": 19,
+            "fp": 2,
+            "fn": 1
+          },
+          "Demographics_Gender": {
+            "precision": 91.67,
+            "recall": 97.58,
+            "f1": 94.53,
+            "tp": 121,
+            "fp": 11,
+            "fn": 3
+          },
+          "Demographics_Doctor": {
+            "precision": 95.0,
+            "recall": 82.61,
+            "f1": 88.37,
+            "tp": 19,
+            "fp": 1,
+            "fn": 4
+          },
+          "Clinical_Condition": {
+            "precision": 30.38,
+            "recall": 52.17,
+            "f1": 38.4,
+            "tp": 24,
+            "fp": 55,
+            "fn": 22
+          },
+          "Clinical_Observation": {
+            "precision": 30.34,
+            "recall": 50.57,
+            "f1": 37.93,
+            "tp": 44,
+            "fp": 101,
+            "fn": 43
+          },
+          "Medication": {
+            "precision": 26.67,
+            "recall": 32.0,
+            "f1": 29.09,
+            "tp": 8,
+            "fp": 22,
+            "fn": 17
+          },
+          "Investigation_Procedure": {
+            "precision": 11.76,
+            "recall": 11.43,
+            "f1": 11.59,
+            "tp": 4,
+            "fp": 30,
+            "fn": 31
+          },
+          "Plan_Goal": {
+            "precision": 7.23,
+            "recall": 20.0,
+            "f1": 10.62,
+            "tp": 6,
+            "fp": 77,
+            "fn": 24
+          },
+          "Care_Activity": {
+            "precision": 27.78,
+            "recall": 27.78,
+            "f1": 27.78,
+            "tp": 5,
+            "fp": 13,
+            "fn": 13
+          }
+        }
+      }
+    },
+    {
+      "fold_name": "fold_1",
+      "selected_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "tuning_history": [
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": null
+          },
+          "val_token_acc": 65.72,
+          "val_strict_f1": 41.73,
+          "val_lenient_f1": 60.6
+        },
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 64.17,
+          "val_strict_f1": 36.64,
+          "val_lenient_f1": 55.69
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": null
+          },
+          "val_token_acc": 73.46,
+          "val_strict_f1": 44.92,
+          "val_lenient_f1": 66.41
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 68.84,
+          "val_strict_f1": 41.8,
+          "val_lenient_f1": 61.55
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": null
+          },
+          "val_token_acc": 75.01,
+          "val_strict_f1": 46.79,
+          "val_lenient_f1": 67.52
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 71.15,
+          "val_strict_f1": 43.65,
+          "val_lenient_f1": 64.16
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": null
+          },
+          "val_token_acc": 73.8,
+          "val_strict_f1": 44.57,
+          "val_lenient_f1": 64.94
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 72.13,
+          "val_strict_f1": 42.87,
+          "val_lenient_f1": 63.46
+        }
+      ],
+      "test_token_accuracy": 79.51,
+      "test_metrics": {
+        "strict": {
+          "precision": 45.89,
+          "recall": 55.68,
+          "f1": 50.31,
+          "tp": 240,
+          "fp": 283,
+          "fn": 191
+        },
+        "lenient": {
+          "precision": 66.92,
+          "recall": 81.21,
+          "f1": 73.38,
+          "tp": 350,
+          "fp": 173,
+          "fn": 81
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 93.1,
+            "recall": 100.0,
+            "f1": 96.43,
+            "tp": 27,
+            "fp": 2,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 21,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 90.0,
+            "recall": 90.0,
+            "f1": 90.0,
+            "tp": 18,
+            "fp": 2,
+            "fn": 2
+          },
+          "Demographics_Gender": {
+            "precision": 92.55,
+            "recall": 93.55,
+            "f1": 93.05,
+            "tp": 87,
+            "fp": 7,
+            "fn": 6
+          },
+          "Demographics_Doctor": {
+            "precision": 90.0,
+            "recall": 85.71,
+            "f1": 87.8,
+            "tp": 18,
+            "fp": 2,
+            "fn": 3
+          },
+          "Clinical_Condition": {
+            "precision": 36.59,
+            "recall": 44.12,
+            "f1": 40.0,
+            "tp": 30,
+            "fp": 52,
+            "fn": 38
+          },
+          "Clinical_Observation": {
+            "precision": 27.83,
+            "recall": 52.46,
+            "f1": 36.36,
+            "tp": 32,
+            "fp": 83,
+            "fn": 29
+          },
+          "Medication": {
+            "precision": 47.62,
+            "recall": 55.56,
+            "f1": 51.28,
+            "tp": 10,
+            "fp": 11,
+            "fn": 8
+          },
+          "Investigation_Procedure": {
+            "precision": 7.69,
+            "recall": 12.5,
+            "f1": 9.52,
+            "tp": 3,
+            "fp": 36,
+            "fn": 21
+          },
+          "Plan_Goal": {
+            "precision": 12.31,
+            "recall": 17.02,
+            "f1": 14.29,
+            "tp": 8,
+            "fp": 57,
+            "fn": 39
+          },
+          "Care_Activity": {
+            "precision": 41.18,
+            "recall": 58.33,
+            "f1": 48.28,
+            "tp": 7,
+            "fp": 10,
+            "fn": 5
+          }
+        }
+      }
+    },
+    {
+      "fold_name": "fold_2",
+      "selected_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "tuning_history": [
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": null
+          },
+          "val_token_acc": 62.25,
+          "val_strict_f1": 43.17,
+          "val_lenient_f1": 58.55
+        },
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 62.74,
+          "val_strict_f1": 38.59,
+          "val_lenient_f1": 56.27
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": null
+          },
+          "val_token_acc": 73.03,
+          "val_strict_f1": 49.12,
+          "val_lenient_f1": 68.57
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 69.9,
+          "val_strict_f1": 42.62,
+          "val_lenient_f1": 62.81
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": null
+          },
+          "val_token_acc": 74.9,
+          "val_strict_f1": 50.8,
+          "val_lenient_f1": 70.72
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 73.25,
+          "val_strict_f1": 45.7,
+          "val_lenient_f1": 66.91
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": null
+          },
+          "val_token_acc": 73.86,
+          "val_strict_f1": 48.34,
+          "val_lenient_f1": 69.98
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 73.58,
+          "val_strict_f1": 45.77,
+          "val_lenient_f1": 67.53
+        }
+      ],
+      "test_token_accuracy": 76.0,
+      "test_metrics": {
+        "strict": {
+          "precision": 41.27,
+          "recall": 53.79,
+          "f1": 46.71,
+          "tp": 234,
+          "fp": 333,
+          "fn": 201
+        },
+        "lenient": {
+          "precision": 61.2,
+          "recall": 79.77,
+          "f1": 69.26,
+          "tp": 347,
+          "fp": 220,
+          "fn": 88
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 88.89,
+            "recall": 100.0,
+            "f1": 94.12,
+            "tp": 24,
+            "fp": 3,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 18,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 95.24,
+            "recall": 95.24,
+            "f1": 95.24,
+            "tp": 20,
+            "fp": 1,
+            "fn": 1
+          },
+          "Demographics_Gender": {
+            "precision": 92.66,
+            "recall": 94.39,
+            "f1": 93.52,
+            "tp": 101,
+            "fp": 8,
+            "fn": 6
+          },
+          "Demographics_Doctor": {
+            "precision": 68.18,
+            "recall": 71.43,
+            "f1": 69.77,
+            "tp": 15,
+            "fp": 7,
+            "fn": 6
+          },
+          "Clinical_Condition": {
+            "precision": 18.29,
+            "recall": 34.09,
+            "f1": 23.81,
+            "tp": 15,
+            "fp": 67,
+            "fn": 29
+          },
+          "Clinical_Observation": {
+            "precision": 26.67,
+            "recall": 44.44,
+            "f1": 33.33,
+            "tp": 32,
+            "fp": 88,
+            "fn": 40
+          },
+          "Medication": {
+            "precision": 40.62,
+            "recall": 39.39,
+            "f1": 40.0,
+            "tp": 13,
+            "fp": 19,
+            "fn": 20
+          },
+          "Investigation_Procedure": {
+            "precision": 8.57,
+            "recall": 10.0,
+            "f1": 9.23,
+            "tp": 3,
+            "fp": 32,
+            "fn": 27
+          },
+          "Plan_Goal": {
+            "precision": 3.75,
+            "recall": 11.54,
+            "f1": 5.66,
+            "tp": 3,
+            "fp": 77,
+            "fn": 23
+          },
+          "Care_Activity": {
+            "precision": 38.1,
+            "recall": 47.06,
+            "f1": 42.11,
+            "tp": 8,
+            "fp": 13,
+            "fn": 9
+          }
+        }
+      }
+    },
+    {
+      "fold_name": "fold_3",
+      "selected_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "tuning_history": [
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": null
+          },
+          "val_token_acc": 72.08,
+          "val_strict_f1": 50.33,
+          "val_lenient_f1": 68.95
+        },
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 71.45,
+          "val_strict_f1": 44.5,
+          "val_lenient_f1": 63.36
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": null
+          },
+          "val_token_acc": 80.28,
+          "val_strict_f1": 56.84,
+          "val_lenient_f1": 77.89
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 79.02,
+          "val_strict_f1": 49.93,
+          "val_lenient_f1": 70.07
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": null
+          },
+          "val_token_acc": 83.2,
+          "val_strict_f1": 60.12,
+          "val_lenient_f1": 78.87
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 79.81,
+          "val_strict_f1": 50.14,
+          "val_lenient_f1": 74.79
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": null
+          },
+          "val_token_acc": 82.18,
+          "val_strict_f1": 57.02,
+          "val_lenient_f1": 76.9
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 80.6,
+          "val_strict_f1": 50.99,
+          "val_lenient_f1": 75.07
+        }
+      ],
+      "test_token_accuracy": 76.0,
+      "test_metrics": {
+        "strict": {
+          "precision": 44.9,
+          "recall": 56.53,
+          "f1": 50.05,
+          "tp": 251,
+          "fp": 308,
+          "fn": 193
+        },
+        "lenient": {
+          "precision": 65.12,
+          "recall": 81.98,
+          "f1": 72.58,
+          "tp": 364,
+          "fp": 195,
+          "fn": 80
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 96.0,
+            "recall": 100.0,
+            "f1": 97.96,
+            "tp": 24,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 5.0,
+            "recall": 2.56,
+            "f1": 3.39,
+            "tp": 1,
+            "fp": 19,
+            "fn": 38
+          },
+          "Demographics_Age": {
+            "precision": 90.91,
+            "recall": 100.0,
+            "f1": 95.24,
+            "tp": 20,
+            "fp": 2,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 89.29,
+            "recall": 99.01,
+            "f1": 93.9,
+            "tp": 100,
+            "fp": 12,
+            "fn": 1
+          },
+          "Demographics_Doctor": {
+            "precision": 89.47,
+            "recall": 80.95,
+            "f1": 85.0,
+            "tp": 17,
+            "fp": 2,
+            "fn": 4
+          },
+          "Clinical_Condition": {
+            "precision": 24.36,
+            "recall": 48.72,
+            "f1": 32.48,
+            "tp": 19,
+            "fp": 59,
+            "fn": 20
+          },
+          "Clinical_Observation": {
+            "precision": 26.52,
+            "recall": 42.17,
+            "f1": 32.56,
+            "tp": 35,
+            "fp": 97,
+            "fn": 48
+          },
+          "Medication": {
+            "precision": 61.11,
+            "recall": 53.66,
+            "f1": 57.14,
+            "tp": 22,
+            "fp": 14,
+            "fn": 19
+          },
+          "Investigation_Procedure": {
+            "precision": 6.67,
+            "recall": 7.14,
+            "f1": 6.9,
+            "tp": 2,
+            "fp": 28,
+            "fn": 26
+          },
+          "Plan_Goal": {
+            "precision": 8.33,
+            "recall": 16.13,
+            "f1": 10.99,
+            "tp": 5,
+            "fp": 55,
+            "fn": 26
+          },
+          "Care_Activity": {
+            "precision": 24.0,
+            "recall": 35.29,
+            "f1": 28.57,
+            "tp": 6,
+            "fp": 19,
+            "fn": 11
+          }
+        }
+      }
+    },
+    {
+      "fold_name": "fold_4",
+      "selected_param": {
+        "C": 1.0,
+        "class_weight": null
+      },
+      "tuning_history": [
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": null
+          },
+          "val_token_acc": 68.5,
+          "val_strict_f1": 46.33,
+          "val_lenient_f1": 63.29
+        },
+        {
+          "params": {
+            "C": 0.01,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 62.95,
+          "val_strict_f1": 38.94,
+          "val_lenient_f1": 57.12
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": null
+          },
+          "val_token_acc": 75.19,
+          "val_strict_f1": 48.94,
+          "val_lenient_f1": 69.44
+        },
+        {
+          "params": {
+            "C": 0.1,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 69.38,
+          "val_strict_f1": 43.85,
+          "val_lenient_f1": 64.22
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": null
+          },
+          "val_token_acc": 76.75,
+          "val_strict_f1": 49.31,
+          "val_lenient_f1": 71.13
+        },
+        {
+          "params": {
+            "C": 1.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 72.44,
+          "val_strict_f1": 46.24,
+          "val_lenient_f1": 66.84
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": null
+          },
+          "val_token_acc": 74.68,
+          "val_strict_f1": 48.25,
+          "val_lenient_f1": 68.16
+        },
+        {
+          "params": {
+            "C": 10.0,
+            "class_weight": "balanced"
+          },
+          "val_token_acc": 73.48,
+          "val_strict_f1": 47.36,
+          "val_lenient_f1": 66.72
+        }
+      ],
+      "test_token_accuracy": 84.31,
+      "test_metrics": {
+        "strict": {
+          "precision": 57.76,
+          "recall": 63.41,
+          "f1": 60.45,
+          "tp": 201,
+          "fp": 147,
+          "fn": 116
+        },
+        "lenient": {
+          "precision": 77.3,
+          "recall": 84.86,
+          "f1": 80.9,
+          "tp": 269,
+          "fp": 79,
+          "fn": 48
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 25,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 95.24,
+            "recall": 100.0,
+            "f1": 97.56,
+            "tp": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 95.38,
+            "recall": 96.88,
+            "f1": 96.12,
+            "tp": 62,
+            "fp": 3,
+            "fn": 2
+          },
+          "Demographics_Doctor": {
+            "precision": 94.12,
+            "recall": 88.89,
+            "f1": 91.43,
+            "tp": 16,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 60.53,
+            "recall": 74.19,
+            "f1": 66.67,
+            "tp": 23,
+            "fp": 15,
+            "fn": 8
+          },
+          "Clinical_Observation": {
+            "precision": 41.33,
+            "recall": 60.78,
+            "f1": 49.21,
+            "tp": 31,
+            "fp": 44,
+            "fn": 20
+          },
+          "Medication": {
+            "precision": 73.68,
+            "recall": 82.35,
+            "f1": 77.78,
+            "tp": 14,
+            "fp": 5,
+            "fn": 3
+          },
+          "Investigation_Procedure": {
+            "precision": 15.62,
+            "recall": 19.23,
+            "f1": 17.24,
+            "tp": 5,
+            "fp": 27,
+            "fn": 21
+          },
+          "Plan_Goal": {
+            "precision": 6.25,
+            "recall": 9.09,
+            "f1": 7.41,
+            "tp": 2,
+            "fp": 30,
+            "fn": 20
+          },
+          "Care_Activity": {
+            "precision": 75.0,
+            "recall": 100.0,
+            "f1": 85.71,
+            "tp": 3,
+            "fp": 1,
+            "fn": 0
+          }
+        }
+      }
+    }
+  ]
+}

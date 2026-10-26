@@ -1,0 +1,1832 @@
+{
+  "metadata": {
+    "experiment_name": "Category-Wise Hybrid Rule + CRF Comparative Evaluation",
+    "timestamp": "2026-10-26T04:59:14Z",
+    "dataset": "PULSE 101 Synthetic Handover Corpus",
+    "total_documents": 101,
+    "cross_validation_folds": 5,
+    "partitioning_protocol": "Document-Level Stratified 3-Way Split (Train / Val / Test)",
+    "primary_selection_metric": "Strict Span F1",
+    "hardware_environment": {
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python_version": "3.13.1",
+      "cpu_count": 12,
+      "elapsed_seconds": 11.31
+    }
+  },
+  "model_comparison_overall": {
+    "rule_alone": {
+      "strict_span_metrics": {
+        "precision": 43.43,
+        "recall": 17.28,
+        "f1": 24.7,
+        "std": 3.09
+      },
+      "lenient_span_metrics": {
+        "f1": 39.67,
+        "std": 3.99
+      },
+      "latency_ms_per_doc": {
+        "mean": 6.25,
+        "std": 1.87
+      }
+    },
+    "crf_alone": {
+      "strict_span_metrics": {
+        "precision": 63.82,
+        "recall": 58.07,
+        "f1": 60.81,
+        "std": 2.85
+      },
+      "lenient_span_metrics": {
+        "f1": 78.51,
+        "std": 2.83
+      },
+      "latency_ms_per_doc": {
+        "mean": 2.15,
+        "std": 0.28
+      }
+    },
+    "hybrid_extractor": {
+      "strict_span_metrics": {
+        "precision": 63.69,
+        "recall": 58.16,
+        "f1": 60.79,
+        "std": 2.78
+      },
+      "lenient_span_metrics": {
+        "f1": 78.58,
+        "std": 2.89
+      },
+      "latency_ms_per_doc": {
+        "mean": 10.33,
+        "std": 1.69
+      }
+    },
+    "deltas_hybrid_vs_crf": {
+      "strict_f1_delta": -0.02,
+      "lenient_f1_delta": 0.07,
+      "paired_t_statistic": -0.3473,
+      "p_value": 0.7459,
+      "statistically_significant": false
+    },
+    "deltas_hybrid_vs_rule": {
+      "strict_f1_delta": 36.09,
+      "lenient_f1_delta": 38.91,
+      "paired_t_statistic": 30.7845,
+      "p_value": 0.0,
+      "statistically_significant": true
+    }
+  },
+  "per_class_strict_f1_comparison": {
+    "Demographics_Bed": {
+      "rule_f1_mean": 81.67,
+      "crf_f1_mean": 99.59,
+      "hybrid_f1_mean": 99.59,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 17.93
+    },
+    "Demographics_Name": {
+      "rule_f1_mean": 2.9,
+      "crf_f1_mean": 0.0,
+      "hybrid_f1_mean": 0.0,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": -2.9
+    },
+    "Demographics_Age": {
+      "rule_f1_mean": 1.6,
+      "crf_f1_mean": 97.49,
+      "hybrid_f1_mean": 97.49,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 95.89
+    },
+    "Demographics_Gender": {
+      "rule_f1_mean": 30.95,
+      "crf_f1_mean": 94.4,
+      "hybrid_f1_mean": 94.4,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 63.45
+    },
+    "Demographics_Doctor": {
+      "rule_f1_mean": 84.31,
+      "crf_f1_mean": 86.8,
+      "hybrid_f1_mean": 86.8,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 2.48
+    },
+    "Clinical_Condition": {
+      "rule_f1_mean": 18.63,
+      "crf_f1_mean": 52.29,
+      "hybrid_f1_mean": 52.29,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 33.66
+    },
+    "Clinical_Observation": {
+      "rule_f1_mean": 6.43,
+      "crf_f1_mean": 50.9,
+      "hybrid_f1_mean": 50.9,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 44.48
+    },
+    "Medication": {
+      "rule_f1_mean": 27.0,
+      "crf_f1_mean": 46.07,
+      "hybrid_f1_mean": 47.03,
+      "hybrid_vs_crf_delta": 0.96,
+      "hybrid_vs_rule_delta": 20.02
+    },
+    "Investigation_Procedure": {
+      "rule_f1_mean": 6.52,
+      "crf_f1_mean": 11.75,
+      "hybrid_f1_mean": 11.6,
+      "hybrid_vs_crf_delta": -0.15,
+      "hybrid_vs_rule_delta": 5.08
+    },
+    "Plan_Goal": {
+      "rule_f1_mean": 0.0,
+      "crf_f1_mean": 21.91,
+      "hybrid_f1_mean": 21.91,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 21.91
+    },
+    "Care_Activity": {
+      "rule_f1_mean": 12.09,
+      "crf_f1_mean": 66.96,
+      "hybrid_f1_mean": 66.96,
+      "hybrid_vs_crf_delta": 0.0,
+      "hybrid_vs_rule_delta": 54.87
+    }
+  },
+  "fold_evaluations": [
+    {
+      "fold_name": "fold_0",
+      "rule_alone_metrics": {
+        "strict": {
+          "precision": 40.68,
+          "recall": 15.13,
+          "f1": 22.05,
+          "tp": 72,
+          "fp": 105,
+          "fn": 404
+        },
+        "lenient": {
+          "precision": 68.93,
+          "recall": 25.63,
+          "f1": 37.37,
+          "tp": 122,
+          "fp": 55,
+          "fn": 354
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 70.37,
+            "f1": 82.61,
+            "tp": 19,
+            "fp": 0,
+            "fn": 8
+          },
+          "Demographics_Name": {
+            "precision": 6.67,
+            "recall": 2.44,
+            "f1": 3.57,
+            "tp": 1,
+            "fp": 14,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 20.0,
+            "recall": 5.0,
+            "f1": 8.0,
+            "tp": 1,
+            "fp": 4,
+            "fn": 19
+          },
+          "Demographics_Gender": {
+            "precision": 95.0,
+            "recall": 15.32,
+            "f1": 26.39,
+            "tp": 19,
+            "fp": 1,
+            "fn": 105
+          },
+          "Demographics_Doctor": {
+            "precision": 89.47,
+            "recall": 73.91,
+            "f1": 80.95,
+            "tp": 17,
+            "fp": 2,
+            "fn": 6
+          },
+          "Clinical_Condition": {
+            "precision": 14.29,
+            "recall": 4.35,
+            "f1": 6.67,
+            "tp": 2,
+            "fp": 12,
+            "fn": 44
+          },
+          "Clinical_Observation": {
+            "precision": 11.9,
+            "recall": 5.75,
+            "f1": 7.75,
+            "tp": 5,
+            "fp": 37,
+            "fn": 82
+          },
+          "Medication": {
+            "precision": 28.57,
+            "recall": 16.0,
+            "f1": 20.51,
+            "tp": 4,
+            "fp": 10,
+            "fn": 21
+          },
+          "Investigation_Procedure": {
+            "precision": 16.67,
+            "recall": 5.71,
+            "f1": 8.51,
+            "tp": 2,
+            "fp": 10,
+            "fn": 33
+          },
+          "Plan_Goal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 30
+          },
+          "Care_Activity": {
+            "precision": 11.76,
+            "recall": 11.11,
+            "f1": 11.43,
+            "tp": 2,
+            "fp": 15,
+            "fn": 16
+          }
+        }
+      },
+      "crf_alone_metrics": {
+        "strict": {
+          "precision": 64.71,
+          "recall": 60.08,
+          "f1": 62.31,
+          "tp": 286,
+          "fp": 156,
+          "fn": 190
+        },
+        "lenient": {
+          "precision": 80.32,
+          "recall": 74.58,
+          "f1": 77.34,
+          "tp": 355,
+          "fp": 87,
+          "fn": 121
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 41
+          },
+          "Demographics_Age": {
+            "precision": 95.24,
+            "recall": 100.0,
+            "f1": 97.56,
+            "tp": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 92.25,
+            "recall": 95.97,
+            "f1": 94.07,
+            "tp": 119,
+            "fp": 10,
+            "fn": 5
+          },
+          "Demographics_Doctor": {
+            "precision": 95.24,
+            "recall": 86.96,
+            "f1": 90.91,
+            "tp": 20,
+            "fp": 1,
+            "fn": 3
+          },
+          "Clinical_Condition": {
+            "precision": 56.52,
+            "recall": 56.52,
+            "f1": 56.52,
+            "tp": 26,
+            "fp": 20,
+            "fn": 20
+          },
+          "Clinical_Observation": {
+            "precision": 55.81,
+            "recall": 55.17,
+            "f1": 55.49,
+            "tp": 48,
+            "fp": 38,
+            "fn": 39
+          },
+          "Medication": {
+            "precision": 36.84,
+            "recall": 28.0,
+            "f1": 31.82,
+            "tp": 7,
+            "fp": 12,
+            "fn": 18
+          },
+          "Investigation_Procedure": {
+            "precision": 13.04,
+            "recall": 8.57,
+            "f1": 10.34,
+            "tp": 3,
+            "fp": 20,
+            "fn": 32
+          },
+          "Plan_Goal": {
+            "precision": 17.5,
+            "recall": 23.33,
+            "f1": 20.0,
+            "tp": 7,
+            "fp": 33,
+            "fn": 23
+          },
+          "Care_Activity": {
+            "precision": 90.0,
+            "recall": 50.0,
+            "f1": 64.29,
+            "tp": 9,
+            "fp": 1,
+            "fn": 9
+          }
+        }
+      },
+      "hybrid_metrics": {
+        "strict": {
+          "precision": 64.35,
+          "recall": 60.29,
+          "f1": 62.26,
+          "tp": 287,
+          "fp": 159,
+          "fn": 189
+        },
+        "lenient": {
+          "precision": 80.04,
+          "recall": 75.0,
+          "f1": 77.44,
+          "tp": 357,
+          "fp": 89,
+          "fn": 119
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 41
+          },
+          "Demographics_Age": {
+            "precision": 95.24,
+            "recall": 100.0,
+            "f1": 97.56,
+            "tp": 20,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 92.25,
+            "recall": 95.97,
+            "f1": 94.07,
+            "tp": 119,
+            "fp": 10,
+            "fn": 5
+          },
+          "Demographics_Doctor": {
+            "precision": 95.24,
+            "recall": 86.96,
+            "f1": 90.91,
+            "tp": 20,
+            "fp": 1,
+            "fn": 3
+          },
+          "Clinical_Condition": {
+            "precision": 56.52,
+            "recall": 56.52,
+            "f1": 56.52,
+            "tp": 26,
+            "fp": 20,
+            "fn": 20
+          },
+          "Clinical_Observation": {
+            "precision": 55.81,
+            "recall": 55.17,
+            "f1": 55.49,
+            "tp": 48,
+            "fp": 38,
+            "fn": 39
+          },
+          "Medication": {
+            "precision": 38.1,
+            "recall": 32.0,
+            "f1": 34.78,
+            "tp": 8,
+            "fp": 13,
+            "fn": 17
+          },
+          "Investigation_Procedure": {
+            "precision": 12.0,
+            "recall": 8.57,
+            "f1": 10.0,
+            "tp": 3,
+            "fp": 22,
+            "fn": 32
+          },
+          "Plan_Goal": {
+            "precision": 17.5,
+            "recall": 23.33,
+            "f1": 20.0,
+            "tp": 7,
+            "fp": 33,
+            "fn": 23
+          },
+          "Care_Activity": {
+            "precision": 90.0,
+            "recall": 50.0,
+            "f1": 64.29,
+            "tp": 9,
+            "fp": 1,
+            "fn": 9
+          }
+        }
+      },
+      "attributes_bound_count": 446,
+      "conflicts_resolved_count": 37,
+      "latencies_ms": {
+        "rule": 9.65,
+        "crf": 2.55,
+        "hybrid": 11.6
+      }
+    },
+    {
+      "fold_name": "fold_1",
+      "rule_alone_metrics": {
+        "strict": {
+          "precision": 43.02,
+          "recall": 17.17,
+          "f1": 24.54,
+          "tp": 74,
+          "fp": 98,
+          "fn": 357
+        },
+        "lenient": {
+          "precision": 66.86,
+          "recall": 26.68,
+          "f1": 38.14,
+          "tp": 115,
+          "fp": 57,
+          "fn": 316
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 66.67,
+            "f1": 80.0,
+            "tp": 18,
+            "fp": 0,
+            "fn": 9
+          },
+          "Demographics_Name": {
+            "precision": 7.14,
+            "recall": 2.5,
+            "f1": 3.7,
+            "tp": 1,
+            "fp": 13,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 6,
+            "fn": 20
+          },
+          "Demographics_Gender": {
+            "precision": 83.33,
+            "recall": 16.13,
+            "f1": 27.03,
+            "tp": 15,
+            "fp": 3,
+            "fn": 78
+          },
+          "Demographics_Doctor": {
+            "precision": 85.0,
+            "recall": 80.95,
+            "f1": 82.93,
+            "tp": 17,
+            "fp": 3,
+            "fn": 4
+          },
+          "Clinical_Condition": {
+            "precision": 44.12,
+            "recall": 22.06,
+            "f1": 29.41,
+            "tp": 15,
+            "fp": 19,
+            "fn": 53
+          },
+          "Clinical_Observation": {
+            "precision": 4.35,
+            "recall": 1.64,
+            "f1": 2.38,
+            "tp": 1,
+            "fp": 22,
+            "fn": 60
+          },
+          "Medication": {
+            "precision": 36.36,
+            "recall": 22.22,
+            "f1": 27.59,
+            "tp": 4,
+            "fp": 7,
+            "fn": 14
+          },
+          "Investigation_Procedure": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 10,
+            "fn": 24
+          },
+          "Plan_Goal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 47
+          },
+          "Care_Activity": {
+            "precision": 16.67,
+            "recall": 25.0,
+            "f1": 20.0,
+            "tp": 3,
+            "fp": 15,
+            "fn": 9
+          }
+        }
+      },
+      "crf_alone_metrics": {
+        "strict": {
+          "precision": 62.03,
+          "recall": 56.84,
+          "f1": 59.32,
+          "tp": 245,
+          "fp": 150,
+          "fn": 186
+        },
+        "lenient": {
+          "precision": 81.01,
+          "recall": 74.25,
+          "f1": 77.48,
+          "tp": 320,
+          "fp": 75,
+          "fn": 111
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 94.74,
+            "recall": 90.0,
+            "f1": 92.31,
+            "tp": 18,
+            "fp": 1,
+            "fn": 2
+          },
+          "Demographics_Gender": {
+            "precision": 93.55,
+            "recall": 93.55,
+            "f1": 93.55,
+            "tp": 87,
+            "fp": 6,
+            "fn": 6
+          },
+          "Demographics_Doctor": {
+            "precision": 95.0,
+            "recall": 90.48,
+            "f1": 92.68,
+            "tp": 19,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 56.45,
+            "recall": 51.47,
+            "f1": 53.85,
+            "tp": 35,
+            "fp": 27,
+            "fn": 33
+          },
+          "Clinical_Observation": {
+            "precision": 42.47,
+            "recall": 50.82,
+            "f1": 46.27,
+            "tp": 31,
+            "fp": 42,
+            "fn": 30
+          },
+          "Medication": {
+            "precision": 38.46,
+            "recall": 27.78,
+            "f1": 32.26,
+            "tp": 5,
+            "fp": 8,
+            "fn": 13
+          },
+          "Investigation_Procedure": {
+            "precision": 11.11,
+            "recall": 12.5,
+            "f1": 11.76,
+            "tp": 3,
+            "fp": 24,
+            "fn": 21
+          },
+          "Plan_Goal": {
+            "precision": 38.71,
+            "recall": 25.53,
+            "f1": 30.77,
+            "tp": 12,
+            "fp": 19,
+            "fn": 35
+          },
+          "Care_Activity": {
+            "precision": 80.0,
+            "recall": 66.67,
+            "f1": 72.73,
+            "tp": 8,
+            "fp": 2,
+            "fn": 4
+          }
+        }
+      },
+      "hybrid_metrics": {
+        "strict": {
+          "precision": 62.03,
+          "recall": 56.84,
+          "f1": 59.32,
+          "tp": 245,
+          "fp": 150,
+          "fn": 186
+        },
+        "lenient": {
+          "precision": 81.01,
+          "recall": 74.25,
+          "f1": 77.48,
+          "tp": 320,
+          "fp": 75,
+          "fn": 111
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 27,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 94.74,
+            "recall": 90.0,
+            "f1": 92.31,
+            "tp": 18,
+            "fp": 1,
+            "fn": 2
+          },
+          "Demographics_Gender": {
+            "precision": 93.55,
+            "recall": 93.55,
+            "f1": 93.55,
+            "tp": 87,
+            "fp": 6,
+            "fn": 6
+          },
+          "Demographics_Doctor": {
+            "precision": 95.0,
+            "recall": 90.48,
+            "f1": 92.68,
+            "tp": 19,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 56.45,
+            "recall": 51.47,
+            "f1": 53.85,
+            "tp": 35,
+            "fp": 27,
+            "fn": 33
+          },
+          "Clinical_Observation": {
+            "precision": 42.47,
+            "recall": 50.82,
+            "f1": 46.27,
+            "tp": 31,
+            "fp": 42,
+            "fn": 30
+          },
+          "Medication": {
+            "precision": 38.46,
+            "recall": 27.78,
+            "f1": 32.26,
+            "tp": 5,
+            "fp": 8,
+            "fn": 13
+          },
+          "Investigation_Procedure": {
+            "precision": 11.11,
+            "recall": 12.5,
+            "f1": 11.76,
+            "tp": 3,
+            "fp": 24,
+            "fn": 21
+          },
+          "Plan_Goal": {
+            "precision": 38.71,
+            "recall": 25.53,
+            "f1": 30.77,
+            "tp": 12,
+            "fp": 19,
+            "fn": 35
+          },
+          "Care_Activity": {
+            "precision": 80.0,
+            "recall": 66.67,
+            "f1": 72.73,
+            "tp": 8,
+            "fp": 2,
+            "fn": 4
+          }
+        }
+      },
+      "attributes_bound_count": 395,
+      "conflicts_resolved_count": 38,
+      "latencies_ms": {
+        "rule": 5.81,
+        "crf": 2.26,
+        "hybrid": 11.01
+      }
+    },
+    {
+      "fold_name": "fold_2",
+      "rule_alone_metrics": {
+        "strict": {
+          "precision": 40.0,
+          "recall": 17.01,
+          "f1": 23.87,
+          "tp": 74,
+          "fp": 111,
+          "fn": 361
+        },
+        "lenient": {
+          "precision": 69.19,
+          "recall": 29.43,
+          "f1": 41.29,
+          "tp": 128,
+          "fp": 57,
+          "fn": 307
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 89.47,
+            "recall": 70.83,
+            "f1": 79.07,
+            "tp": 17,
+            "fp": 2,
+            "fn": 7
+          },
+          "Demographics_Name": {
+            "precision": 6.25,
+            "recall": 2.5,
+            "f1": 3.57,
+            "tp": 1,
+            "fp": 15,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 6,
+            "fn": 21
+          },
+          "Demographics_Gender": {
+            "precision": 94.12,
+            "recall": 14.95,
+            "f1": 25.81,
+            "tp": 16,
+            "fp": 1,
+            "fn": 91
+          },
+          "Demographics_Doctor": {
+            "precision": 88.89,
+            "recall": 76.19,
+            "f1": 82.05,
+            "tp": 16,
+            "fp": 2,
+            "fn": 5
+          },
+          "Clinical_Condition": {
+            "precision": 29.17,
+            "recall": 15.91,
+            "f1": 20.59,
+            "tp": 7,
+            "fp": 17,
+            "fn": 37
+          },
+          "Clinical_Observation": {
+            "precision": 24.0,
+            "recall": 8.33,
+            "f1": 12.37,
+            "tp": 6,
+            "fp": 19,
+            "fn": 66
+          },
+          "Medication": {
+            "precision": 40.91,
+            "recall": 27.27,
+            "f1": 32.73,
+            "tp": 9,
+            "fp": 13,
+            "fn": 24
+          },
+          "Investigation_Procedure": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 8,
+            "fn": 30
+          },
+          "Plan_Goal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 26
+          },
+          "Care_Activity": {
+            "precision": 6.67,
+            "recall": 11.76,
+            "f1": 8.51,
+            "tp": 2,
+            "fp": 28,
+            "fn": 15
+          }
+        }
+      },
+      "crf_alone_metrics": {
+        "strict": {
+          "precision": 59.7,
+          "recall": 55.17,
+          "f1": 57.35,
+          "tp": 240,
+          "fp": 162,
+          "fn": 195
+        },
+        "lenient": {
+          "precision": 79.1,
+          "recall": 73.1,
+          "f1": 75.99,
+          "tp": 318,
+          "fp": 84,
+          "fn": 117
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 96.0,
+            "recall": 100.0,
+            "f1": 97.96,
+            "tp": 24,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 95.24,
+            "f1": 97.56,
+            "tp": 20,
+            "fp": 0,
+            "fn": 1
+          },
+          "Demographics_Gender": {
+            "precision": 92.79,
+            "recall": 96.26,
+            "f1": 94.5,
+            "tp": 103,
+            "fp": 8,
+            "fn": 4
+          },
+          "Demographics_Doctor": {
+            "precision": 83.33,
+            "recall": 71.43,
+            "f1": 76.92,
+            "tp": 15,
+            "fp": 3,
+            "fn": 6
+          },
+          "Clinical_Condition": {
+            "precision": 40.43,
+            "recall": 43.18,
+            "f1": 41.76,
+            "tp": 19,
+            "fp": 28,
+            "fn": 25
+          },
+          "Clinical_Observation": {
+            "precision": 46.27,
+            "recall": 43.06,
+            "f1": 44.6,
+            "tp": 31,
+            "fp": 36,
+            "fn": 41
+          },
+          "Medication": {
+            "precision": 46.43,
+            "recall": 39.39,
+            "f1": 42.62,
+            "tp": 13,
+            "fp": 15,
+            "fn": 20
+          },
+          "Investigation_Procedure": {
+            "precision": 18.18,
+            "recall": 6.67,
+            "f1": 9.76,
+            "tp": 2,
+            "fp": 9,
+            "fn": 28
+          },
+          "Plan_Goal": {
+            "precision": 11.9,
+            "recall": 19.23,
+            "f1": 14.71,
+            "tp": 5,
+            "fp": 37,
+            "fn": 21
+          },
+          "Care_Activity": {
+            "precision": 61.54,
+            "recall": 47.06,
+            "f1": 53.33,
+            "tp": 8,
+            "fp": 5,
+            "fn": 9
+          }
+        }
+      },
+      "hybrid_metrics": {
+        "strict": {
+          "precision": 59.65,
+          "recall": 55.4,
+          "f1": 57.45,
+          "tp": 241,
+          "fp": 163,
+          "fn": 194
+        },
+        "lenient": {
+          "precision": 78.96,
+          "recall": 73.33,
+          "f1": 76.04,
+          "tp": 319,
+          "fp": 85,
+          "fn": 116
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 96.0,
+            "recall": 100.0,
+            "f1": 97.96,
+            "tp": 24,
+            "fp": 1,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 95.24,
+            "f1": 97.56,
+            "tp": 20,
+            "fp": 0,
+            "fn": 1
+          },
+          "Demographics_Gender": {
+            "precision": 92.79,
+            "recall": 96.26,
+            "f1": 94.5,
+            "tp": 103,
+            "fp": 8,
+            "fn": 4
+          },
+          "Demographics_Doctor": {
+            "precision": 83.33,
+            "recall": 71.43,
+            "f1": 76.92,
+            "tp": 15,
+            "fp": 3,
+            "fn": 6
+          },
+          "Clinical_Condition": {
+            "precision": 40.43,
+            "recall": 43.18,
+            "f1": 41.76,
+            "tp": 19,
+            "fp": 28,
+            "fn": 25
+          },
+          "Clinical_Observation": {
+            "precision": 46.27,
+            "recall": 43.06,
+            "f1": 44.6,
+            "tp": 31,
+            "fp": 36,
+            "fn": 41
+          },
+          "Medication": {
+            "precision": 46.67,
+            "recall": 42.42,
+            "f1": 44.44,
+            "tp": 14,
+            "fp": 16,
+            "fn": 19
+          },
+          "Investigation_Procedure": {
+            "precision": 18.18,
+            "recall": 6.67,
+            "f1": 9.76,
+            "tp": 2,
+            "fp": 9,
+            "fn": 28
+          },
+          "Plan_Goal": {
+            "precision": 11.9,
+            "recall": 19.23,
+            "f1": 14.71,
+            "tp": 5,
+            "fp": 37,
+            "fn": 21
+          },
+          "Care_Activity": {
+            "precision": 61.54,
+            "recall": 47.06,
+            "f1": 53.33,
+            "tp": 8,
+            "fp": 5,
+            "fn": 9
+          }
+        }
+      },
+      "attributes_bound_count": 404,
+      "conflicts_resolved_count": 47,
+      "latencies_ms": {
+        "rule": 6.0,
+        "crf": 2.04,
+        "hybrid": 11.23
+      }
+    },
+    {
+      "fold_name": "fold_3",
+      "rule_alone_metrics": {
+        "strict": {
+          "precision": 41.98,
+          "recall": 15.32,
+          "f1": 22.44,
+          "tp": 68,
+          "fp": 94,
+          "fn": 376
+        },
+        "lenient": {
+          "precision": 65.43,
+          "recall": 23.87,
+          "f1": 34.98,
+          "tp": 106,
+          "fp": 56,
+          "fn": 338
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 70.83,
+            "f1": 82.93,
+            "tp": 17,
+            "fp": 0,
+            "fn": 7
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 14,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 4,
+            "fn": 20
+          },
+          "Demographics_Gender": {
+            "precision": 90.0,
+            "recall": 17.82,
+            "f1": 29.75,
+            "tp": 18,
+            "fp": 2,
+            "fn": 83
+          },
+          "Demographics_Doctor": {
+            "precision": 94.12,
+            "recall": 76.19,
+            "f1": 84.21,
+            "tp": 16,
+            "fp": 1,
+            "fn": 5
+          },
+          "Clinical_Condition": {
+            "precision": 8.33,
+            "recall": 2.56,
+            "f1": 3.92,
+            "tp": 1,
+            "fp": 11,
+            "fn": 38
+          },
+          "Clinical_Observation": {
+            "precision": 7.69,
+            "recall": 2.41,
+            "f1": 3.67,
+            "tp": 2,
+            "fp": 24,
+            "fn": 81
+          },
+          "Medication": {
+            "precision": 66.67,
+            "recall": 19.51,
+            "f1": 30.19,
+            "tp": 8,
+            "fp": 4,
+            "fn": 33
+          },
+          "Investigation_Procedure": {
+            "precision": 11.11,
+            "recall": 7.14,
+            "f1": 8.7,
+            "tp": 2,
+            "fp": 16,
+            "fn": 26
+          },
+          "Plan_Goal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 31
+          },
+          "Care_Activity": {
+            "precision": 18.18,
+            "recall": 23.53,
+            "f1": 20.51,
+            "tp": 4,
+            "fp": 18,
+            "fn": 13
+          }
+        }
+      },
+      "crf_alone_metrics": {
+        "strict": {
+          "precision": 62.53,
+          "recall": 56.76,
+          "f1": 59.5,
+          "tp": 252,
+          "fp": 151,
+          "fn": 192
+        },
+        "lenient": {
+          "precision": 81.64,
+          "recall": 74.1,
+          "f1": 77.69,
+          "tp": 329,
+          "fp": 74,
+          "fn": 115
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 19,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 90.74,
+            "recall": 97.03,
+            "f1": 93.78,
+            "tp": 98,
+            "fp": 10,
+            "fn": 3
+          },
+          "Demographics_Doctor": {
+            "precision": 88.89,
+            "recall": 76.19,
+            "f1": 82.05,
+            "tp": 16,
+            "fp": 2,
+            "fn": 5
+          },
+          "Clinical_Condition": {
+            "precision": 37.78,
+            "recall": 43.59,
+            "f1": 40.48,
+            "tp": 17,
+            "fp": 28,
+            "fn": 22
+          },
+          "Clinical_Observation": {
+            "precision": 53.16,
+            "recall": 50.6,
+            "f1": 51.85,
+            "tp": 42,
+            "fp": 37,
+            "fn": 41
+          },
+          "Medication": {
+            "precision": 54.55,
+            "recall": 43.9,
+            "f1": 48.65,
+            "tp": 18,
+            "fp": 15,
+            "fn": 23
+          },
+          "Investigation_Procedure": {
+            "precision": 12.5,
+            "recall": 7.14,
+            "f1": 9.09,
+            "tp": 2,
+            "fp": 14,
+            "fn": 26
+          },
+          "Plan_Goal": {
+            "precision": 31.82,
+            "recall": 22.58,
+            "f1": 26.42,
+            "tp": 7,
+            "fp": 15,
+            "fn": 24
+          },
+          "Care_Activity": {
+            "precision": 42.11,
+            "recall": 47.06,
+            "f1": 44.44,
+            "tp": 8,
+            "fp": 11,
+            "fn": 9
+          }
+        }
+      },
+      "hybrid_metrics": {
+        "strict": {
+          "precision": 62.53,
+          "recall": 56.76,
+          "f1": 59.5,
+          "tp": 252,
+          "fp": 151,
+          "fn": 192
+        },
+        "lenient": {
+          "precision": 81.64,
+          "recall": 74.1,
+          "f1": 77.69,
+          "tp": 329,
+          "fp": 74,
+          "fn": 115
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 24,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 19,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 90.74,
+            "recall": 97.03,
+            "f1": 93.78,
+            "tp": 98,
+            "fp": 10,
+            "fn": 3
+          },
+          "Demographics_Doctor": {
+            "precision": 88.89,
+            "recall": 76.19,
+            "f1": 82.05,
+            "tp": 16,
+            "fp": 2,
+            "fn": 5
+          },
+          "Clinical_Condition": {
+            "precision": 37.78,
+            "recall": 43.59,
+            "f1": 40.48,
+            "tp": 17,
+            "fp": 28,
+            "fn": 22
+          },
+          "Clinical_Observation": {
+            "precision": 53.16,
+            "recall": 50.6,
+            "f1": 51.85,
+            "tp": 42,
+            "fp": 37,
+            "fn": 41
+          },
+          "Medication": {
+            "precision": 54.55,
+            "recall": 43.9,
+            "f1": 48.65,
+            "tp": 18,
+            "fp": 15,
+            "fn": 23
+          },
+          "Investigation_Procedure": {
+            "precision": 12.5,
+            "recall": 7.14,
+            "f1": 9.09,
+            "tp": 2,
+            "fp": 14,
+            "fn": 26
+          },
+          "Plan_Goal": {
+            "precision": 31.82,
+            "recall": 22.58,
+            "f1": 26.42,
+            "tp": 7,
+            "fp": 15,
+            "fn": 24
+          },
+          "Care_Activity": {
+            "precision": 42.11,
+            "recall": 47.06,
+            "f1": 44.44,
+            "tp": 8,
+            "fp": 11,
+            "fn": 9
+          }
+        }
+      },
+      "attributes_bound_count": 403,
+      "conflicts_resolved_count": 31,
+      "latencies_ms": {
+        "rule": 5.86,
+        "crf": 2.23,
+        "hybrid": 10.81
+      }
+    },
+    {
+      "fold_name": "fold_4",
+      "rule_alone_metrics": {
+        "strict": {
+          "precision": 51.49,
+          "recall": 21.77,
+          "f1": 30.6,
+          "tp": 69,
+          "fp": 65,
+          "fn": 248
+        },
+        "lenient": {
+          "precision": 78.36,
+          "recall": 33.12,
+          "f1": 46.56,
+          "tp": 105,
+          "fp": 29,
+          "fn": 212
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 72.0,
+            "f1": 83.72,
+            "tp": 18,
+            "fp": 0,
+            "fn": 7
+          },
+          "Demographics_Name": {
+            "precision": 6.67,
+            "recall": 2.5,
+            "f1": 3.64,
+            "tp": 1,
+            "fp": 14,
+            "fn": 39
+          },
+          "Demographics_Age": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 8,
+            "fn": 20
+          },
+          "Demographics_Gender": {
+            "precision": 100.0,
+            "recall": 29.69,
+            "f1": 45.78,
+            "tp": 19,
+            "fp": 0,
+            "fn": 45
+          },
+          "Demographics_Doctor": {
+            "precision": 94.12,
+            "recall": 88.89,
+            "f1": 91.43,
+            "tp": 16,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 58.33,
+            "recall": 22.58,
+            "f1": 32.56,
+            "tp": 7,
+            "fp": 5,
+            "fn": 24
+          },
+          "Clinical_Observation": {
+            "precision": 12.5,
+            "recall": 3.92,
+            "f1": 5.97,
+            "tp": 2,
+            "fp": 14,
+            "fn": 49
+          },
+          "Medication": {
+            "precision": 37.5,
+            "recall": 17.65,
+            "f1": 24.0,
+            "tp": 3,
+            "fp": 5,
+            "fn": 14
+          },
+          "Investigation_Procedure": {
+            "precision": 23.08,
+            "recall": 11.54,
+            "f1": 15.38,
+            "tp": 3,
+            "fp": 10,
+            "fn": 23
+          },
+          "Plan_Goal": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 0,
+            "fn": 22
+          },
+          "Care_Activity": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 8,
+            "fn": 3
+          }
+        }
+      },
+      "crf_alone_metrics": {
+        "strict": {
+          "precision": 70.14,
+          "recall": 61.51,
+          "f1": 65.55,
+          "tp": 195,
+          "fp": 83,
+          "fn": 122
+        },
+        "lenient": {
+          "precision": 89.93,
+          "recall": 78.86,
+          "f1": 84.03,
+          "tp": 250,
+          "fp": 28,
+          "fn": 67
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 25,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 95.38,
+            "recall": 96.88,
+            "f1": 96.12,
+            "tp": 62,
+            "fp": 3,
+            "fn": 2
+          },
+          "Demographics_Doctor": {
+            "precision": 94.12,
+            "recall": 88.89,
+            "f1": 91.43,
+            "tp": 16,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 70.0,
+            "recall": 67.74,
+            "f1": 68.85,
+            "tp": 21,
+            "fp": 9,
+            "fn": 10
+          },
+          "Clinical_Observation": {
+            "precision": 55.77,
+            "recall": 56.86,
+            "f1": 56.31,
+            "tp": 29,
+            "fp": 23,
+            "fn": 22
+          },
+          "Medication": {
+            "precision": 80.0,
+            "recall": 70.59,
+            "f1": 75.0,
+            "tp": 12,
+            "fp": 3,
+            "fn": 5
+          },
+          "Investigation_Procedure": {
+            "precision": 21.05,
+            "recall": 15.38,
+            "f1": 17.78,
+            "tp": 4,
+            "fp": 15,
+            "fn": 22
+          },
+          "Plan_Goal": {
+            "precision": 25.0,
+            "recall": 13.64,
+            "f1": 17.65,
+            "tp": 3,
+            "fp": 9,
+            "fn": 19
+          },
+          "Care_Activity": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 3,
+            "fp": 0,
+            "fn": 0
+          }
+        }
+      },
+      "hybrid_metrics": {
+        "strict": {
+          "precision": 69.89,
+          "recall": 61.51,
+          "f1": 65.44,
+          "tp": 195,
+          "fp": 84,
+          "fn": 122
+        },
+        "lenient": {
+          "precision": 89.96,
+          "recall": 79.18,
+          "f1": 84.23,
+          "tp": 251,
+          "fp": 28,
+          "fn": 66
+        },
+        "per_class_strict": {
+          "Demographics_Bed": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 25,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Name": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1": 0.0,
+            "tp": 0,
+            "fp": 20,
+            "fn": 40
+          },
+          "Demographics_Age": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 20,
+            "fp": 0,
+            "fn": 0
+          },
+          "Demographics_Gender": {
+            "precision": 95.38,
+            "recall": 96.88,
+            "f1": 96.12,
+            "tp": 62,
+            "fp": 3,
+            "fn": 2
+          },
+          "Demographics_Doctor": {
+            "precision": 94.12,
+            "recall": 88.89,
+            "f1": 91.43,
+            "tp": 16,
+            "fp": 1,
+            "fn": 2
+          },
+          "Clinical_Condition": {
+            "precision": 70.0,
+            "recall": 67.74,
+            "f1": 68.85,
+            "tp": 21,
+            "fp": 9,
+            "fn": 10
+          },
+          "Clinical_Observation": {
+            "precision": 55.77,
+            "recall": 56.86,
+            "f1": 56.31,
+            "tp": 29,
+            "fp": 23,
+            "fn": 22
+          },
+          "Medication": {
+            "precision": 80.0,
+            "recall": 70.59,
+            "f1": 75.0,
+            "tp": 12,
+            "fp": 3,
+            "fn": 5
+          },
+          "Investigation_Procedure": {
+            "precision": 20.0,
+            "recall": 15.38,
+            "f1": 17.39,
+            "tp": 4,
+            "fp": 16,
+            "fn": 22
+          },
+          "Plan_Goal": {
+            "precision": 25.0,
+            "recall": 13.64,
+            "f1": 17.65,
+            "tp": 3,
+            "fp": 9,
+            "fn": 19
+          },
+          "Care_Activity": {
+            "precision": 100.0,
+            "recall": 100.0,
+            "f1": 100.0,
+            "tp": 3,
+            "fp": 0,
+            "fn": 0
+          }
+        }
+      },
+      "attributes_bound_count": 279,
+      "conflicts_resolved_count": 11,
+      "latencies_ms": {
+        "rule": 3.9,
+        "crf": 1.69,
+        "hybrid": 6.99
+      }
+    }
+  ]
+}

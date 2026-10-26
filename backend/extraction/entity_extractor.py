@@ -29,31 +29,147 @@ class ClinicalEntityExtractor(BaseClinicalExtractor):
 
 class BioClinicalBertEntityExtractor(ClinicalEntityExtractor):
     """
-    Candidate Architecture Extension Point:
-    Bio_ClinicalBERT (Alsentzer et al., 2019) Token Classification / NER pipeline.
-    
-    RESEARCH NOTE:
-    Bio_ClinicalBERT is a proposed candidate backbone for PULSE. It has NOT yet
-    been fine-tuned on the 101 nursing handover reference files.
-    When fine-tuned checkpoints become available, this class can be initialized
-    with the PyTorch/HuggingFace AutoModelForTokenClassification weights without
-    changing any downstream API or frontend contracts.
+    Bio_ClinicalBERT Token Classification Extractor.
+    Loads and runs inference using the fine-tuned checkpoint at backend/models/clinical_bert.
     """
     def __init__(self, model_checkpoint: Optional[str] = None):
-        self.model_checkpoint = model_checkpoint or "emilyalsentzer/Bio_ClinicalBERT"
+        super().__init__(name="bio_clinicalbert", version="1.0.0", supports_open_vocabulary=False)
+        import os
+        default_dir = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models", "clinical_bert"
+        )
+        self.model_checkpoint = model_checkpoint or default_dir
+        self.tokenizer = None
+        self.model = None
         self.is_loaded = False
-        # TODO: When fine-tuned weights are ready:
-        # from transformers import AutoTokenizer, AutoModelForTokenClassification, pipeline
-        # self.tokenizer = AutoTokenizer.from_pretrained(self.model_checkpoint)
-        # self.model = AutoModelForTokenClassification.from_pretrained(self.model_checkpoint)
-        # self.ner_pipeline = pipeline("ner", model=self.model, tokenizer=self.tokenizer)
-        # self.is_loaded = True
+
+    def load_model(self):
+        if self.is_loaded:
+            return
+        import os
+        if not os.path.exists(self.model_checkpoint):
+            raise FileNotFoundError(f"Bio_ClinicalBERT checkpoint not found at: {self.model_checkpoint}")
+        import torch
+        from transformers import BertTokenizerFast, AutoModelForTokenClassification
+        self.tokenizer = BertTokenizerFast.from_pretrained(self.model_checkpoint)
+        self.model = AutoModelForTokenClassification.from_pretrained(self.model_checkpoint)
+        self.model.eval()
+        self.is_loaded = True
 
     def extract(self, text: str) -> Dict[str, Any]:
-        raise NotImplementedError(
-            "Bio_ClinicalBERT fine-tuning pipeline is planned for future experimental evaluation. "
-            "Use HybridClinicalEntityExtractor for the working prototype."
+        if not text:
+            return {
+                "patient_information": [], "conditions": [], "symptoms": [],
+                "medications": [], "investigations": [], "treatments": [],
+                "measurements": [], "abbreviations": [], "clinical_risks": [],
+                "unclassified_candidates": [], "all_entities": []
+            }
+        self.load_model()
+        import torch
+
+        encoding = self.tokenizer(
+            text,
+            return_offsets_mapping=True,
+            truncation=True,
+            max_length=512,
+            return_tensors="pt"
         )
+        input_ids = encoding["input_ids"]
+        attention_mask = encoding["attention_mask"]
+        offsets = encoding["offset_mapping"][0].cpu().numpy()
+
+        with torch.no_grad():
+            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
+            logits = outputs.logits[0]
+            preds = torch.argmax(logits, dim=-1).cpu().numpy()
+
+        id2label = self.model.config.id2label
+
+        raw_spans = []
+        current_span = None
+        for idx, (sub_start, sub_end) in enumerate(offsets):
+            sub_start, sub_end = int(sub_start), int(sub_end)
+            if sub_start == 0 and sub_end == 0:
+                continue
+            pred_id = int(preds[idx])
+            pred_label = id2label.get(str(pred_id), id2label.get(pred_id, "O"))
+
+            if pred_label.startswith("B-"):
+                if current_span:
+                    raw_spans.append(current_span)
+                cat = pred_label[2:]
+                current_span = {
+                    "category": cat,
+                    "start_char": sub_start,
+                    "end_char": sub_end,
+                    "text": text[sub_start:sub_end]
+                }
+            elif pred_label.startswith("I-"):
+                cat = pred_label[2:]
+                if current_span and current_span["category"] == cat:
+                    current_span["end_char"] = sub_end
+                    current_span["text"] = text[current_span["start_char"]:sub_end]
+                else:
+                    if current_span:
+                        raw_spans.append(current_span)
+                    current_span = {
+                        "category": cat,
+                        "start_char": sub_start,
+                        "end_char": sub_end,
+                        "text": text[sub_start:sub_end]
+                    }
+            else:
+                if current_span:
+                    raw_spans.append(current_span)
+                    current_span = None
+        if current_span:
+            raw_spans.append(current_span)
+
+        entities: Dict[str, Any] = {
+            "patient_information": [], "conditions": [], "symptoms": [],
+            "medications": [], "investigations": [], "treatments": [],
+            "measurements": [], "abbreviations": [], "clinical_risks": [],
+            "unclassified_candidates": [], "all_entities": []
+        }
+
+        for sp in raw_spans:
+            cat = sp["category"]
+            s_text = sp["text"]
+            st = sp["start_char"]
+            en = sp["end_char"]
+            c_ent = ClinicalEntity(
+                entity_type=cat,
+                source_text=s_text,
+                normalized_value=s_text,
+                source_start=st,
+                source_end=en,
+                attributes={"model": "Bio_ClinicalBERT", "raw_label": cat},
+                evidence_text=text,
+                extraction_method="bio_clinicalbert",
+                review_status="unreviewed"
+            )
+            d = c_ent.to_dict()
+            if cat.startswith("Demographics_"):
+                entities["patient_information"].append(d)
+            elif cat == "Clinical_Condition":
+                d["category"] = "Condition"
+                entities["conditions"].append(d)
+            elif cat == "Clinical_Observation":
+                d["category"] = "Symptom"
+                entities["symptoms"].append(d)
+            elif cat == "Medication":
+                entities["medications"].append(d)
+            elif cat == "Investigation_Procedure":
+                d["category"] = "Investigation"
+                entities["investigations"].append(d)
+            elif cat == "Care_Activity":
+                d["category"] = "Treatment"
+                entities["treatments"].append(d)
+            else:
+                entities["unclassified_candidates"].append(d)
+            entities["all_entities"].append(d)
+
+        return entities
 
 
 class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
@@ -387,6 +503,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             output_list.append({
                 "category": "Patient Information",
                 "field": "Bed / Room",
+                "text": bed_match.group(0),
                 "value": bed_match.group(0),
                 "detail": f"Bed {bed_match.group(1)}",
                 "confidence": None,
@@ -413,6 +530,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                     output_list.append({
                         "category": "Patient Information",
                         "field": "Patient Name",
+                        "text": text[m.start(1):m.end(1)],
                         "value": name_val,
                         "detail": name_val,
                         "confidence": None,
@@ -439,6 +557,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 output_list.append({
                     "category": "Patient Information",
                     "field": "Age",
+                    "text": m.group(0),
                     "value": formatter(m),
                     "detail": formatter(m),
                     "confidence": None,
@@ -460,6 +579,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             output_list.append({
                 "category": "Patient Information",
                 "field": "Gender / Sex",
+                "text": gender_m.group(1),
                 "value": gender_val,
                 "detail": f"Verified via clinical pronoun/record ('{gender_m.group(1)}')",
                 "confidence": None,
@@ -478,6 +598,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
             output_list.append({
                 "category": "Patient Information",
                 "field": "Attending Consultant",
+                "text": doc_m.group(1),
                 "value": doc_m.group(1),
                 "detail": doc_m.group(1),
                 "confidence": None,
@@ -656,7 +777,10 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                 route_match = route_regex.search(local_scope)
                 route = route_match.group(0).upper() if route_match else "Unspecified route"
 
-                dedup_key = (norm, ctx["assertion"], ctx["temporality"])
+                prn_match = re.search(r"\bprn\s+(?:for\s+)?([a-zA-Z\s]+?)(?=[.,;]|$)", local_scope, re.IGNORECASE)
+                prn_indication = prn_match.group(1).strip() if prn_match else None
+
+                dedup_key = (matched_med.lower(), ctx["assertion"], ctx["temporality"])
                 if dedup_key not in matched_meds:
                     matched_meds[dedup_key] = {
                         "category": "Medication",
@@ -665,6 +789,7 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
                         "dosage": dosage,
                         "frequency": frequency,
                         "route": route,
+                        "prn_indication": prn_indication,
                         "assertion": ctx["assertion"],
                         "temporality": ctx["temporality"],
                         "is_negated": ctx["is_negated"],
@@ -840,3 +965,54 @@ class HybridClinicalEntityExtractor(ClinicalEntityExtractor):
 clinical_entity_extractor = HybridClinicalEntityExtractor()
 ExtractorRegistry.register("rule", clinical_entity_extractor)
 ExtractorRegistry.register("hybrid", clinical_entity_extractor)
+
+
+class PureRuleEntityExtractor(ClinicalEntityExtractor):
+    """
+    Pure Rule-Based Entity Extractor.
+    Evaluates baseline dictionary and regex pattern extraction
+    without open-vocabulary candidate extraction or Indian shorthand / Hinglish normalizers.
+    """
+    def __init__(self):
+        super().__init__(name="pure_rule", version="1.0.0", supports_open_vocabulary=False)
+        self.hybrid = HybridClinicalEntityExtractor()
+
+    def extract(self, text: str) -> Dict[str, Any]:
+        if not text:
+            return {
+                "patient_information": [], "conditions": [], "symptoms": [],
+                "medications": [], "investigations": [], "treatments": [],
+                "measurements": [], "abbreviations": [], "clinical_risks": [],
+                "unclassified_candidates": [], "all_entities": []
+            }
+        sentence_spans = self.hybrid._split_into_sentences(text)
+        entities = {
+            "patient_information": [], "conditions": [], "symptoms": [],
+            "medications": [], "investigations": [], "treatments": [],
+            "measurements": [], "abbreviations": [], "clinical_risks": [],
+            "unclassified_candidates": [], "all_entities": []
+        }
+        self.hybrid._extract_patient_info(text, sentence_spans, entities["patient_information"])
+        self.hybrid._extract_pattern_category(text, sentence_spans, self.hybrid.condition_patterns, "Condition", entities["conditions"])
+        self.hybrid._extract_pattern_category(text, sentence_spans, self.hybrid.symptom_patterns, "Symptom", entities["symptoms"])
+        self.hybrid._extract_medications(text, sentence_spans, entities["medications"])
+        self.hybrid._extract_pattern_category(text, sentence_spans, self.hybrid.investigation_patterns, "Investigation", entities["investigations"])
+        self.hybrid._extract_pattern_category(text, sentence_spans, self.hybrid.treatment_patterns, "Treatment", entities["treatments"])
+        self.hybrid._extract_measurements(text, sentence_spans, entities["measurements"])
+        self.hybrid._extract_abbreviations(text, sentence_spans, entities["abbreviations"])
+
+        all_std = []
+        for cat_k in ["patient_information", "conditions", "symptoms", "medications", "investigations", "treatments", "measurements"]:
+            for item in entities[cat_k]:
+                c_ent = ClinicalEntity.from_dict(item, default_method="pure_rule")
+                all_std.append(c_ent.to_dict())
+        entities["all_entities"] = all_std
+        return entities
+
+
+pure_rule_extractor = PureRuleEntityExtractor()
+bio_clinicalbert_extractor = BioClinicalBertEntityExtractor()
+
+ExtractorRegistry.register("pure_rule", pure_rule_extractor)
+ExtractorRegistry.register("rule_based", pure_rule_extractor)
+ExtractorRegistry.register("bio_clinicalbert", bio_clinicalbert_extractor)

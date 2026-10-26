@@ -143,7 +143,7 @@ class ClinicalEntity:
     def from_dict(cls, data: Dict[str, Any], default_method: str = "deterministic_rule") -> "ClinicalEntity":
         """Reconstructs ClinicalEntity from a legacy or contract dictionary."""
         entity_type = data.get("entity_type") or data.get("category", "General")
-        source_text = data.get("source_text") or data.get("text", "")
+        source_text = data.get("source_text") or data.get("text") or data.get("value") or ""
         if "normalized_value" in data:
             norm_val = data["normalized_value"]
         elif "normalized" in data:

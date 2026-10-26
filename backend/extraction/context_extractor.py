@@ -124,10 +124,13 @@ class ClinicalContextExtractor:
         for match in pattern.finditer(safe):
             orig_match = match.group()
             # Restore protected characters
-            restored = orig_match.replace(abbr_token, ".").replace(dec_token, ".").strip()
+            restored_raw = orig_match.replace(abbr_token, ".").replace(dec_token, ".")
+            lead = len(restored_raw) - len(restored_raw.lstrip())
+            trail = len(restored_raw) - len(restored_raw.rstrip())
+            restored = restored_raw.strip()
             if restored:
-                s_start = match.start()
-                s_end = match.end()
+                s_start = match.start() + lead
+                s_end = match.end() - trail
                 sentence_spans.append((restored, s_start, s_end))
 
         if not sentence_spans and text:

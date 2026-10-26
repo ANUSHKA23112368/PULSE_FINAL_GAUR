@@ -218,6 +218,56 @@ class StructuredHandoverGenerator:
 
         return deduped
 
+    def extract_conditional_instructions(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Extracts structured conditional instructions, explicitly separating
+        trigger conditions (e.g. 'BP < 90', 'SBP < 100') from resulting clinical actions ('inform MO', 'Hold Metoprolol').
+        """
+        if not text:
+            return []
+
+        sentence_spans = self._split_into_sentences(text)
+        instructions = []
+        seen = set()
+
+        p_if = re.compile(r"\bif\s+([^,;]+?),\s*(?:then\s+)?([^.,;\n]+)", re.IGNORECASE)
+        p_act = re.compile(r"\b(hold\s+[^.,;\n]+?|give\s+[^.,;\n]+?|inform\s+[^.,;\n]+?|notify\s+[^.,;\n]+?|call\s+[^.,;\n]+?)\s+if\s+([^.,;\n]+)", re.IGNORECASE)
+
+        for sent_text, s_start, s_end in sentence_spans:
+            for m in p_if.finditer(sent_text):
+                trig = m.group(1).strip()
+                act = m.group(2).strip()
+                key = (trig.lower(), act.lower())
+                if key not in seen:
+                    seen.add(key)
+                    instructions.append({
+                        "trigger_condition": trig,
+                        "resulting_action": act,
+                        "instruction_type": "Conditional Order / Threshold Directive",
+                        "raw_instruction": m.group(0).strip(),
+                        "source_sentence": sent_text,
+                        "start_char": s_start + m.start(),
+                        "end_char": s_start + m.end()
+                    })
+
+            for m in p_act.finditer(sent_text):
+                act = m.group(1).strip()
+                trig = m.group(2).strip()
+                key = (trig.lower(), act.lower())
+                if key not in seen:
+                    seen.add(key)
+                    instructions.append({
+                        "trigger_condition": trig,
+                        "resulting_action": act,
+                        "instruction_type": "Conditional Order / Threshold Directive",
+                        "raw_instruction": m.group(0).strip(),
+                        "source_sentence": sent_text,
+                        "start_char": s_start + m.start(),
+                        "end_char": s_start + m.end()
+                    })
+
+        return instructions
+
     def generate_executive_summary(
         self,
         patient_dict: Dict[str, str],

@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "audit_name": "PULSE Clinical Attribute Accuracy and Structured Handover Evaluation",
+    "timestamp": "2026-10-26T05:21:49Z",
+    "environment": {
+      "platform": "Windows-11-10.0.26200-SP0",
+      "python_version": "3.13.1",
+      "elapsed_seconds": 0.79
+    }
+  },
+  "section_a_historical_corpus": {
+    "dataset_name": "PULSE 101 Synthetic Nursing Handover Corpus",
+    "total_documents": 101,
+    "source_offset_integrity": {
+      "total_spans_checked": 2103,
+      "valid_offsets": 2103,
+      "offset_accuracy_pct": 100.0
+    },
+    "mention_extraction_metrics": {
+      "medication_mentions": {
+        "gold_count": 134,
+        "predicted_count": 67,
+        "strict": {
+          "precision": 41.79,
+          "recall": 20.9,
+          "f1": 27.86,
+          "tp": 28,
+          "fp": 39,
+          "fn": 106
+        },
+        "lenient": {
+          "precision": 85.07,
+          "recall": 42.54,
+          "f1": 56.72,
+          "tp": 57,
+          "fp": 10,
+          "fn": 77
+        }
+      },
+      "investigation_mentions": {
+        "gold_count": 143,
+        "predicted_count": 61,
+        "strict": {
+          "precision": 11.48,
+          "recall": 4.9,
+          "f1": 6.86,
+          "tp": 7,
+          "fp": 54,
+          "fn": 136
+        },
+        "lenient": {
+          "precision": 47.54,
+          "recall": 20.28,
+          "f1": 28.43,
+          "tp": 29,
+          "fp": 32,
+          "fn": 114
+        }
+      }
+    },
+    "attribute_evaluation_status": {
+      "medication_to_dose_binding": "NOT EVALUABLE \u2014 0 gold relational link annotations in 101 corpus",
+      "medication_to_route_binding": "NOT EVALUABLE \u2014 0 gold relational link annotations in 101 corpus",
+      "medication_to_frequency_binding": "NOT EVALUABLE \u2014 0 gold relational link annotations in 101 corpus",
+      "prn_indication_binding": "NOT EVALUABLE \u2014 0 gold PRN indication annotations in 101 corpus",
+      "investigation_status_classification": "NOT EVALUABLE \u2014 0 gold linked status annotations in 101 corpus",
+      "assertion_classification": "NOT EVALUABLE \u2014 0 gold assertion labels in 101 corpus",
+      "temporality_classification": "NOT EVALUABLE \u2014 0 gold temporality labels in 101 corpus",
+      "pending_task_extraction": "NOT EVALUABLE \u2014 0 gold task labels in 101 corpus",
+      "conditional_instruction_extraction": "NOT EVALUABLE \u2014 0 gold conditional trigger/action labels in 101 corpus"
+    }
+  },
+  "section_b_schema_fixtures_regression": {
+    "dataset_name": "PULSE Benchmark Annotation Schema Fixtures (7 Notes)",
+    "disclaimer": "SYNTHETIC SCHEMA REGRESSION TEST ONLY \u2014 NOT GENERAL CLINICAL EVIDENCE",
+    "total_documents": 7,
+    "total_entities_checked": 54,
+    "source_offset_integrity_pct": 100.0,
+    "attribute_binding_accuracy": {
+      "dose_binding": {
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1": 100.0
+      },
+      "route_binding": {
+        "tp": 4,
+        "fp": 1,
+        "fn": 1,
+        "precision": 80.0,
+        "recall": 80.0,
+        "f1": 80.0
+      },
+      "frequency_binding": {
+        "tp": 6,
+        "fp": 0,
+        "fn": 0,
+        "precision": 100.0,
+        "recall": 100.0,
+        "f1": 100.0
+      },
+      "prn_indication_binding": {
+        "tp": 0,
+        "fp": 0,
+        "fn": 2
+      }
+    },
+    "classification_accuracy": {
+      "investigation_status_accuracy": 33.33,
+      "assertion_classification_accuracy": 90.0,
+      "temporality_classification_accuracy": 84.0
+    }
+  },
+  "section_c_controlled_error_analysis": {
+    "total_test_cases": 7,
+    "all_passed": true,
+    "cases": [
+      {
+        "test_id": "TC_MED_01",
+        "name": "Multi-Drug Attribute Boundary Separation",
+        "passed": true,
+        "checks": [
+          {
+            "check": "Furosemide dose is 40 mg",
+            "passed": true
+          },
+          {
+            "check": "Furosemide route is PO",
+            "passed": true
+          },
+          {
+            "check": "Metoprolol dose is 12.5 mg",
+            "passed": true
+          },
+          {
+            "check": "Metoprolol route does NOT leak PO",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_MED_02",
+        "name": "Distinct Drug Pharmacological Deduplication",
+        "passed": true,
+        "checks": [
+          {
+            "check": "Both Warfarin and Heparin extracted as separate entities",
+            "passed": true
+          },
+          {
+            "check": "Warfarin has unspecified dose",
+            "passed": true
+          },
+          {
+            "check": "Heparin has 5000 units subcut",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_MED_03",
+        "name": "PRN Indication and Frequency Extraction",
+        "passed": true,
+        "checks": [
+          {
+            "check": "Paracetamol extracted with 1g and PO",
+            "passed": true
+          },
+          {
+            "check": "PRN indication extracted as headache",
+            "passed": true
+          },
+          {
+            "check": "PRN indication not mistaken for drug name",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_MED_04",
+        "name": "Negated Medication Exclusion from Active Orders",
+        "passed": true,
+        "checks": [
+          {
+            "check": "Aspirin marked as Negated",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_MED_05",
+        "name": "Historical Temporality Preservation",
+        "passed": true,
+        "checks": [
+          {
+            "check": "Digoxin marked as Historical",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_SEM_06",
+        "name": "Investigation Status Distinctions",
+        "passed": true,
+        "checks": [
+          {
+            "check": "CXR marked as Completed",
+            "passed": true
+          },
+          {
+            "check": "Blood cultures marked as Sent",
+            "passed": true
+          },
+          {
+            "check": "Renal biopsy marked as Pending",
+            "passed": true
+          }
+        ]
+      },
+      {
+        "test_id": "TC_COND_07",
+        "name": "Conditional Trigger and Action Separation",
+        "passed": true,
+        "checks": [
+          {
+            "check": "First trigger condition separated",
+            "passed": true
+          },
+          {
+            "check": "Second trigger condition separated",
+            "passed": true
+          }
+        ]
+      }
+    ]
+  }
+}

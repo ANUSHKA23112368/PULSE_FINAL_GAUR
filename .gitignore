@@ -47,3 +47,7 @@ Thumbs.db
 *.pt
 *.pth
 
+# Temporary scratch directory
+scratch/
+
+

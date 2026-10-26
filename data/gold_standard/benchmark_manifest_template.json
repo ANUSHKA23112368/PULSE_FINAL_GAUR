@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "manifest_name": "PULSE Independent Multi-Specialty Clinical Handover Benchmark Manifest",
+    "version": "1.0.0-template",
+    "target_corpus_size": 250,
+    "is_synthetic": false,
+    "spec_reference": "docs/benchmark/independent_benchmark_annotation_protocol.md",
+    "target_split_distribution": {
+      "development": 100,
+      "validation": 50,
+      "held_out_test": 100
+    },
+    "target_specialty_distribution": {
+      "General Medicine": 50,
+      "Surgery & Orthopedics": 45,
+      "Pediatrics & NICU": 40,
+      "Obstetrics & Gynecology": 35,
+      "Emergency Medicine": 40,
+      "Critical Care (ICU)": 40
+    }
+  },
+  "governance": {
+    "iec_irb_approved": false,
+    "iec_approval_number": null,
+    "iec_institution": null,
+    "data_owner_authorized": false,
+    "data_owner_entity": null,
+    "dua_signed": false,
+    "dua_execution_date": null,
+    "de_identification_standard": "HIPAA Safe Harbor + DPDP Act 2023",
+    "encryption_at_rest": "AES-256",
+    "status": "UNRESOLVED"
+  },
+  "lifecycle_state": {
+    "protocol_created": true,
+    "data_collected": false,
+    "annotations_completed": false,
+    "annotations_adjudicated": false,
+    "benchmark_ready_for_evaluation": false
+  },
+  "documents": []
+}

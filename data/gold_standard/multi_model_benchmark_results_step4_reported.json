@@ -1,0 +1,290 @@
+{
+  "metadata": {
+    "benchmark_name": "PULSE Multi-Model Extraction Evaluation",
+    "timestamp": "2026-10-25T11:39:29Z",
+    "evaluated_models": [
+      "pure_rule",
+      "statistical_classifier",
+      "bio_clinicalbert",
+      "hybrid_pipeline"
+    ],
+    "unavailable_models": [
+      "local_slm (No GGUF/checkpoint available in repository)"
+    ]
+  },
+  "corpus_gold_standard_101": {
+    "dataset": "PULSE 101 Synthetic Handover Corpus (ANU/CSIRO)",
+    "documents_count": 101,
+    "tokens_count": 8487,
+    "annotations_count": 2103,
+    "evaluation_protocol": "Stratified Document-Level 5-Fold Cross-Validation",
+    "models": {
+      "pure_rule": {
+        "model_name": "Pure Rule Engine (Lexicons & Regex)",
+        "strict_precision": 44.48,
+        "strict_recall": 17.26,
+        "strict_f1": 24.84,
+        "strict_f1_std": 2.81,
+        "lenient_f1": 47.72,
+        "assertion_accuracy": "NOT EVALUATED (No assertion tags in 101 corpus)",
+        "temporality_accuracy": "NOT EVALUATED (No temporality tags in 101 corpus)",
+        "avg_latency_ms": 1.2
+      },
+      "statistical_classifier": {
+        "model_name": "Statistical Sequence Classifier (Logistic Regression / CRF-eq)",
+        "strict_precision": 47.48,
+        "strict_recall": 58.09,
+        "strict_f1": 52.2,
+        "strict_f1_std": 4.62,
+        "lenient_f1": 80.19,
+        "token_accuracy": 78.52,
+        "assertion_accuracy": "NOT EVALUATED (No assertion tags in 101 corpus)",
+        "temporality_accuracy": "NOT EVALUATED (No temporality tags in 101 corpus)",
+        "avg_latency_ms": 3.8
+      },
+      "bio_clinicalbert": {
+        "model_name": "Bio_ClinicalBERT (Fine-Tuned Token Classification)",
+        "strict_precision": 12.56,
+        "strict_recall": 10.64,
+        "strict_f1": 11.38,
+        "strict_f1_std": 6.46,
+        "lenient_f1": 47.72,
+        "assertion_accuracy": "NOT EVALUATED (No assertion tags in 101 corpus)",
+        "temporality_accuracy": "NOT EVALUATED (No temporality tags in 101 corpus)",
+        "avg_latency_ms": 42.5
+      },
+      "hybrid_pipeline": {
+        "model_name": "PULSE Hybrid Pipeline (Rules + Normalizers + Candidates)",
+        "strict_precision": 45.2,
+        "strict_recall": 20.4,
+        "strict_f1": 28.1,
+        "lenient_f1": 52.4,
+        "assertion_accuracy": "NOT EVALUATED (No assertion tags in 101 corpus)",
+        "temporality_accuracy": "NOT EVALUATED (No temporality tags in 101 corpus)",
+        "avg_latency_ms": 2.1
+      },
+      "local_slm": {
+        "status": "UNAVAILABLE",
+        "reason": "No local SLM checkpoint (GGUF/ONNX/PyTorch) found in repository. Hosted APIs disallowed."
+      }
+    }
+  },
+  "generalization_challenge_benchmark": {
+    "categories_count": 10,
+    "total_gold_spans": 43,
+    "metrics_by_model": {
+      "pure_rule": {
+        "strict_metrics": {
+          "precision": 57.6,
+          "recall": 44.2,
+          "f1": 50.0,
+          "tp": 19,
+          "total_preds": 33,
+          "total_gold": 43
+        },
+        "lenient_metrics": {
+          "precision": 15.2,
+          "recall": 11.6,
+          "f1": 13.2,
+          "tp": 5
+        },
+        "medication_name_accuracy": {
+          "score": 75.0,
+          "numerator": 6,
+          "denominator": 8
+        },
+        "medication_attribute_binding_accuracy": {
+          "score": 76.2,
+          "numerator": 16,
+          "denominator": 21
+        },
+        "investigation_status_accuracy": {
+          "score": 66.7,
+          "numerator": 4,
+          "denominator": 6
+        },
+        "assertion_accuracy": {
+          "score": 60.0,
+          "numerator": 3,
+          "denominator": 5
+        },
+        "temporality_accuracy": {
+          "score": 33.3,
+          "numerator": 1,
+          "denominator": 3
+        },
+        "unclassified_term_preservation_rate": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 3
+        },
+        "hallucination_rate": {
+          "score": 0.0,
+          "unsupported_claims": 0,
+          "total_extracted": 33
+        },
+        "avg_latency_ms": 5.7
+      },
+      "statistical_classifier": {
+        "strict_metrics": {
+          "precision": 12.5,
+          "recall": 32.6,
+          "f1": 18.1,
+          "tp": 14,
+          "total_preds": 112,
+          "total_gold": 43
+        },
+        "lenient_metrics": {
+          "precision": 23.2,
+          "recall": 60.5,
+          "f1": 33.5,
+          "tp": 26
+        },
+        "medication_name_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 8
+        },
+        "medication_attribute_binding_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 21
+        },
+        "investigation_status_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 6
+        },
+        "assertion_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 5
+        },
+        "temporality_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 3
+        },
+        "unclassified_term_preservation_rate": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 3
+        },
+        "hallucination_rate": {
+          "score": 0.0,
+          "unsupported_claims": 0,
+          "total_extracted": 112
+        },
+        "avg_latency_ms": 1.5
+      },
+      "bio_clinicalbert": {
+        "strict_metrics": {
+          "precision": 6.1,
+          "recall": 14.0,
+          "f1": 8.5,
+          "tp": 6,
+          "total_preds": 98,
+          "total_gold": 43
+        },
+        "lenient_metrics": {
+          "precision": 31.6,
+          "recall": 72.1,
+          "f1": 43.9,
+          "tp": 31
+        },
+        "medication_name_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 8
+        },
+        "medication_attribute_binding_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 21
+        },
+        "investigation_status_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 6
+        },
+        "assertion_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 5
+        },
+        "temporality_accuracy": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 3
+        },
+        "unclassified_term_preservation_rate": {
+          "score": 0.0,
+          "numerator": 0,
+          "denominator": 3
+        },
+        "hallucination_rate": {
+          "score": 0.0,
+          "unsupported_claims": 0,
+          "total_extracted": 98
+        },
+        "avg_latency_ms": 2005.0
+      },
+      "hybrid_pipeline": {
+        "strict_metrics": {
+          "precision": 42.6,
+          "recall": 53.5,
+          "f1": 47.4,
+          "tp": 23,
+          "total_preds": 54,
+          "total_gold": 43
+        },
+        "lenient_metrics": {
+          "precision": 31.5,
+          "recall": 39.5,
+          "f1": 35.0,
+          "tp": 17
+        },
+        "medication_name_accuracy": {
+          "score": 87.5,
+          "numerator": 7,
+          "denominator": 8
+        },
+        "medication_attribute_binding_accuracy": {
+          "score": 90.5,
+          "numerator": 19,
+          "denominator": 21
+        },
+        "investigation_status_accuracy": {
+          "score": 83.3,
+          "numerator": 5,
+          "denominator": 6
+        },
+        "assertion_accuracy": {
+          "score": 80.0,
+          "numerator": 4,
+          "denominator": 5
+        },
+        "temporality_accuracy": {
+          "score": 66.7,
+          "numerator": 2,
+          "denominator": 3
+        },
+        "unclassified_term_preservation_rate": {
+          "score": 100.0,
+          "numerator": 3,
+          "denominator": 3
+        },
+        "hallucination_rate": {
+          "score": 0.0,
+          "unsupported_claims": 0,
+          "total_extracted": 54
+        },
+        "avg_latency_ms": 8.3
+      },
+      "local_slm": {
+        "status": "NOT EVALUATED / UNAVAILABLE",
+        "reason": "No local SLM checkpoint (e.g. GGUF/PyTorch) found in repository. External/hosted LLM APIs are disallowed per scope boundary."
+      }
+    }
+  }
+}

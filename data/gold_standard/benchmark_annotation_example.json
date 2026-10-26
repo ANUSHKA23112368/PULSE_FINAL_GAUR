@@ -1,0 +1,307 @@
+{
+  "metadata": {
+    "fixture_name": "PULSE Independent Benchmark Machine-Readable Annotation Example",
+    "version": "1.0.0",
+    "is_synthetic": true,
+    "synthetic_disclosure": "ALL DATA IN THIS FIXTURE IS SYNTHETIC CLINICAL TEXT CREATED AS A FORMAL SCHEMA SPECIFICATION AND PIPELINE VALIDATION TARGET. NO REAL PATIENT DATA IS INCLUDED.",
+    "spec_reference": "docs/benchmark/independent_benchmark_annotation_protocol.md"
+  },
+  "documents": [
+    {
+      "document_id": "SYN_SPEC_001",
+      "patient_id": "PAT_SYN_101",
+      "specialty": "Emergency Medicine",
+      "raw_text": "Bed 6, Sunita Devi, 54F under Dr Sharma. K/C/O HTN and T2DM. C/O chhati me dard x 2 hrs. Given Tab Aspirin 150 mg PO stat and Tab Sorbitrate 5 mg SL. ECG completed: shows ST elevation in V1-V4. Urgent Trop-I sent to lab. If SBP < 90 mmHg, inform MO on call and hold Sorbitrate.",
+      "char_count": 277,
+      "is_synthetic": true,
+      "dataset_split": "development",
+      "de_identification_verified": true,
+      "entities": [
+        {
+          "entity_id": "ent_01",
+          "macro_category": "Demographics_Bed",
+          "source_text": "Bed 6",
+          "start_char": 0,
+          "end_char": 5,
+          "normalized_concept": "Bed 6",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_02",
+          "macro_category": "Demographics_Name",
+          "source_text": "Sunita Devi",
+          "start_char": 7,
+          "end_char": 18,
+          "normalized_concept": "Sunita Devi",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_03",
+          "macro_category": "Demographics_Age",
+          "source_text": "54F",
+          "start_char": 20,
+          "end_char": 23,
+          "normalized_concept": "54 years Female",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_04",
+          "macro_category": "Demographics_Doctor",
+          "source_text": "Dr Sharma",
+          "start_char": 30,
+          "end_char": 39,
+          "normalized_concept": "Dr Sharma",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_05",
+          "macro_category": "Clinical_Condition",
+          "source_text": "HTN",
+          "start_char": 47,
+          "end_char": 50,
+          "normalized_concept": "Hypertension",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_06",
+          "macro_category": "Clinical_Condition",
+          "source_text": "T2DM",
+          "start_char": 55,
+          "end_char": 59,
+          "normalized_concept": "Type 2 Diabetes Mellitus",
+          "assertion": "Positive",
+          "temporality": "Historical",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_07",
+          "macro_category": "Clinical_Observation",
+          "source_text": "chhati me dard",
+          "start_char": 65,
+          "end_char": 79,
+          "normalized_concept": "Chest Pain",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_08",
+          "macro_category": "Medication",
+          "source_text": "Aspirin",
+          "start_char": 99,
+          "end_char": 106,
+          "normalized_concept": "Aspirin",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "150 mg",
+            "route": "PO",
+            "frequency": "stat",
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_08_dose",
+          "macro_category": "Unclassified",
+          "source_text": "150 mg",
+          "start_char": 107,
+          "end_char": 113,
+          "normalized_concept": "150 mg",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_08_route",
+          "macro_category": "Unclassified",
+          "source_text": "PO",
+          "start_char": 114,
+          "end_char": 116,
+          "normalized_concept": "Oral",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_08_freq",
+          "macro_category": "Unclassified",
+          "source_text": "stat",
+          "start_char": 117,
+          "end_char": 121,
+          "normalized_concept": "Immediately",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_09",
+          "macro_category": "Medication",
+          "source_text": "Sorbitrate",
+          "start_char": 130,
+          "end_char": 140,
+          "normalized_concept": "Isosorbide Dinitrate",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": {
+            "dosage": "5 mg",
+            "route": "SL",
+            "frequency": null,
+            "prn_indication": null
+          },
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_09_dose",
+          "macro_category": "Unclassified",
+          "source_text": "5 mg",
+          "start_char": 141,
+          "end_char": 145,
+          "normalized_concept": "5 mg",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_09_route",
+          "macro_category": "Unclassified",
+          "source_text": "SL",
+          "start_char": 146,
+          "end_char": 148,
+          "normalized_concept": "Sublingual",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_10",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "ECG",
+          "start_char": 150,
+          "end_char": 153,
+          "normalized_concept": "Electrocardiogram",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Completed",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_11",
+          "macro_category": "Clinical_Observation",
+          "source_text": "shows ST elevation in V1-V4",
+          "start_char": 165,
+          "end_char": 192,
+          "normalized_concept": "Anterior ST Elevation",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": null,
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        },
+        {
+          "entity_id": "ent_12",
+          "macro_category": "Investigation_Procedure",
+          "source_text": "Trop-I",
+          "start_char": 201,
+          "end_char": 207,
+          "normalized_concept": "Troponin I",
+          "assertion": "Positive",
+          "temporality": "Current",
+          "investigation_status": "Sent",
+          "medication_attributes": null,
+          "review_status": "confirmed"
+        }
+      ],
+      "relationships": [
+        {
+          "rel_id": "rel_01",
+          "rel_type": "has_dosage",
+          "source_entity_id": "ent_08",
+          "target_entity_id": "ent_08_dose"
+        },
+        {
+          "rel_id": "rel_02",
+          "rel_type": "has_route",
+          "source_entity_id": "ent_08",
+          "target_entity_id": "ent_08_route"
+        },
+        {
+          "rel_id": "rel_03",
+          "rel_type": "has_frequency",
+          "source_entity_id": "ent_08",
+          "target_entity_id": "ent_08_freq"
+        },
+        {
+          "rel_id": "rel_04",
+          "rel_type": "indicates_condition",
+          "source_entity_id": "ent_08",
+          "target_entity_id": "ent_07"
+        },
+        {
+          "rel_id": "rel_05",
+          "rel_type": "has_dosage",
+          "source_entity_id": "ent_09",
+          "target_entity_id": "ent_09_dose"
+        },
+        {
+          "rel_id": "rel_06",
+          "rel_type": "has_route",
+          "source_entity_id": "ent_09",
+          "target_entity_id": "ent_09_route"
+        }
+      ],
+      "conditional_directives": [
+        {
+          "trigger_condition": "SBP < 90 mmHg",
+          "resulting_action": "inform MO on call and hold Sorbitrate",
+          "source_span": [221, 277]
+        }
+      ],
+      "annotation_metadata": {
+        "annotator_ids": [
+          "ANN_MD_01",
+          "ANN_MD_02"
+        ],
+        "adjudication_status": "clinically_adjudicated",
+        "adjudicator_id": "SR_ADJUDICATOR_01"
+      }
+    }
+  ]
+}

@@ -238,14 +238,19 @@ class OpenVocabularyExtractor(BaseClinicalExtractor):
 
             # If no entity from dictionaries was found in this sentence, check if it contains clinical narrative
             if not has_matched_entity:
-                ctx = clinical_context_extractor.analyze_assertion(s_clean, s_start, s_end, text)
+                lead_spaces = len(sent_text) - len(sent_text.lstrip())
+                trail_spaces = len(sent_text) - len(sent_text.rstrip())
+                actual_start = s_start + lead_spaces
+                actual_end = s_end - trail_spaces
+
+                ctx = clinical_context_extractor.analyze_assertion(s_clean, actual_start, actual_end, text)
                 unclassified.append(ClinicalEntity(
                     entity_type="Unclassified_Candidate",
                     source_text=s_clean,
                     evidence_text=s_clean,
                     normalized_value=None,
-                    source_start=s_start,
-                    source_end=s_end,
+                    source_start=actual_start,
+                    source_end=actual_end,
                     attributes={
                         "assertion": ctx["assertion"],
                         "temporality": ctx["temporality"],
@@ -257,7 +262,7 @@ class OpenVocabularyExtractor(BaseClinicalExtractor):
                     extraction_method="open_vocabulary_unclassified_phrase",
                     review_status="flagged_for_review",
                     confidence_score=0.50,
-                    all_spans=[(s_start, s_end)],
+                    all_spans=[(actual_start, actual_end)],
                     occurrences=1
                 ))
 
