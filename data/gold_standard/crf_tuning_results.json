@@ -1,7 +1,7 @@
 {
   "metadata": {
     "experiment_name": "Conditional Random Field (CRF) Sequence Tagger Tuning & Evaluation",
-    "timestamp": "2026-10-26T04:45:47Z",
+    "timestamp": "2026-10-26T18:18:11Z",
     "dataset": "PULSE 101 Synthetic Handover Corpus",
     "total_documents": 101,
     "cross_validation_folds": 5,
@@ -13,7 +13,7 @@
       "python_version": "3.13.1",
       "cpu_count": 12,
       "cuda_available": false,
-      "elapsed_seconds": 69.53
+      "elapsed_seconds": 70.37
     }
   },
   "hyperparameter_search_space": {
@@ -109,11 +109,11 @@
     "computational_efficiency": {
       "training_time_seconds": {
         "mean": 1.73,
-        "std": 0.07
+        "std": 0.23
       },
       "inference_latency_ms_per_doc": {
-        "mean": 2.2,
-        "std": 1.39
+        "mean": 2.16,
+        "std": 1.42
       }
     }
   },
@@ -211,16 +211,16 @@
         "c1": 0.1,
         "c2": 0.0
       },
-      "training_time_seconds": 1.636,
-      "inference_time_seconds": 0.0312,
-      "latency_per_doc_ms": 1.48,
+      "training_time_seconds": 2.17,
+      "inference_time_seconds": 0.0349,
+      "latency_per_doc_ms": 1.66,
       "tuning_history": [
         {
           "params": {
             "c1": 0.0,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.16,
+          "fit_time_seconds": 1.19,
           "val_token_acc": 77.1,
           "val_strict_f1": 53.16,
           "val_lenient_f1": 75.97
@@ -230,7 +230,7 @@
             "c1": 0.0,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.167,
+          "fit_time_seconds": 1.132,
           "val_token_acc": 77.67,
           "val_strict_f1": 54.74,
           "val_lenient_f1": 75.39
@@ -240,7 +240,7 @@
             "c1": 0.0,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.157,
+          "fit_time_seconds": 1.587,
           "val_token_acc": 78.65,
           "val_strict_f1": 55.72,
           "val_lenient_f1": 76.16
@@ -250,7 +250,7 @@
             "c1": 0.01,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.145,
+          "fit_time_seconds": 1.413,
           "val_token_acc": 74.91,
           "val_strict_f1": 53.17,
           "val_lenient_f1": 72.93
@@ -260,7 +260,7 @@
             "c1": 0.01,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.197,
+          "fit_time_seconds": 1.603,
           "val_token_acc": 78.3,
           "val_strict_f1": 56.07,
           "val_lenient_f1": 76.21
@@ -270,7 +270,7 @@
             "c1": 0.01,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.155,
+          "fit_time_seconds": 1.579,
           "val_token_acc": 78.65,
           "val_strict_f1": 56.51,
           "val_lenient_f1": 77.15
@@ -280,7 +280,7 @@
             "c1": 0.1,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.135,
+          "fit_time_seconds": 1.436,
           "val_token_acc": 77.21,
           "val_strict_f1": 57.45,
           "val_lenient_f1": 74.91
@@ -290,7 +290,7 @@
             "c1": 0.1,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.223,
+          "fit_time_seconds": 1.708,
           "val_token_acc": 76.64,
           "val_strict_f1": 56.27,
           "val_lenient_f1": 74.79
@@ -300,7 +300,7 @@
             "c1": 0.1,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.152,
+          "fit_time_seconds": 1.547,
           "val_token_acc": 78.76,
           "val_strict_f1": 57.07,
           "val_lenient_f1": 77.0
@@ -422,16 +422,16 @@
         "c1": 0.0,
         "c2": 0.01
       },
-      "training_time_seconds": 1.707,
-      "inference_time_seconds": 0.0326,
-      "latency_per_doc_ms": 1.63,
+      "training_time_seconds": 1.55,
+      "inference_time_seconds": 0.031,
+      "latency_per_doc_ms": 1.55,
       "tuning_history": [
         {
           "params": {
             "c1": 0.0,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.2,
+          "fit_time_seconds": 1.629,
           "val_token_acc": 75.94,
           "val_strict_f1": 55.99,
           "val_lenient_f1": 74.65
@@ -441,7 +441,7 @@
             "c1": 0.0,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.229,
+          "fit_time_seconds": 1.767,
           "val_token_acc": 77.03,
           "val_strict_f1": 58.22,
           "val_lenient_f1": 76.69
@@ -451,7 +451,7 @@
             "c1": 0.0,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.197,
+          "fit_time_seconds": 1.659,
           "val_token_acc": 76.51,
           "val_strict_f1": 58.17,
           "val_lenient_f1": 76.92
@@ -461,7 +461,7 @@
             "c1": 0.01,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.223,
+          "fit_time_seconds": 1.623,
           "val_token_acc": 75.25,
           "val_strict_f1": 56.87,
           "val_lenient_f1": 75.36
@@ -471,7 +471,7 @@
             "c1": 0.01,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.3,
+          "fit_time_seconds": 1.557,
           "val_token_acc": 75.3,
           "val_strict_f1": 57.24,
           "val_lenient_f1": 75.77
@@ -481,7 +481,7 @@
             "c1": 0.01,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.227,
+          "fit_time_seconds": 1.252,
           "val_token_acc": 76.0,
           "val_strict_f1": 57.52,
           "val_lenient_f1": 76.53
@@ -491,7 +491,7 @@
             "c1": 0.1,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.201,
+          "fit_time_seconds": 1.243,
           "val_token_acc": 74.32,
           "val_strict_f1": 56.09,
           "val_lenient_f1": 74.46
@@ -501,7 +501,7 @@
             "c1": 0.1,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.216,
+          "fit_time_seconds": 1.123,
           "val_token_acc": 73.63,
           "val_strict_f1": 56.5,
           "val_lenient_f1": 74.14
@@ -511,7 +511,7 @@
             "c1": 0.1,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.332,
+          "fit_time_seconds": 1.121,
           "val_token_acc": 76.63,
           "val_strict_f1": 57.42,
           "val_lenient_f1": 76.48
@@ -633,16 +633,16 @@
         "c1": 0.0,
         "c2": 0.01
       },
-      "training_time_seconds": 1.719,
-      "inference_time_seconds": 0.0331,
-      "latency_per_doc_ms": 1.66,
+      "training_time_seconds": 1.572,
+      "inference_time_seconds": 0.029,
+      "latency_per_doc_ms": 1.45,
       "tuning_history": [
         {
           "params": {
             "c1": 0.0,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.282,
+          "fit_time_seconds": 1.116,
           "val_token_acc": 74.68,
           "val_strict_f1": 56.61,
           "val_lenient_f1": 74.71
@@ -652,7 +652,7 @@
             "c1": 0.0,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.207,
+          "fit_time_seconds": 1.149,
           "val_token_acc": 75.51,
           "val_strict_f1": 59.09,
           "val_lenient_f1": 77.14
@@ -662,7 +662,7 @@
             "c1": 0.0,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.227,
+          "fit_time_seconds": 1.115,
           "val_token_acc": 76.88,
           "val_strict_f1": 58.36,
           "val_lenient_f1": 78.29
@@ -672,7 +672,7 @@
             "c1": 0.01,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.175,
+          "fit_time_seconds": 1.104,
           "val_token_acc": 73.53,
           "val_strict_f1": 57.38,
           "val_lenient_f1": 75.56
@@ -682,7 +682,7 @@
             "c1": 0.01,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.188,
+          "fit_time_seconds": 1.112,
           "val_token_acc": 73.53,
           "val_strict_f1": 57.65,
           "val_lenient_f1": 75.92
@@ -692,7 +692,7 @@
             "c1": 0.01,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.181,
+          "fit_time_seconds": 1.092,
           "val_token_acc": 76.11,
           "val_strict_f1": 58.47,
           "val_lenient_f1": 78.28
@@ -702,7 +702,7 @@
             "c1": 0.1,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.203,
+          "fit_time_seconds": 1.103,
           "val_token_acc": 75.62,
           "val_strict_f1": 58.43,
           "val_lenient_f1": 76.96
@@ -712,7 +712,7 @@
             "c1": 0.1,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.282,
+          "fit_time_seconds": 1.08,
           "val_token_acc": 74.96,
           "val_strict_f1": 57.86,
           "val_lenient_f1": 75.95
@@ -722,7 +722,7 @@
             "c1": 0.1,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.216,
+          "fit_time_seconds": 1.103,
           "val_token_acc": 74.85,
           "val_strict_f1": 57.72,
           "val_lenient_f1": 77.37
@@ -844,16 +844,16 @@
         "c1": 0.1,
         "c2": 0.1
       },
-      "training_time_seconds": 1.755,
-      "inference_time_seconds": 0.0992,
-      "latency_per_doc_ms": 4.96,
+      "training_time_seconds": 1.719,
+      "inference_time_seconds": 0.0997,
+      "latency_per_doc_ms": 4.99,
       "tuning_history": [
         {
           "params": {
             "c1": 0.0,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.333,
+          "fit_time_seconds": 1.215,
           "val_token_acc": 80.68,
           "val_strict_f1": 61.46,
           "val_lenient_f1": 81.3
@@ -863,7 +863,7 @@
             "c1": 0.0,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.368,
+          "fit_time_seconds": 1.239,
           "val_token_acc": 81.7,
           "val_strict_f1": 64.78,
           "val_lenient_f1": 81.73
@@ -873,7 +873,7 @@
             "c1": 0.0,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.389,
+          "fit_time_seconds": 1.225,
           "val_token_acc": 82.65,
           "val_strict_f1": 65.65,
           "val_lenient_f1": 82.91
@@ -883,7 +883,7 @@
             "c1": 0.01,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.304,
+          "fit_time_seconds": 1.224,
           "val_token_acc": 81.86,
           "val_strict_f1": 61.41,
           "val_lenient_f1": 82.43
@@ -893,7 +893,7 @@
             "c1": 0.01,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.415,
+          "fit_time_seconds": 1.217,
           "val_token_acc": 82.73,
           "val_strict_f1": 64.89,
           "val_lenient_f1": 83.19
@@ -903,7 +903,7 @@
             "c1": 0.01,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.326,
+          "fit_time_seconds": 1.189,
           "val_token_acc": 83.99,
           "val_strict_f1": 65.44,
           "val_lenient_f1": 83.56
@@ -913,7 +913,7 @@
             "c1": 0.1,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.383,
+          "fit_time_seconds": 1.199,
           "val_token_acc": 82.26,
           "val_strict_f1": 66.11,
           "val_lenient_f1": 83.56
@@ -923,7 +923,7 @@
             "c1": 0.1,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.489,
+          "fit_time_seconds": 1.24,
           "val_token_acc": 82.57,
           "val_strict_f1": 65.54,
           "val_lenient_f1": 83.78
@@ -933,7 +933,7 @@
             "c1": 0.1,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.354,
+          "fit_time_seconds": 1.223,
           "val_token_acc": 83.99,
           "val_strict_f1": 66.33,
           "val_lenient_f1": 83.93
@@ -1055,16 +1055,16 @@
         "c1": 0.1,
         "c2": 0.01
       },
-      "training_time_seconds": 1.84,
-      "inference_time_seconds": 0.0257,
-      "latency_per_doc_ms": 1.28,
+      "training_time_seconds": 1.625,
+      "inference_time_seconds": 0.0234,
+      "latency_per_doc_ms": 1.17,
       "tuning_history": [
         {
           "params": {
             "c1": 0.0,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.37,
+          "fit_time_seconds": 1.248,
           "val_token_acc": 73.69,
           "val_strict_f1": 56.05,
           "val_lenient_f1": 73.89
@@ -1074,7 +1074,7 @@
             "c1": 0.0,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.515,
+          "fit_time_seconds": 1.239,
           "val_token_acc": 75.19,
           "val_strict_f1": 58.13,
           "val_lenient_f1": 75.27
@@ -1084,7 +1084,7 @@
             "c1": 0.0,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.365,
+          "fit_time_seconds": 1.247,
           "val_token_acc": 76.49,
           "val_strict_f1": 60.47,
           "val_lenient_f1": 77.52
@@ -1094,7 +1094,7 @@
             "c1": 0.01,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.351,
+          "fit_time_seconds": 1.213,
           "val_token_acc": 73.79,
           "val_strict_f1": 56.58,
           "val_lenient_f1": 74.56
@@ -1104,7 +1104,7 @@
             "c1": 0.01,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.348,
+          "fit_time_seconds": 1.225,
           "val_token_acc": 74.88,
           "val_strict_f1": 60.22,
           "val_lenient_f1": 75.82
@@ -1114,7 +1114,7 @@
             "c1": 0.01,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.33,
+          "fit_time_seconds": 1.221,
           "val_token_acc": 76.39,
           "val_strict_f1": 60.89,
           "val_lenient_f1": 77.33
@@ -1124,7 +1124,7 @@
             "c1": 0.1,
             "c2": 0.0
           },
-          "fit_time_seconds": 1.327,
+          "fit_time_seconds": 1.165,
           "val_token_acc": 77.37,
           "val_strict_f1": 61.06,
           "val_lenient_f1": 77.43
@@ -1134,7 +1134,7 @@
             "c1": 0.1,
             "c2": 0.01
           },
-          "fit_time_seconds": 1.371,
+          "fit_time_seconds": 1.188,
           "val_token_acc": 77.32,
           "val_strict_f1": 61.3,
           "val_lenient_f1": 77.4
@@ -1144,7 +1144,7 @@
             "c1": 0.1,
             "c2": 0.1
           },
-          "fit_time_seconds": 1.367,
+          "fit_time_seconds": 1.192,
           "val_token_acc": 77.58,
           "val_strict_f1": 61.23,
           "val_lenient_f1": 77.99
