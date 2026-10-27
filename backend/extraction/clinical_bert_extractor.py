@@ -6,38 +6,25 @@ and clinical assertion scoping (negation, temporality, and uncertainty).
 """
 
 import os
-import sys
 import re
-from typing import Dict, Any, List, Optional, Tuple
-import torch
-from transformers import BertTokenizerFast, AutoModelForTokenClassification
+import time
+from typing import Dict, Any, List, Optional
 
 from backend.extraction.context_extractor import clinical_context_extractor
 from backend.extraction.contract import ClinicalEntity, BaseClinicalExtractor, ExtractorRegistry
+from backend.extraction.label_schema import ID2LABEL, LABEL2ID, LABEL_LIST, MACRO_CATEGORIES
+
+try:
+    import torch
+    from transformers import AutoModelForTokenClassification, BertTokenizerFast
+    TORCH_AVAILABLE = True
+except Exception:
+    torch = None
+    AutoModelForTokenClassification = None
+    BertTokenizerFast = None
+    TORCH_AVAILABLE = False
 
 MODEL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "clinical_bert"))
-
-MACRO_CATEGORIES = [
-    "Demographics_Bed",
-    "Demographics_Name",
-    "Demographics_Age",
-    "Demographics_Gender",
-    "Demographics_Doctor",
-    "Clinical_Condition",
-    "Clinical_Observation",
-    "Medication",
-    "Investigation_Procedure",
-    "Plan_Goal",
-    "Care_Activity"
-]
-
-LABEL_LIST = ["O"]
-for cat in MACRO_CATEGORIES:
-    LABEL_LIST.append(f"B-{cat}")
-    LABEL_LIST.append(f"I-{cat}")
-
-ID2LABEL = {i: l for i, l in enumerate(LABEL_LIST)}
-LABEL2ID = {l: i for i, l in enumerate(LABEL_LIST)}
 
 DISALLOWED_STOPWORDS = {
     "if", "and", "ad", "or", "to", "for", "in", "on", "at", "by", "with", "from",
@@ -70,20 +57,37 @@ class ClinicalBERTExtractor(BaseClinicalExtractor):
     Provides subword alignment, span decoding, and assertion scoping.
     """
     def __init__(self, model_path: Optional[str] = None):
-        super().__init__(name="clinical_bert", version="1.0.0", supports_open_vocabulary=True)
+        super().__init__(name="clinical_bert", version="2.0.0", supports_open_vocabulary=True)
         self.model_path = model_path or MODEL_DIR
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = None
         self.tokenizer = None
         self.model = None
         self._is_loaded = False
+        self.last_inference_ms = None
+        self.warmup_complete = False
+        self.inference_history_ms: List[float] = []
         self._load_model()
 
+    def _has_weights(self) -> bool:
+        return any(
+            os.path.exists(os.path.join(self.model_path, name))
+            for name in ("model.safetensors", "pytorch_model.bin")
+        )
+
     def _load_model(self):
+        if not TORCH_AVAILABLE:
+            self._is_loaded = False
+            return
         try:
-            if os.path.exists(self.model_path) and os.path.exists(os.path.join(self.model_path, "config.json")):
+            config_ok = os.path.exists(os.path.join(self.model_path, "config.json"))
+            if os.path.exists(self.model_path) and config_ok and self._has_weights():
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
                 self.tokenizer = BertTokenizerFast.from_pretrained(self.model_path)
-                self.model = AutoModelForTokenClassification.from_pretrained(self.model_path).to(self.device)
+                self.model = AutoModelForTokenClassification.from_pretrained(self.model_path)
+                self.model.to(self.device)
                 self.model.eval()
+                if self.device.type == "cpu":
+                    torch.set_num_threads(min(8, os.cpu_count() or 4))
                 self._is_loaded = True
             else:
                 self._is_loaded = False
@@ -97,31 +101,22 @@ class ClinicalBERTExtractor(BaseClinicalExtractor):
     def reload(self):
         self._load_model()
 
-    def extract_spans(self, text: str) -> List[Dict[str, Any]]:
-        """
-        Runs Bio_ClinicalBERT forward pass and reconstructs character-level entity spans.
-        """
-        if not self._is_loaded or not text.strip():
-            return []
+    def warmup(self) -> float:
+        """Run a tiny forward pass so the first user request is not cold."""
+        if not self._is_loaded:
+            return 0.0
+        started = time.perf_counter()
+        self.extract_spans("Bed 1 Demo Patient. 60 year old male under Dr Hanlen. Admitted with pneumonia.")
+        elapsed = round((time.perf_counter() - started) * 1000, 2)
+        self.warmup_complete = True
+        return elapsed
 
-        encoding = self.tokenizer(
-            text,
-            return_offsets_mapping=True,
-            truncation=True,
-            max_length=256,
-            return_tensors="pt"
-        )
+    def average_inference_ms(self) -> Optional[float]:
+        if not self.inference_history_ms:
+            return None
+        return round(sum(self.inference_history_ms[-20:]) / len(self.inference_history_ms[-20:]), 2)
 
-        input_ids = encoding["input_ids"].to(self.device)
-        attention_mask = encoding["attention_mask"].to(self.device)
-        offset_mapping = encoding["offset_mapping"].squeeze(0).cpu().numpy()
-
-        with torch.no_grad():
-            outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-            logits = outputs.logits.squeeze(0)
-            probs = torch.softmax(logits, dim=-1).cpu().numpy()
-            preds = torch.argmax(logits, dim=-1).cpu().numpy()
-
+    def _decode_window(self, text: str, preds, probs, offset_mapping) -> List[Dict[str, Any]]:
         spans = []
         current_span = None
 
@@ -181,6 +176,57 @@ class ClinicalBERTExtractor(BaseClinicalExtractor):
 
         if current_span:
             spans.append(current_span)
+        return spans
+
+    def extract_spans(self, text: str) -> List[Dict[str, Any]]:
+        """
+        Runs Bio_ClinicalBERT forward pass and reconstructs character-level entity spans.
+        Long notes are scored in overlapping windows so live handover text is not truncated.
+        """
+        if not self._is_loaded or not text.strip():
+            return []
+
+        started = time.perf_counter()
+        encoding = self.tokenizer(
+            text,
+            return_offsets_mapping=True,
+            truncation=False,
+            return_tensors=None,
+            add_special_tokens=True,
+        )
+        input_ids = encoding["input_ids"]
+        offset_mapping = encoding["offset_mapping"]
+        window = 254  # plus CLS/SEP budget inside 256
+        stride = 128
+        raw_spans: List[Dict[str, Any]] = []
+
+        # Drop CLS/SEP for windowing over content tokens
+        content_ids = input_ids[1:-1] if len(input_ids) >= 2 else input_ids
+        content_offsets = offset_mapping[1:-1] if len(offset_mapping) >= 2 else offset_mapping
+        cls_id = self.tokenizer.cls_token_id
+        sep_id = self.tokenizer.sep_token_id
+
+        start_idx = 0
+        while True:
+            chunk_ids = content_ids[start_idx:start_idx + window]
+            chunk_off = content_offsets[start_idx:start_idx + window]
+            if not chunk_ids:
+                break
+            ids = [cls_id] + list(chunk_ids) + [sep_id]
+            offs = [(0, 0)] + list(chunk_off) + [(0, 0)]
+            tensor_ids = torch.tensor([ids], dtype=torch.long, device=self.device)
+            mask = torch.ones_like(tensor_ids)
+            with torch.inference_mode():
+                outputs = self.model(input_ids=tensor_ids, attention_mask=mask)
+                logits = outputs.logits.squeeze(0)
+                probs = torch.softmax(logits, dim=-1).detach().cpu().numpy()
+                preds = torch.argmax(logits, dim=-1).detach().cpu().numpy()
+            raw_spans.extend(self._decode_window(text, preds, probs, offs))
+            if start_idx + window >= len(content_ids):
+                break
+            start_idx += stride
+
+        spans = raw_spans
 
         # Post-clean spans: strip leading/trailing punctuation or whitespace, filter stopwords
         cleaned_spans = []
@@ -244,6 +290,11 @@ class ClinicalBERTExtractor(BaseClinicalExtractor):
             if not duplicate:
                 final_spans.append(s)
 
+        elapsed = round((time.perf_counter() - started) * 1000, 2)
+        self.last_inference_ms = elapsed
+        self.inference_history_ms.append(elapsed)
+        if len(self.inference_history_ms) > 50:
+            self.inference_history_ms = self.inference_history_ms[-50:]
         return final_spans
 
     def extract(self, text: str) -> Dict[str, Any]:

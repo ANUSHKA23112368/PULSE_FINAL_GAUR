@@ -31,10 +31,12 @@ To develop an automated computational pipeline that ingests unstructured nursing
 
 ## 3. Dataset Specifications
 
-The primary corpus used for this prototype is the **Synthetic Nursing Handover Training and Development Data Set – Text Files** (Suominen et al., NICTA / Australian National University).
+The primary **gold** corpus is the **Synthetic Nursing Handover Training and Development Data Set** (Suominen et al., NICTA / Australian National University) — a hospital-ward handover research set with adjudicated character offsets.
 
 - **Primary Folder:** `data/101writtenfreetextreports/`
-- **Total Reports:** 101 free-text nursing handover files (`0.txt` to `100.txt`)
+- **Gold annotations:** `data/gold_standard/gold_standard_corpus.json` (101 notes, 2,103 spans)
+- **Hospital training pack:** NICTA gold + de-identified ISBAR augmentations (`scripts/train_production_clinicalbert.py`)
+- **Backbone:** `emilyalsentzer/Bio_ClinicalBERT` (MIMIC-trained clinical BERT). Real MIMIC/n2c2/i2b2 notes are **not** bundled here because they require PhysioNet/DUA access.
 - **Format:** Plain text (`.txt`), read verbatim and preserved read-only
 - **Dynamic Corpus EDA Statistics:**
   - Total Handover Documents: **101**
@@ -43,6 +45,12 @@ The primary corpus used for this prototype is the **Synthetic Nursing Handover T
   - Maximum Report Length: **209 words**
   - Total Corpus Word Tokens: **~7,214**
   - Unique Vocabulary Tokens: **~1,441**
+
+Train the live checkpoint (Python 3.10 recommended):
+
+```bash
+python scripts/train_production_clinicalbert.py --epochs 3 --synthetic 160 --trainable-last-n 2
+```
 
 ---
 
@@ -248,6 +256,7 @@ Follow this sequence to present PULSE during your project evaluation:
 | **13** | **Source Evidence Citations** | Click the **Evidence Sentences** tab. Show how every extracted item links directly to its source sentence. |
 | **14** | **Sample Reports & Dataset** | Click **Sample Reports** to show the 101 report cards and live search. Click **Dataset** to view the full corpus table. |
 | **15** | **About PULSE & Model Disclosure** | Open **About PULSE**. Show the explicit technical disclosure: *"Current prototype: Hybrid clinical information extraction pipeline"*, *"Planned candidate backbone: Bio_ClinicalBERT"*, and confirm no fabricated metrics are reported. |
+| **16** | **BioClinicalBERT Live Training & Inference Sandbox** | Open the new **"BioClinicalBERT"** tab. Demonstrate the real-time hyperparameter control panel (epochs, learning rate, synthetic augmentation count), live SSE loss monitoring with interactive loss sparkline, real-time inference sandbox with instant latency benchmarking (~18–25 ms), and the zero-downtime "Hot-Reload Weights" mechanism. |
 
 ---
 

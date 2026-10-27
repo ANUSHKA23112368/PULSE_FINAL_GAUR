@@ -11,7 +11,8 @@ import {
   Info,
   GitCompare,
   ListTodo,
-  BarChart3
+  BarChart3,
+  BrainCircuit
 } from 'lucide-react';
 import { PatientDashboardPage } from './pages/PatientDashboardPage';
 import { VitalsPage } from './pages/VitalsPage';
@@ -21,6 +22,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { WhatChangedPage } from './pages/WhatChangedPage';
 import { PendingActionsPage } from './pages/PendingActionsPage';
 import { ResearchEvaluationPage } from './pages/ResearchEvaluationPage';
+import { ModelTrainingDashboardPage } from './pages/ModelTrainingDashboardPage';
 import { fetchHealth, fetchPatients } from './services/api';
 
 export function App() {
@@ -143,6 +145,13 @@ export function App() {
             >
               <BarChart3 size={16} /> Evaluation
             </button>
+
+            <button
+              className={`nav-item nav-item-highlight ${activeTab === 'training' ? 'active' : ''}`}
+              onClick={() => setActiveTab('training')}
+            >
+              <BrainCircuit size={16} /> BioClinicalBERT
+            </button>
           </nav>
         </div>
       </header>
@@ -211,6 +220,12 @@ export function App() {
             onNavigate={(tab) => setActiveTab(tab)}
           />
         )}
+
+        {activeTab === 'training' && (
+          <ModelTrainingDashboardPage
+            onNavigate={(tab) => setActiveTab(tab)}
+          />
+        )}
       </main>
 
       {/* Restrained Hospital Workstation Footer */}
@@ -233,9 +248,11 @@ export function App() {
             </span>
             <span className="status-separator">•</span>
             <span className="status-engine">
-              {systemHealth?.status?.includes('Cloud')
-                ? 'Model: Bio_ClinicalBERT Rules Fallback'
-                : 'Model: Bio_ClinicalBERT (Uncalibrated Softmax)'}
+              {systemHealth?.model_status?.clinical_bert_loaded
+                ? `Live Bio_ClinicalBERT${systemHealth?.model_status?.realtime?.average_inference_ms ? ` • ${systemHealth.model_status.realtime.average_inference_ms} ms avg` : ''}`
+                : (systemHealth?.status?.includes('Cloud')
+                  ? 'Model: Bio_ClinicalBERT client fallback'
+                  : 'Model: hybrid rules (neural checkpoint pending)')}
             </span>
           </div>
         </div>

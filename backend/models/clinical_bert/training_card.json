@@ -1,0 +1,66 @@
+{
+  "model": "emilyalsentzer/Bio_ClinicalBERT",
+  "task": "Clinical named entity recognition for nursing handover",
+  "labels": [
+    "O",
+    "B-Demographics_Bed",
+    "I-Demographics_Bed",
+    "B-Demographics_Name",
+    "I-Demographics_Name",
+    "B-Demographics_Age",
+    "I-Demographics_Age",
+    "B-Demographics_Gender",
+    "I-Demographics_Gender",
+    "B-Demographics_Doctor",
+    "I-Demographics_Doctor",
+    "B-Clinical_Condition",
+    "I-Clinical_Condition",
+    "B-Clinical_Observation",
+    "I-Clinical_Observation",
+    "B-Medication",
+    "I-Medication",
+    "B-Investigation_Procedure",
+    "I-Investigation_Procedure",
+    "B-Plan_Goal",
+    "I-Plan_Goal",
+    "B-Care_Activity",
+    "I-Care_Activity"
+  ],
+  "metrics": {
+    "strict": {
+      "precision": 14.24,
+      "recall": 41.81,
+      "f1": 21.25,
+      "tp": 199,
+      "fp": 1198,
+      "fn": 277
+    },
+    "lenient": {
+      "precision": 33.29,
+      "recall": 97.69,
+      "f1": 49.65,
+      "tp": 465,
+      "fp": 932,
+      "fn": 11
+    }
+  },
+  "dataset": {
+    "gold": "NICTA/ANU Synthetic Nursing Handover (Suominen et al., 101 notes)",
+    "augmentation": "80 de-identified ISBAR hospital notes",
+    "held_out": "gold fold_0 test documents only",
+    "train_documents": 160,
+    "test_documents": 21
+  },
+  "training": {
+    "epochs": 3,
+    "lr": 3e-05,
+    "batch_size": 4,
+    "max_length": 256,
+    "trainable_last_n": 2,
+    "final_weighted_loss": 1.5402,
+    "device": "cpu",
+    "deployment_retrain": true,
+    "deployment_loss": 2.0838
+  },
+  "disclaimer": "PULSE organizes handover text. It does not diagnose or treat."
+}

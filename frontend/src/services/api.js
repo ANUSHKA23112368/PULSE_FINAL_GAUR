@@ -45,8 +45,10 @@ export async function fetchHealth() {
       total_patients: patientsData.total_count,
       model_status: {
         current_engine: "PULSE Hybrid Clinical Engine (Client Cloud)",
+        clinical_bert_model: "emilyalsentzer/Bio_ClinicalBERT",
         candidate_backbone: "Bio_ClinicalBERT",
-        candidate_status: "Active (Client-side assertion scoping & ISBAR generator)"
+        candidate_status: "Active (Client-side assertion scoping & ISBAR generator)",
+        realtime: { warmup_complete: false, last_inference_ms: null, average_inference_ms: null }
       },
       disclaimer: "PULSE is an AI-assisted clinical information-organization prototype. It does not diagnose, prescribe treatment, or replace professional clinical judgment."
     };
@@ -101,32 +103,72 @@ export async function preprocessText(rawText) {
   }
 }
 
-export async function analyzeHandover({ reportId, rawText, engine }) {
-  try {
-    const payload = {};
-    if (reportId !== undefined && reportId !== null && reportId !== '') {
-      payload.report_id = String(reportId);
-    }
-    if (rawText !== undefined && rawText !== null) {
-      payload.raw_text = rawText;
-    }
-    if (engine) {
-      payload.engine = engine;
-    }
+export async function analyzeHandover({ reportId, rawText, engine, onStep }) {
+  const payload = {};
+  if (reportId !== undefined && reportId !== null && reportId !== '') {
+    payload.report_id = String(reportId);
+  }
+  if (rawText !== undefined && rawText !== null) {
+    payload.raw_text = rawText;
+  }
+  if (engine) {
+    payload.engine = engine;
+  }
 
-    const res = await fetch(`${API_BASE}/analyze`, {
+  try {
+    const streamRes = await fetch(`${API_BASE}/analyze/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: AbortSignal.timeout(15000)
+      signal: AbortSignal.timeout(60000)
     });
-    if (!res.ok) throw new Error("Backend analyzer offline");
-    return await res.json();
-  } catch (err) {
-    // Cloud / Vercel fallback: execute complete clinical analysis pipeline client-side
-    return analyzeLocalEngine({ reportId, rawText });
+    if (streamRes.ok && streamRes.body) {
+      const reader = streamRes.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let result = null;
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const chunks = buffer.split('\n\n');
+        buffer = chunks.pop() || '';
+        for (const block of chunks) {
+          const eventMatch = block.match(/^event:\s*(\w+)/m);
+          const dataMatch = block.match(/^data:\s*(.+)$/m);
+          if (!eventMatch || !dataMatch) continue;
+          const data = JSON.parse(dataMatch[1]);
+          if (eventMatch[1] === 'step' && typeof onStep === 'function') {
+            onStep(data.step);
+          }
+          if (eventMatch[1] === 'result') {
+            result = data;
+          }
+        }
+      }
+      if (result) return result;
+    }
+    throw new Error('Streaming analyzer unavailable');
+  } catch (streamErr) {
+    try {
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(30000)
+      });
+      if (!res.ok) throw new Error("Backend analyzer offline");
+      return await res.json();
+    } catch (err) {
+      return analyzeLocalEngine({ reportId, rawText, engine });
+    }
   }
 }
+
+export async function analyzeNote(rawText) {
+  return await analyzeHandover({ rawText });
+}
+
 
 export async function fetchHistory() {
   try {
@@ -340,3 +382,77 @@ export async function fetchResearchEvaluation() {
     return getLocalResearchEvaluation();
   }
 }
+
+// ---------------------------------------------------------------------------
+// Bio_ClinicalBERT Training & Real-Time Model Analytics API
+// ---------------------------------------------------------------------------
+
+export async function fetchTrainingStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/training/status`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error("Training status unavailable");
+    return await res.json();
+  } catch (err) {
+    return {
+      is_training: false,
+      progress: null,
+      history_length: 0,
+      last_result: null,
+      error: err.message
+    };
+  }
+}
+
+export async function startBioBertTraining(config = {}) {
+  const res = await fetch(`${API_BASE}/training/train`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(config)
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Failed to start training' }));
+    throw new Error(err.detail || 'Training failed to initiate');
+  }
+  return await res.json();
+}
+
+export async function fetchModelCard() {
+  try {
+    const res = await fetch(`${API_BASE}/training/card`, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error("Model card not yet available");
+    return await res.json();
+  } catch (err) {
+    return null;
+  }
+}
+
+export async function hotReloadModel() {
+  const res = await fetch(`${API_BASE}/training/hot-reload`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' }
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Hot reload failed' }));
+    throw new Error(err.detail || 'Hot reload failed');
+  }
+  return await res.json();
+}
+
+export function subscribeTrainingSSE(onEvent, onError) {
+  const sse = new EventSource(`${API_BASE}/training/stream`);
+  sse.onmessage = (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (onEvent) onEvent(data);
+    } catch (err) {
+      console.warn("SSE parse error:", err);
+    }
+  };
+  sse.onerror = (e) => {
+    if (onError) onError(e);
+  };
+  return () => {
+    sse.close();
+  };
+}
+

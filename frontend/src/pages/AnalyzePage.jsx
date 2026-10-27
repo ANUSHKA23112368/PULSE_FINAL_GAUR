@@ -153,10 +153,16 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
     try {
       setAnalyzing(true);
       setError(null);
+      setPipelineStep(1);
       const result = await analyzeHandover({
         reportId: chosenReportId,
         rawText: inputText,
-        engine: selectedEngine
+        engine: selectedEngine,
+        onStep: (step) => {
+          const order = ['preprocess', 'extract', 'events', 'temporal', 'tasks', 'structure', 'complete'];
+          const idx = order.indexOf(step);
+          setPipelineStep(idx >= 0 ? idx + 1 : 1);
+        }
       });
 
       setAnalysisResult(result);
@@ -489,7 +495,14 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
               <div className="pulse-anim" style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#06b6d4', flexShrink: 0 }} />
               <span>
-                Executing <strong>{selectedEngine === 'rule' ? 'Deterministic Rule Baseline' : (selectedEngine === 'clinical_bert' ? 'Bio_ClinicalBERT Token Classifier' : 'Hybrid Pipeline (Bio_ClinicalBERT + ConText)')}</strong>: Normalizing clinical formatting, extracting entities, evaluating assertion contexts, and structuring handover...
+                Live {selectedEngine === 'rule' ? 'rule baseline' : 'Bio_ClinicalBERT'} pipeline
+                {pipelineStep ? ` — step ${pipelineStep}/7` : ''}:
+                {' '}
+                <strong>
+                  {selectedEngine === 'rule'
+                    ? 'Deterministic Rule Baseline'
+                    : (selectedEngine === 'clinical_bert' ? 'Bio_ClinicalBERT Token Classifier' : 'Hybrid Pipeline (Bio_ClinicalBERT + ConText)')}
+                </strong>
               </span>
             </div>
           </div>
@@ -558,6 +571,14 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
           </div>
 
           {/* Executive Nursing Shift Brief */}
+          {analysisResult.model_metadata?.total_inference_ms != null && (
+            <div style={{ margin: '0 0 1rem', padding: '0.75rem 1rem', background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.25)', borderRadius: '8px', fontSize: '0.82rem', color: '#e0f2fe' }}>
+              Real-time Bio_ClinicalBERT run in <strong>{analysisResult.model_metadata.total_inference_ms} ms</strong>
+              {analysisResult.model_metadata.neural_span_ms != null ? ` (neural spans ${analysisResult.model_metadata.neural_span_ms} ms)` : ''}.
+              {' '}Engine: {analysisResult.engine_used || analysisResult.model_metadata.pipeline}.
+            </div>
+          )}
+
           {analysisResult.executive_summary && (
             <div className="executive-summary-banner">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', color: '#38bdf8', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>

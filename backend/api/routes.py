@@ -15,6 +15,9 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, List, Optional
 import re
 
+import json
+from fastapi.responses import StreamingResponse
+
 from backend.dataset.loader import dataset_loader
 from backend.preprocessing.preprocessor import clinical_preprocessor
 from backend.extraction.entity_extractor import clinical_entity_extractor
@@ -22,6 +25,7 @@ from backend.extraction.clinical_bert_extractor import clinical_bert_extractor
 from backend.extraction.event_extractor import clinical_event_extractor
 from backend.extraction.temporal_extractor import clinical_temporal_extractor
 from backend.extraction.structured_generator import structured_handover_generator
+from backend.extraction.realtime_pipeline import run_realtime_analysis
 from backend.database.database import db
 
 router = APIRouter(prefix="/api")
@@ -89,11 +93,17 @@ async def health_check():
         "total_reports": stats["total_reports"],
         "total_patients": len(db.list_patients()),
         "model_status": {
-            "current_engine": "Bio_ClinicalBERT Neural Extraction Pipeline" if bert_available else "Hybrid Clinical Rule Engine",
+            "current_engine": "Bio_ClinicalBERT Real-Time Extraction Pipeline" if bert_available else "Hybrid Clinical Rule Engine",
             "clinical_bert_loaded": bert_available,
             "clinical_bert_model": "emilyalsentzer/Bio_ClinicalBERT",
             "clinical_bert_path": clinical_bert_extractor.model_path,
-            "status_detail": "Fine-tuned model checkpoint active" if bert_available else "Rule engine fallback active (checkpoint loading pending or in progress)"
+            "status_detail": "Fine-tuned model checkpoint active" if bert_available else "Rule engine fallback active (checkpoint loading pending or in progress)",
+            "realtime": {
+                "warmup_complete": clinical_bert_extractor.warmup_complete,
+                "last_inference_ms": clinical_bert_extractor.last_inference_ms,
+                "average_inference_ms": clinical_bert_extractor.average_inference_ms(),
+                "sliding_window": True,
+            },
         },
         "disclaimer": "PULSE is an AI-assisted clinical information-organization prototype. It does not diagnose, prescribe treatment, or replace professional clinical judgment."
     }
@@ -189,173 +199,73 @@ async def extract_clinical_info(payload: ExtractRequest):
         entities = clinical_bert_extractor.extract(payload.text)
     else:
         entities = clinical_entity_extractor.extract(payload.text)
+    entities["inference_ms"] = clinical_bert_extractor.last_inference_ms
     return entities
 
 
-@router.post("/analyze")
-async def analyze_handover(payload: AnalyzeRequest):
-    """
-    The PRIMARY End-to-End Pipeline Execution Endpoint:
-    STEP 1: Receive raw handover text (or fetch by report_id)
-    STEP 2: Preprocess the text (clean formatting, preserve clinical meaning)
-    STEP 3: Perform clinical information & entity extraction (Neural or Hybrid Rule)
-    STEP 4: Perform event extraction
-    STEP 5: Perform temporal extraction
-    STEP 6: Extract pending tasks & follow-up actions
-    STEP 7: Synthesize 9-category structured clinical handover
-    STEP 8: Store in SQLite history and return comprehensive JSON
-    """
+def _resolve_analyze_text(payload: AnalyzeRequest) -> tuple:
     raw_text = payload.raw_text or ""
     report_id = payload.report_id
-    engine = (payload.engine or "hybrid").lower()
-
-    # If report_id is given and raw_text is omitted or blank, load from dataset
     if report_id and not raw_text.strip():
         report_data = dataset_loader.get_report_by_id(report_id)
         if not report_data:
             raise HTTPException(status_code=404, detail=f"Report ID '{report_id}' not found in dataset.")
         raw_text = report_data["raw_text"]
-
     if not raw_text.strip():
         raise HTTPException(status_code=400, detail="No clinical handover text provided for analysis.")
+    return raw_text, report_id
 
-    # STEP 2: Preprocessing
-    prep_res = clinical_preprocessor.preprocess(raw_text)
-    preprocessed_text = prep_res["preprocessed_text"]
-    changes_made = prep_res["changes_made"]
 
-    # STEP 3: Entity Extraction (Route to Bio_ClinicalBERT or Rule engine)
-    if engine in ["clinical_bert", "hybrid"] and clinical_bert_extractor.is_available():
-        entities = clinical_bert_extractor.extract(preprocessed_text)
-    else:
-        entities = clinical_entity_extractor.extract(preprocessed_text)
-
-    # STEP 4: Event Extraction
-    events = clinical_event_extractor.extract(preprocessed_text, entities=entities)
-
-    # STEP 5: Temporal Extraction
-    temporal_info = clinical_temporal_extractor.extract(preprocessed_text, events=events)
-
-    # STEP 6: Pending Tasks & Follow-Up
-    pending_tasks = structured_handover_generator.extract_pending_tasks(preprocessed_text, events=events)
-    follow_up = structured_handover_generator.extract_follow_up(preprocessed_text, pending_tasks=pending_tasks)
-
-    # STEP 7: Final 9-Category Structured Handover Output
-    structured_handover = structured_handover_generator.generate_structured_handover(
-        text=preprocessed_text,
-        entities=entities,
-        events=events,
-        temporal_info=temporal_info,
-        pending_tasks=pending_tasks,
-        follow_up=follow_up
-    )
-
-    # Compile Evidence Map (linking extracted items to source sentences)
-    evidence_items = []
-    # Patient Info evidence
-    for p in entities.get("patient_information", []):
-        evidence_items.append({
-            "category": "Patient Info",
-            "entity": f"{p.get('field')}: {p.get('value')}",
-            "source_sentence": p.get("source_sentence", "")
-        })
-    # Conditions evidence
-    for c in entities.get("conditions", []):
-        evidence_items.append({
-            "category": "Condition",
-            "entity": c.get("text"),
-            "source_sentence": c.get("source_sentence", "")
-        })
-    # Symptoms evidence
-    for s in entities.get("symptoms", []):
-        evidence_items.append({
-            "category": "Symptom",
-            "entity": s.get("text"),
-            "source_sentence": s.get("source_sentence", "")
-        })
-    # Medications evidence
-    for m in entities.get("medications", []):
-        evidence_items.append({
-            "category": "Medication",
-            "entity": m.get("text"),
-            "source_sentence": m.get("source_sentence", "")
-        })
-    # Investigations evidence
-    for inv in entities.get("investigations", []):
-        evidence_items.append({
-            "category": "Investigation",
-            "entity": inv.get("text"),
-            "source_sentence": inv.get("source_sentence", "")
-        })
-    # Treatments evidence
-    for trt in entities.get("treatments", []):
-        evidence_items.append({
-            "category": "Treatment",
-            "entity": trt.get("text"),
-            "source_sentence": trt.get("source_sentence", "")
-        })
-    # Measurements evidence
-    for ms in entities.get("measurements", []):
-        evidence_items.append({
-            "category": "Measurement",
-            "entity": ms.get("text"),
-            "source_sentence": ms.get("source_sentence", "")
-        })
-    # Events evidence
-    for ev in events:
-        evidence_items.append({
-            "category": "Clinical Event",
-            "entity": ev.get("event"),
-            "source_sentence": ev.get("source_sentence", "")
-        })
-    # Pending tasks evidence
-    for pt in pending_tasks:
-        evidence_items.append({
-            "category": "Pending Task",
-            "entity": pt.get("task"),
-            "source_sentence": pt.get("source_sentence", "")
-        })
-
-    # Prepare complete response payload
-    response_data = {
-        "report_id": report_id or "Custom",
-        "raw_text": raw_text,
-        "preprocessed_text": preprocessed_text,
-        "changes_made": changes_made,
-        "word_count": len(preprocessed_text.split()),
-        "char_count": len(preprocessed_text),
-        "entities": entities,
-        "events": events,
-        "temporal_information": temporal_info,
-        "pending_tasks": pending_tasks,
-        "follow_up": follow_up,
-        "structured_handover": structured_handover,
-        "executive_summary": structured_handover.get("executive_summary", ""),
-        "isbar": structured_handover.get("isbar", {}),
-        "clinical_risks": entities.get("clinical_risks", []),
-        "evidence": evidence_items,
-        "model_metadata": {
-            "pipeline": "PULSE Bio_ClinicalBERT Extraction Pipeline" if (engine in ["clinical_bert", "hybrid"] and clinical_bert_extractor.is_available()) else "PULSE Deterministic Rule & ConText Pipeline",
-            "nlp_paradigm": "Fine-Tuned Bio_ClinicalBERT Token Classification with Contextual Assertion Scoping" if (engine in ["clinical_bert", "hybrid"] and clinical_bert_extractor.is_available()) else "Dictionary, Pattern, and Contextual Rule Engine",
-            "candidate_backbone": "Bio_ClinicalBERT (emilyalsentzer/Bio_ClinicalBERT)",
-            "model_active": clinical_bert_extractor.is_available(),
-            "selected_engine": engine,
-            "evaluation_reference": "Synthetic Nursing Handover Reference Corpus (101 Documents)"
-        }
-    }
-
-    # STEP 8: Store in SQLite history
+def _persist_analysis(report_id, raw_text, response_data):
     try:
         db.save_analysis(
             report_id=report_id,
             raw_text=raw_text,
-            preprocessed_text=preprocessed_text,
-            structured_data=response_data
+            preprocessed_text=response_data.get("preprocessed_text", ""),
+            structured_data=response_data,
         )
     except Exception as db_err:
         print(f"Warning: could not persist to SQLite history: {db_err}")
 
+
+@router.post("/analyze")
+async def analyze_handover(payload: AnalyzeRequest):
+    """
+    Real-time end-to-end handover pipeline with Bio_ClinicalBERT when weights are loaded.
+    """
+    raw_text, report_id = _resolve_analyze_text(payload)
+    engine = (payload.engine or "hybrid").lower()
+    analysis = run_realtime_analysis(raw_text, engine=engine)
+    response_data = {
+        "report_id": report_id or "Custom",
+        **analysis,
+    }
+    _persist_analysis(report_id, raw_text, response_data)
     return response_data
+
+
+@router.post("/analyze/stream")
+async def analyze_handover_stream(payload: AnalyzeRequest):
+    """
+    Server-sent events for live pipeline steps, then a final `result` event.
+    """
+    raw_text, report_id = _resolve_analyze_text(payload)
+    engine = (payload.engine or "hybrid").lower()
+
+    def event_stream():
+        captured = []
+
+        def capture(name, payload_data):
+            captured.append({"step": name, **(payload_data or {})})
+
+        analysis = run_realtime_analysis(raw_text, engine=engine, on_step=capture)
+        response_data = {"report_id": report_id or "Custom", **analysis}
+        _persist_analysis(report_id, raw_text, response_data)
+        for item in captured:
+            yield f"event: step\ndata: {json.dumps(item)}\n\n"
+        yield f"event: result\ndata: {json.dumps(response_data)}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 @router.get("/history")
@@ -495,38 +405,16 @@ async def process_patient_note(patient_id: str, note_id: int):
     if not raw_text.strip():
         raise HTTPException(status_code=400, detail="Cannot process an empty note.")
 
-    # 1. Preprocess note text
-    prep_res = clinical_preprocessor.preprocess(raw_text)
-    preprocessed_text = prep_res["preprocessed_text"]
+    analysis = run_realtime_analysis(raw_text, engine="hybrid")
+    engine_name = analysis.get("engine_used", "Hybrid Rule Engine")
+    entities = analysis["entities"]
+    events = analysis["events"]
+    temporal_info = analysis["temporal_information"]
+    pending_tasks = analysis["pending_tasks"]
+    follow_up = analysis["follow_up"]
+    structured = analysis["structured_handover"]
+    preprocessed_text = analysis["preprocessed_text"]
 
-    # 2. Extract clinical entities
-    engine_name = "Bio_ClinicalBERT" if clinical_bert_extractor.is_available() else "Hybrid Rule Engine"
-    if clinical_bert_extractor.is_available():
-        entities = clinical_bert_extractor.extract(preprocessed_text)
-    else:
-        entities = clinical_entity_extractor.extract(preprocessed_text)
-
-    # 3. Extract events
-    events = clinical_event_extractor.extract(preprocessed_text, entities=entities)
-
-    # 4. Extract temporal relationships
-    temporal_info = clinical_temporal_extractor.extract(preprocessed_text, events=events)
-
-    # 5. Extract pending tasks and follow up
-    pending_tasks = structured_handover_generator.extract_pending_tasks(preprocessed_text, events=events)
-    follow_up = structured_handover_generator.extract_follow_up(preprocessed_text, pending_tasks=pending_tasks)
-
-    # 6. Generate structured clinical handover
-    structured = structured_handover_generator.generate_structured_handover(
-        text=preprocessed_text,
-        entities=entities,
-        events=events,
-        temporal_info=temporal_info,
-        pending_tasks=pending_tasks,
-        follow_up=follow_up
-    )
-
-    # Explicit unreviewed clinical assertion metadata
     extraction_payload = {
         "review_status": "ai_generated_unreviewed",
         "status_label": "AI-generated — not yet reviewed",
@@ -541,6 +429,7 @@ async def process_patient_note(patient_id: str, note_id: int):
         "executive_summary": structured.get("executive_summary", ""),
         "isbar": structured.get("isbar", {}),
         "clinical_risks": entities.get("clinical_risks", []),
+        "model_metadata": analysis.get("model_metadata", {}),
         "disclaimer": "This information was automatically structured by AI and is not verified by a clinician. Do not use for clinical diagnosis or treatment."
     }
 
@@ -826,11 +715,13 @@ async def get_research_evaluation():
 
     return {
         "corpus": {
-            "name": "Synthetic Nursing Handover Reference Corpus",
+            "name": "NICTA/ANU Synthetic Nursing Handover + de-identified ISBAR hospital augmentations",
             "total_reference_documents": 101,
             "total_tokens": 7214,
             "vocabulary_size": 1441,
-            "de_identification_standard": "Strict Synthetic & De-identified Benchmark"
+            "de_identification_standard": "Strict Synthetic & De-identified Benchmark",
+            "model_backbone": "emilyalsentzer/Bio_ClinicalBERT",
+            "realtime_inference": clinical_bert_extractor.is_available()
         },
         "live_prototype_activity": {
             "registered_demo_patients": len(patients),

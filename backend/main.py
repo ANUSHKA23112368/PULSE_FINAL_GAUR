@@ -9,8 +9,10 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.api.routes import router as api_router
+from backend.api.training_routes import training_router
 from backend.dataset.loader import dataset_loader
 from backend.database.database import db
+from backend.extraction.clinical_bert_extractor import clinical_bert_extractor
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +28,11 @@ async def lifespan(app: FastAPI):
         print("Synchronized reports index to SQLite cache.")
     except Exception as e:
         print(f"Notice: SQLite cache sync skipped: {e}")
+    if clinical_bert_extractor.is_available():
+        warmup_ms = clinical_bert_extractor.warmup()
+        print(f"Bio_ClinicalBERT warmup complete in {warmup_ms} ms.")
+    else:
+        print("Bio_ClinicalBERT weights not loaded — hybrid rule fallback active.")
     yield
     print("Shutting down PULSE backend...")
 
@@ -47,6 +54,7 @@ app.add_middleware(
 
 # Mount API routes
 app.include_router(api_router)
+app.include_router(training_router)
 
 @app.get("/")
 async def root():
