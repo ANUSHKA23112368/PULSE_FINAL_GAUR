@@ -64,16 +64,42 @@ class HospitalNERDataset(Dataset):
         self.samples = []
         for doc in documents:
             raw_text = doc["raw_text"]
-            gold_spans = [
-                {
-                    "start_char": sp["start_char"],
-                    "end_char": sp["end_char"],
-                    "category": sp.get("category") or sp.get("label"),
-                }
-                for sp in doc.get("entity_spans", [])
-                if (sp.get("category") or sp.get("label")) in MACRO_CATEGORIES
-                and sp["start_char"] < sp["end_char"]
-            ]
+            # Map gold spans to macro categories correctly
+            gold_spans = []
+            if "tokens" in doc:
+                # Use the logic from our roundtrip test
+                current_span = None
+                for tok in doc["tokens"]:
+                    raw_label = tok.get("adjudicated_label", "O")
+                    clean_l = raw_label.replace("B-", "").replace("I-", "")
+                    mapped_cat = CATEGORY_MAP.get(clean_l, "Other") if raw_label not in ["NA", "O"] else "O"
+
+                    if mapped_cat != "O":
+                        if current_span and current_span["category"] == mapped_cat:
+                            current_span["end_char"] = tok["end_char"]
+                        else:
+                            if current_span: gold_spans.append(current_span)
+                            current_span = {
+                                "category": mapped_cat,
+                                "start_char": tok["start_char"],
+                                "end_char": tok["end_char"]
+                            }
+                    else:
+                        if current_span:
+                            gold_spans.append(current_span)
+                            current_span = None
+                if current_span: gold_spans.append(current_span)
+            else:
+                # Fallback for synthetic documents which might have "entity_spans" directly
+                for sp in doc.get("entity_spans", []):
+                    cat = sp.get("category") or sp.get("label")
+                    if cat in MACRO_CATEGORIES:
+                        gold_spans.append({
+                            "start_char": sp["start_char"],
+                            "end_char": sp["end_char"],
+                            "category": cat,
+                        })
+
             encoding = tokenizer(
                 raw_text,
                 return_offsets_mapping=True,
@@ -89,18 +115,21 @@ class HospitalNERDataset(Dataset):
             for idx, (sub_start, sub_end) in enumerate(offset_mapping.tolist()):
                 if sub_start == 0 and sub_end == 0:
                     continue
+
                 matched = None
                 for span in gold_spans:
-                    if span["start_char"] <= sub_start < span["end_char"]:
+                    if span["start_char"] < sub_end and span["end_char"] > sub_start:
                         matched = span
                         break
+
                 if not matched:
                     labels[idx] = LABEL2ID["O"]
                     continue
-                # First overlapping subword of the span is B-, remainder I-
-                is_begin = sub_start == matched["start_char"] or (
-                    idx == 1 or int(offset_mapping[idx - 1][1]) <= matched["start_char"]
-                )
+
+                # Fixed B- vs I- logic
+                is_begin = (sub_start == matched["start_char"]) or \
+                           (idx > 0 and (offset_mapping[idx-1][1] <= matched["start_char"]))
+
                 tag = f"{'B' if is_begin else 'I'}-{matched['category']}"
                 labels[idx] = LABEL2ID.get(tag, LABEL2ID["O"])
 

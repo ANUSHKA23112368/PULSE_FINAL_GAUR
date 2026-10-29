@@ -28,27 +28,27 @@
   ],
   "metrics": {
     "strict": {
-      "precision": 14.24,
-      "recall": 41.81,
-      "f1": 21.25,
-      "tp": 199,
-      "fp": 1198,
-      "fn": 277
+      "precision": 25.22,
+      "recall": 53.57,
+      "f1": 34.3,
+      "tp": 255,
+      "fp": 756,
+      "fn": 221
     },
     "lenient": {
-      "precision": 33.29,
-      "recall": 97.69,
-      "f1": 49.65,
-      "tp": 465,
-      "fp": 932,
-      "fn": 11
+      "precision": 45.9,
+      "recall": 97.48,
+      "f1": 62.41,
+      "tp": 464,
+      "fp": 547,
+      "fn": 12
     }
   },
   "dataset": {
     "gold": "NICTA/ANU Synthetic Nursing Handover (Suominen et al., 101 notes)",
-    "augmentation": "80 de-identified ISBAR hospital notes",
+    "augmentation": "160 de-identified ISBAR hospital notes",
     "held_out": "gold fold_0 test documents only",
-    "train_documents": 160,
+    "train_documents": 240,
     "test_documents": 21
   },
   "training": {
@@ -57,10 +57,10 @@
     "batch_size": 4,
     "max_length": 256,
     "trainable_last_n": 2,
-    "final_weighted_loss": 1.5402,
+    "final_weighted_loss": 0.5423,
     "device": "cpu",
     "deployment_retrain": true,
-    "deployment_loss": 2.0838
+    "deployment_loss": 0.7604
   },
   "disclaimer": "PULSE organizes handover text. It does not diagnose or treat."
 }

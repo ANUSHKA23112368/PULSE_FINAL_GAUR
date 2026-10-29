@@ -3,110 +3,110 @@
   "evaluation_protocol": "Stratified Document-Level 5-Fold Cross-Validation",
   "rule_based_baseline": {
     "strict_span_metrics": {
-      "precision_mean": 44.48,
-      "precision_std": 3.79,
-      "recall_mean": 17.26,
-      "recall_std": 2.21,
-      "f1_mean": 24.84,
-      "f1_std": 2.81
+      "precision_mean": 44.53,
+      "precision_std": 4.09,
+      "recall_mean": 17.7,
+      "recall_std": 2.29,
+      "f1_mean": 25.31,
+      "f1_std": 2.96
     },
     "lenient_span_metrics": {
-      "precision_mean": 85.51,
-      "precision_std": 2.8,
-      "recall_mean": 33.15,
-      "recall_std": 2.89,
-      "f1_mean": 47.72,
-      "f1_std": 3.28
+      "precision_mean": 85.75,
+      "precision_std": 2.75,
+      "recall_mean": 34.03,
+      "recall_std": 2.61,
+      "f1_mean": 48.69,
+      "f1_std": 2.97
     },
     "per_fold": [
       {
         "strict": {
-          "precision": 42.2,
-          "recall": 15.34,
-          "f1": 22.5,
-          "tp": 73,
-          "fp": 100,
-          "fn": 403
-        },
-        "lenient": {
-          "precision": 87.28,
-          "recall": 31.72,
-          "f1": 46.53,
-          "tp": 151,
-          "fp": 22,
-          "fn": 325
-        }
-      },
-      {
-        "strict": {
-          "precision": 43.71,
-          "recall": 16.94,
-          "f1": 24.41,
-          "tp": 73,
-          "fp": 94,
-          "fn": 358
-        },
-        "lenient": {
-          "precision": 82.63,
-          "recall": 32.02,
-          "f1": 46.15,
-          "tp": 138,
-          "fp": 29,
-          "fn": 293
-        }
-      },
-      {
-        "strict": {
-          "precision": 40.44,
-          "recall": 17.01,
-          "f1": 23.95,
+          "precision": 41.81,
+          "recall": 15.55,
+          "f1": 22.66,
           "tp": 74,
-          "fp": 109,
-          "fn": 361
+          "fp": 103,
+          "fn": 402
         },
         "lenient": {
-          "precision": 83.61,
-          "recall": 35.17,
-          "f1": 49.51,
-          "tp": 153,
+          "precision": 87.57,
+          "recall": 32.56,
+          "f1": 47.47,
+          "tp": 155,
+          "fp": 22,
+          "fn": 321
+        }
+      },
+      {
+        "strict": {
+          "precision": 43.6,
+          "recall": 17.4,
+          "f1": 24.88,
+          "tp": 75,
+          "fp": 97,
+          "fn": 356
+        },
+        "lenient": {
+          "precision": 83.14,
+          "recall": 33.18,
+          "f1": 47.43,
+          "tp": 143,
+          "fp": 29,
+          "fn": 288
+        }
+      },
+      {
+        "strict": {
+          "precision": 40.54,
+          "recall": 17.24,
+          "f1": 24.19,
+          "tp": 75,
+          "fp": 110,
+          "fn": 360
+        },
+        "lenient": {
+          "precision": 83.78,
+          "recall": 35.63,
+          "f1": 50.0,
+          "tp": 155,
           "fp": 30,
-          "fn": 282
+          "fn": 280
         }
       },
       {
         "strict": {
-          "precision": 44.52,
-          "recall": 15.54,
-          "f1": 23.04,
-          "tp": 69,
-          "fp": 86,
-          "fn": 375
+          "precision": 44.44,
+          "recall": 16.22,
+          "f1": 23.76,
+          "tp": 72,
+          "fp": 90,
+          "fn": 372
         },
         "lenient": {
-          "precision": 83.87,
-          "recall": 29.28,
-          "f1": 43.41,
-          "tp": 130,
-          "fp": 25,
-          "fn": 314
+          "precision": 83.95,
+          "recall": 30.63,
+          "f1": 44.88,
+          "tp": 136,
+          "fp": 26,
+          "fn": 308
         }
       },
       {
         "strict": {
-          "precision": 51.52,
-          "recall": 21.45,
-          "f1": 30.29,
-          "tp": 68,
+          "precision": 52.24,
+          "recall": 22.08,
+          "f1": 31.04,
+          "tp": 70,
           "fp": 64,
-          "fn": 249
+          "fn": 247
         },
         "lenient": {
-          "precision": 90.15,
-          "recall": 37.54,
-          "f1": 53.01,
-          "tp": 119,
+          "precision": 90.3,
+          "recall": 38.17,
+          "f1": 53.66,
+          "tp": 121,
           "fp": 13,
-          "fn": 198
+          "fn": 196
         }
       }
     ]

@@ -1,0 +1,15 @@
+# PULSE Label Mapping Configuration
+# Maps external dataset tags to internal PULSE categories
+
+n2c2_2018_to_pulse:
+  Drug: Medication
+  Dosage: Medication
+  Route: Medication
+  Frequency: Medication
+  Reason: Clinical_Condition
+  ADE: Clinical_Observation
+
+i2b2_2010_to_pulse:
+  problem: Clinical_Condition
+  treatment: Medication
+  test: Investigation_Procedure
