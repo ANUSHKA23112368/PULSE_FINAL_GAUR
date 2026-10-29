@@ -4,14 +4,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
-  XCircle,
   Plus,
   RefreshCw,
-  FileText,
-  ShieldCheck,
-  Calendar,
-  Filter,
   Check,
   RotateCcw
 } from 'lucide-react';
@@ -22,7 +16,7 @@ import {
   updatePatientTask
 } from '../services/api';
 
-export function PendingActionsPage({ selectedPatient, onSwitchPatient, onNavigate }) {
+export function PendingActionsPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'COMPLETED' | 'NEEDS_REVIEW'
@@ -55,7 +49,7 @@ export function PendingActionsPage({ selectedPatient, onSwitchPatient, onNavigat
   async function handleStatusChange(taskId, newStatus) {
     if (!selectedPatient) return;
     try {
-      const evidenceText = `Status updated to ${newStatus} by Staff Clinician on ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      const evidenceText = `Status updated to ${newStatus} by Staff Clinician at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
       await updatePatientTask(
         selectedPatient.display_id || selectedPatient.id,
         taskId,
@@ -118,358 +112,194 @@ export function PendingActionsPage({ selectedPatient, onSwitchPatient, onNavigat
 
   return (
     <div className="page-container">
-      {/* Patient Header Banner */}
+      {/* Patient Banner */}
       <PatientBanner
         patient={selectedPatient}
         onSwitchPatient={onSwitchPatient}
-        activeTab="tasks"
+        allPatients={allPatients}
+        onSelectPatient={onSelectPatient}
         onNavigate={onNavigate}
       />
 
       {/* Page Title & Controls */}
-      <div className="section-header" style={{ marginTop: '1rem', marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-              <ListTodo size={22} color="#059669" />
-              Pending Actions & Shift Task Tracker
-            </h2>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#64748b' }}>
-              Persistent follow-up tasks, scheduled rechecks, pending investigations, and clinician directives for <strong>{selectedPatient?.name || 'patient'}</strong>.
-            </p>
-          </div>
+      <div className="section-header-row">
+        <div>
+          <h2 className="page-heading">
+            Shift Action Tracker & Clinical Directives
+          </h2>
+          <p className="page-subheading">
+            Persistent follow-up orders, scheduled rechecks, pending labs, and consultations for <strong>{selectedPatient?.name || 'patient'}</strong>.
+          </p>
+        </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="btn-primary"
-              style={{ fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <Plus size={15} />
-              Add Pending Task
-            </button>
+        <div className="header-actions-group">
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="btn btn-primary"
+          >
+            <Plus size={15} />
+            <span>Add Task</span>
+          </button>
 
-            <button
-              onClick={loadTasks}
-              disabled={loading}
-              className="btn-secondary"
-              style={{ fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <RefreshCw size={14} className={loading ? 'spin' : ''} />
-              Refresh
-            </button>
-          </div>
+          <button
+            onClick={loadTasks}
+            disabled={loading}
+            className="btn btn-outline"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
       {feedback && (
-        <div style={{
-          padding: '0.75rem 1rem',
-          borderRadius: '6px',
-          marginBottom: '1rem',
-          fontSize: '0.875rem',
-          background: feedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
-          color: feedback.type === 'success' ? '#166534' : '#991b1b',
-          border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
-        }}>
-          <CheckCircle2 size={16} />
+        <div className={`feedback-alert feedback-${feedback.type}`}>
+          {feedback.type === 'success' ? <CheckCircle2 size={16} className="text-emerald" /> : <AlertCircle size={16} className="text-rose" />}
           <span>{feedback.text}</span>
+          <button className="feedback-close" onClick={() => setFeedback(null)}>×</button>
         </div>
       )}
 
-      {/* Filter Tabs */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        borderBottom: '1px solid #e2e8f0',
-        paddingBottom: '0.75rem',
-        marginBottom: '1.25rem',
-        flexWrap: 'wrap'
-      }}>
-        <button
-          onClick={() => setFilter('ALL')}
-          style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            background: filter === 'ALL' ? '#1e293b' : '#f1f5f9',
-            color: filter === 'ALL' ? '#ffffff' : '#475569'
-          }}
-        >
-          All Tasks ({counts.all})
-        </button>
-
-        <button
-          onClick={() => setFilter('PENDING')}
-          style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            background: filter === 'PENDING' ? '#0284c7' : '#f0f9ff',
-            color: filter === 'PENDING' ? '#ffffff' : '#0369a1'
-          }}
-        >
-          Pending ({counts.pending})
-        </button>
-
-        <button
-          onClick={() => setFilter('COMPLETED')}
-          style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            background: filter === 'COMPLETED' ? '#16a34a' : '#f0fdf4',
-            color: filter === 'COMPLETED' ? '#ffffff' : '#15803d'
-          }}
-        >
-          Completed ({counts.completed})
-        </button>
-
-        <button
-          onClick={() => setFilter('NEEDS_REVIEW')}
-          style={{
-            padding: '0.4rem 0.75rem',
-            borderRadius: '6px',
-            fontSize: '0.8125rem',
-            fontWeight: 600,
-            border: 'none',
-            cursor: 'pointer',
-            background: filter === 'NEEDS_REVIEW' ? '#d97706' : '#fffbeb',
-            color: filter === 'NEEDS_REVIEW' ? '#ffffff' : '#b45309'
-          }}
-        >
-          Needs Review ({counts.needs_review})
-        </button>
-      </div>
-
-      {/* Task List */}
-      {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-          <RefreshCw size={24} className="spin" style={{ margin: '0 auto 0.5rem' }} />
-          <div>Loading patient tasks...</div>
-        </div>
-      ) : filteredTasks.length === 0 ? (
-        <div style={{
-          background: '#ffffff',
-          border: '1px dashed #cbd5e1',
-          borderRadius: '8px',
-          padding: '2.5rem 1.5rem',
-          textAlign: 'center',
-          maxWidth: '560px',
-          margin: '1.5rem auto'
-        }}>
-          <ListTodo size={36} color="#94a3b8" style={{ margin: '0 auto 0.75rem' }} />
-          <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.35rem' }}>
-            No {filter !== 'ALL' ? filter.toLowerCase() : ''} tasks found
-          </h3>
-          <p style={{ fontSize: '0.8125rem', color: '#64748b', marginBottom: '1rem' }}>
-            Tasks are automatically extracted from clinical handover notes or manually added by clinicians.
-          </p>
+      {/* Filter Tabs Strip */}
+      <div className="hospital-card task-filter-card">
+        <div className="filter-pills-row">
           <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary"
-            style={{ fontSize: '0.8125rem' }}
+            className={`filter-pill ${filter === 'ALL' ? 'active' : ''}`}
+            onClick={() => setFilter('ALL')}
           >
-            Add First Task
+            All Tasks ({counts.all})
+          </button>
+          <button
+            className={`filter-pill filter-pending ${filter === 'PENDING' ? 'active' : ''}`}
+            onClick={() => setFilter('PENDING')}
+          >
+            Pending ({counts.pending})
+          </button>
+          <button
+            className={`filter-pill filter-completed ${filter === 'COMPLETED' ? 'active' : ''}`}
+            onClick={() => setFilter('COMPLETED')}
+          >
+            Completed ({counts.completed})
+          </button>
+          <button
+            className={`filter-pill filter-review ${filter === 'NEEDS_REVIEW' ? 'active' : ''}`}
+            onClick={() => setFilter('NEEDS_REVIEW')}
+          >
+            Needs Review ({counts.needs_review})
           </button>
         </div>
+      </div>
+
+      {/* Tasks Content List */}
+      {loading ? (
+        <div className="hospital-card loading-state-card">
+          <RefreshCw size={24} className="animate-spin text-primary" />
+          <span>Loading clinical tasks...</span>
+        </div>
+      ) : filteredTasks.length === 0 ? (
+        <div className="hospital-card empty-state-card">
+          <ListTodo size={36} className="text-muted" />
+          <h3>No tasks in this category</h3>
+          <p>Click "Add Task" to record a new follow-up order for this shift.</p>
+        </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+        <div className="tasks-grid">
           {filteredTasks.map((t) => {
             const isCompleted = t.status === 'Completed';
             const isPending = t.status === 'Pending';
-            const isNeedsReview = t.status === 'Needs Review';
-            const isCancelled = t.status === 'Cancelled';
+            const isReview = t.status === 'Needs Review';
+            const priorityClass = (t.priority || 'Medium').toLowerCase();
 
             return (
-              <div
-                key={t.id}
-                style={{
-                  background: '#ffffff',
-                  border: `1px solid ${isCompleted ? '#bbf7d0' : isNeedsReview ? '#fed7aa' : '#e2e8f0'}`,
-                  borderLeft: `4px solid ${isCompleted ? '#16a34a' : isNeedsReview ? '#ea580c' : isCancelled ? '#94a3b8' : '#0284c7'}`,
-                  borderRadius: '8px',
-                  padding: '1rem 1.25rem',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.625rem'
-                }}
+              <div 
+                key={t.id} 
+                className={`hospital-card task-card task-card-${isCompleted ? 'completed' : isReview ? 'review' : 'active'}`}
               >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-                      <span style={{
-                        fontSize: '0.9375rem',
-                        fontWeight: 600,
-                        color: isCompleted ? '#475569' : '#0f172a',
-                        textDecoration: isCompleted ? 'line-through' : 'none'
-                      }}>
-                        {t.task}
-                      </span>
-
-                      {/* Status Badge */}
-                      <span style={{
-                        fontSize: '0.6875rem',
-                        fontWeight: 700,
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '12px',
-                        background: isCompleted ? '#dcfce7' : isPending ? '#e0f2fe' : isNeedsReview ? '#ffedd5' : '#f1f5f9',
-                        color: isCompleted ? '#15803d' : isPending ? '#0369a1' : isNeedsReview ? '#c2410c' : '#475569',
-                        textTransform: 'uppercase'
-                      }}>
-                        {t.status}
-                      </span>
-
-                      {/* Priority Badge */}
-                      {t.priority && (
-                        <span style={{
-                          fontSize: '0.6875rem',
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '4px',
-                          background: t.priority === 'High' ? '#fee2e2' : '#f8fafc',
-                          color: t.priority === 'High' ? '#b91c1c' : '#64748b',
-                          fontWeight: 500
-                        }}>
-                          {t.priority} Priority
-                        </span>
-                      )}
-
-                      {/* Due Time */}
-                      {t.due_time && (
-                        <span style={{
-                          fontSize: '0.6875rem',
-                          background: '#fef3c7',
-                          color: '#92400e',
-                          padding: '0.15rem 0.45rem',
-                          borderRadius: '4px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem',
-                          fontWeight: 600
-                        }}>
-                          <Clock size={11} /> Due: {t.due_time}
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Metadata line */}
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                      <span>Recorded: {new Date(t.recorded_time || t.created_at).toLocaleDateString()} {new Date(t.recorded_time || t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      {t.source_note_id && (
-                        <span style={{ color: '#0284c7' }}>Sourced from Note #{t.source_note_id}</span>
-                      )}
-                    </div>
+                <div className="task-header-row">
+                  <div className="task-tags">
+                    <span className="task-id-badge">#{t.id}</span>
+                    <span className={`priority-pill priority-${priorityClass}`}>
+                      {t.priority || 'Medium'} Priority
+                    </span>
+                    <span className={`status-pill status-${t.status.toLowerCase().replace(' ', '-')}`}>
+                      {t.status}
+                    </span>
                   </div>
 
-                  {/* Clinician Action Buttons */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  {t.due_time && (
+                    <div className="task-due-time">
+                      <Clock size={13} />
+                      <span>Due: {t.due_time}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="task-body">
+                  <p className={`task-text ${isCompleted ? 'text-strikethrough' : ''}`}>
+                    {t.task}
+                  </p>
+                  {t.evidence && (
+                    <div className="task-evidence-box">
+                      <strong>Audit Trail:</strong> {t.evidence}
+                    </div>
+                  )}
+                </div>
+
+                <div className="task-footer">
+                  <span className="task-source-label">
+                    {t.type || 'Clinical Handover Task'}
+                  </span>
+
+                  <div className="task-status-actions">
                     {isPending && (
-                      <button
-                        onClick={() => handleStatusChange(t.id, 'Completed')}
-                        title="Mark Task Completed"
-                        style={{
-                          background: '#16a34a',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '4px',
-                          padding: '0.35rem 0.65rem',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem'
-                        }}
-                      >
-                        <Check size={13} /> Complete
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-xs"
+                          onClick={() => handleStatusChange(t.id, 'Needs Review')}
+                        >
+                          Mark for Review
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-xs"
+                          onClick={() => handleStatusChange(t.id, 'Completed')}
+                        >
+                          <Check size={12} /> Complete
+                        </button>
+                      </>
                     )}
 
                     {isCompleted && (
                       <button
+                        type="button"
+                        className="btn btn-outline btn-xs"
                         onClick={() => handleStatusChange(t.id, 'Pending')}
-                        title="Reopen Task as Pending"
-                        style={{
-                          background: '#f1f5f9',
-                          color: '#475569',
-                          border: '1px solid #cbd5e1',
-                          borderRadius: '4px',
-                          padding: '0.35rem 0.55rem',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem'
-                        }}
                       >
                         <RotateCcw size={12} /> Reopen
                       </button>
                     )}
 
-                    {!isNeedsReview && !isCompleted && (
-                      <button
-                        onClick={() => handleStatusChange(t.id, 'Needs Review')}
-                        title="Flag for Clinician Clarification"
-                        style={{
-                          background: '#fffbeb',
-                          color: '#b45309',
-                          border: '1px solid #fde68a',
-                          borderRadius: '4px',
-                          padding: '0.35rem 0.55rem',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Needs Review
-                      </button>
-                    )}
-
-                    {!isCancelled && !isCompleted && (
-                      <button
-                        onClick={() => handleStatusChange(t.id, 'Cancelled')}
-                        title="Cancel Task"
-                        style={{
-                          background: '#fef2f2',
-                          color: '#991b1b',
-                          border: '1px solid #fecaca',
-                          borderRadius: '4px',
-                          padding: '0.35rem 0.55rem',
-                          fontSize: '0.75rem',
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Cancel
-                      </button>
+                    {isReview && (
+                      <>
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-xs"
+                          onClick={() => handleStatusChange(t.id, 'Pending')}
+                        >
+                          Return to Pending
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-xs"
+                          onClick={() => handleStatusChange(t.id, 'Completed')}
+                        >
+                          <Check size={12} /> Verify & Complete
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
-
-                {/* Evidence Section */}
-                {t.evidence && (
-                  <div style={{
-                    background: '#f8fafc',
-                    borderRadius: '4px',
-                    padding: '0.5rem 0.75rem',
-                    fontSize: '0.75rem',
-                    color: '#334155',
-                    borderLeft: '3px solid #94a3b8'
-                  }}>
-                    <strong>Traceable Evidence:</strong> {t.evidence}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -478,111 +308,72 @@ export function PendingActionsPage({ selectedPatient, onSwitchPatient, onNavigat
 
       {/* Add Task Modal */}
       {showAddModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(15, 23, 42, 0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-          padding: '1rem'
-        }}>
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '8px',
-            maxWidth: '500px',
-            width: '100%',
-            padding: '1.5rem',
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)'
-          }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', marginTop: 0, marginBottom: '1rem' }}>
-              Add Pending Clinical Action
-            </h3>
-
-            <form onSubmit={handleAddTask} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>
-                  Task Description *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="e.g. Recheck temperature at 12 PM, Repeat troponin at 06:00"
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.5rem 0.75rem',
-                    borderRadius: '6px',
-                    border: '1px solid #cbd5e1',
-                    fontSize: '0.875rem'
-                  }}
-                />
+        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="add-task-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Plus size={20} className="modal-icon text-primary" />
+                <h3>Add Shift Action or Pending Directive</h3>
               </div>
+              <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>×</button>
+            </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>
-                    Due Time / Interval
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. 12:00 PM, In 4 hours"
-                    value={newDueTime}
-                    onChange={(e) => setNewDueTime(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.875rem'
-                    }}
+            <form onSubmit={handleAddTask}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Task Description *</label>
+                  <textarea
+                    rows={3}
+                    className="form-input"
+                    placeholder="e.g. Check morning blood glucose at 0600; follow-up repeat troponin report..."
+                    value={newTaskText}
+                    onChange={(e) => setNewTaskText(e.target.value)}
+                    required
                   />
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: '#475569', marginBottom: '0.25rem' }}>
-                    Priority
-                  </label>
-                  <select
-                    value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '0.5rem 0.75rem',
-                      borderRadius: '6px',
-                      border: '1px solid #cbd5e1',
-                      fontSize: '0.875rem',
-                      background: '#ffffff'
-                    }}
-                  >
-                    <option value="Low">Low</option>
-                    <option value="Medium">Medium</option>
-                    <option value="High">High</option>
-                  </select>
+                <div className="form-grid-2col">
+                  <div className="form-group">
+                    <label className="form-label">Priority</label>
+                    <select
+                      className="form-input"
+                      value={newPriority}
+                      onChange={(e) => setNewPriority(e.target.value)}
+                    >
+                      <option value="STAT / Urgent">STAT / Urgent</option>
+                      <option value="High">High</option>
+                      <option value="Medium">Medium</option>
+                      <option value="Low">Low</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Scheduled Due Time (Optional)</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="e.g. 12:00 PM / End of Shift"
+                      value={newDueTime}
+                      onChange={(e) => setNewDueTime(e.target.value)}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <div className="modal-footer">
                 <button
                   type="button"
+                  className="modal-action-btn secondary"
                   onClick={() => setShowAddModal(false)}
-                  className="btn-secondary"
-                  style={{ fontSize: '0.8125rem' }}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={savingTask || !newTaskText.trim()}
-                  className="btn-primary"
-                  style={{ fontSize: '0.8125rem' }}
+                  className="modal-action-btn primary"
+                  disabled={savingTask}
                 >
-                  {savingTask ? 'Saving...' : 'Save Pending Action'}
+                  {savingTask ? 'Saving Task...' : '+ Record Directive'}
                 </button>
               </div>
             </form>

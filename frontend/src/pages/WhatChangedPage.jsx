@@ -2,19 +2,15 @@ import React, { useState, useEffect } from 'react';
 import {
   GitCompare,
   TrendingDown,
-  TrendingUp,
   FileCheck2,
   Clock,
-  AlertTriangle,
   CheckCircle2,
   AlertCircle,
   Sparkles,
   ArrowRight,
-  ShieldAlert,
   Layers,
   RefreshCw,
-  FileText,
-  UserCheck
+  FileText
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import {
@@ -24,7 +20,7 @@ import {
   comparePatientHandovers
 } from '../services/api';
 
-export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }) {
+export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [comparing, setComparing] = useState(false);
@@ -47,7 +43,6 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
     try {
       const data = await fetchPatientNotes(selectedPatient.display_id || selectedPatient.id);
       const patientNotes = data.notes || [];
-      // Chronological sort
       const chrono = [...patientNotes].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
       setNotes(chrono);
 
@@ -68,18 +63,18 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
   }
 
   async function runComparison(pId, cId) {
-    if (!pId || !cId || String(pId) === String(cId)) return;
+    if (!pId || !cId || !selectedPatient) return;
     setComparing(true);
     try {
       const result = await comparePatientHandovers(
         selectedPatient.display_id || selectedPatient.id,
-        Number(pId),
-        Number(cId)
+        pId,
+        cId
       );
       setComparison(result);
     } catch (err) {
-      console.warn("Handover comparison error:", err);
-      setStatusMessage({ type: 'error', text: 'Failed to run consecutive handover comparison.' });
+      console.error("Comparison failed:", err);
+      setStatusMessage({ type: 'error', text: 'Failed to compute consecutive shift differences.' });
     } finally {
       setComparing(false);
     }
@@ -88,7 +83,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
   async function handleLoadConsecutiveDemo() {
     if (!selectedPatient) return;
     setSeedingDemo(true);
-    setStatusMessage({ type: 'info', text: 'Seeding consecutive shift notes (Morning Shift 1 & Evening Shift 2)...' });
+    setStatusMessage(null);
     try {
       const pKey = selectedPatient.display_id || selectedPatient.id;
 
@@ -114,114 +109,71 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
 
   return (
     <div className="page-container">
-      {/* Patient Header Banner */}
+      {/* Patient Banner */}
       <PatientBanner
         patient={selectedPatient}
         onSwitchPatient={onSwitchPatient}
-        activeTab="changes"
+        allPatients={allPatients}
+        onSelectPatient={onSelectPatient}
         onNavigate={onNavigate}
       />
 
       {/* Page Header */}
-      <div className="section-header" style={{ marginTop: '1rem', marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div>
-            <h2 style={{ fontSize: '1.35rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-              <GitCompare size={22} color="#0284c7" />
-              What Changed? — Consecutive Handover Update Tracking
-            </h2>
-            <p style={{ margin: '0.25rem 0 0', fontSize: '0.875rem', color: '#64748b' }}>
-              Compares consecutive clinical handovers for <strong>{selectedPatient?.name || 'the patient'}</strong> to detect clinical observation deltas, lab transitions, task progressions, and ongoing conditions.
-            </p>
-          </div>
+      <div className="section-header-row">
+        <div>
+          <h2 className="page-heading">
+            Shift-to-Shift Delta: What Changed?
+          </h2>
+          <p className="page-subheading">
+            Compares consecutive clinical handovers for <strong>{selectedPatient?.name || 'the patient'}</strong> to detect physiological deltas, lab transitions, completed tasks, and ongoing symptoms.
+          </p>
+        </div>
 
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <button
-              onClick={handleLoadConsecutiveDemo}
-              disabled={seedingDemo}
-              className="btn-secondary"
-              style={{
-                fontSize: '0.8125rem',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.4rem',
-                background: '#f0fdf4',
-                color: '#15803d',
-                borderColor: '#bbf7d0',
-                fontWeight: 600
-              }}
-            >
-              <Sparkles size={14} color="#15803d" />
-              {seedingDemo ? 'Loading Demo Notes...' : 'Load Rahul 2-Shift Demo'}
-            </button>
+        <div className="header-actions-group">
+          <button
+            onClick={handleLoadConsecutiveDemo}
+            disabled={seedingDemo}
+            className="btn btn-outline"
+          >
+            <Sparkles size={14} className="text-emerald" />
+            <span>{seedingDemo ? 'Seeding Multi-Shift...' : 'Load Rahul 2-Shift Demo'}</span>
+          </button>
 
-            <button
-              onClick={loadNotesAndCompare}
-              disabled={loading || comparing}
-              className="btn-secondary"
-              style={{ fontSize: '0.8125rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
-            >
-              <RefreshCw size={14} className={loading || comparing ? 'spin' : ''} />
-              Refresh Comparison
-            </button>
-          </div>
+          <button
+            onClick={loadNotesAndCompare}
+            disabled={loading || comparing}
+            className="btn btn-outline"
+          >
+            <RefreshCw size={14} className={loading || comparing ? 'animate-spin' : ''} />
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
       {statusMessage && (
-        <div style={{
-          padding: '0.75rem 1rem',
-          borderRadius: '6px',
-          marginBottom: '1rem',
-          fontSize: '0.875rem',
-          background: statusMessage.type === 'success' ? '#f0fdf4' : statusMessage.type === 'error' ? '#fef2f2' : '#f0f9ff',
-          color: statusMessage.type === 'success' ? '#166534' : statusMessage.type === 'error' ? '#991b1b' : '#0369a1',
-          border: `1px solid ${statusMessage.type === 'success' ? '#bbf7d0' : statusMessage.type === 'error' ? '#fecaca' : '#bae6fd'}`,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem'
-        }}>
+        <div className={`feedback-alert feedback-${statusMessage.type}`}>
           <AlertCircle size={16} />
           <span>{statusMessage.text}</span>
+          <button className="feedback-close" onClick={() => setStatusMessage(null)}>×</button>
         </div>
       )}
 
-      {/* Handover Note Selector Controls */}
+      {/* Shift Note Selectors */}
       {notes.length >= 2 && (
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid #e2e8f0',
-          borderRadius: '8px',
-          padding: '0.875rem 1.25rem',
-          marginBottom: '1.25rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: '#475569' }}>
-              Compare Handovers:
-            </span>
+        <div className="hospital-card shift-selector-card">
+          <div className="shift-selector-row">
+            <span className="selector-title">Compare Handovers:</span>
 
-            {/* Prior Note Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Prior Shift:</span>
+            {/* Prior Shift Selector */}
+            <div className="selector-group">
+              <span className="selector-label">Prior Shift:</span>
               <select
                 value={priorNoteId}
                 onChange={(e) => {
                   setPriorNoteId(e.target.value);
                   runComparison(e.target.value, currentNoteId);
                 }}
-                style={{
-                  fontSize: '0.8125rem',
-                  padding: '0.35rem 0.5rem',
-                  borderRadius: '4px',
-                  border: '1px solid #cbd5e1',
-                  background: '#f8fafc',
-                  color: '#1e293b'
-                }}
+                className="form-input selector-input"
               >
                 {notes.map(n => (
                   <option key={`prior-${n.id}`} value={n.id}>
@@ -231,25 +183,18 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
               </select>
             </div>
 
-            <ArrowRight size={16} color="#94a3b8" />
+            <ArrowRight size={16} className="text-muted" />
 
-            {/* Current Note Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Current Shift:</span>
+            {/* Current Shift Selector */}
+            <div className="selector-group">
+              <span className="selector-label">Current Shift:</span>
               <select
                 value={currentNoteId}
                 onChange={(e) => {
                   setCurrentNoteId(e.target.value);
                   runComparison(priorNoteId, e.target.value);
                 }}
-                style={{
-                  fontSize: '0.8125rem',
-                  padding: '0.35rem 0.5rem',
-                  borderRadius: '4px',
-                  border: '1px solid #cbd5e1',
-                  background: '#f8fafc',
-                  color: '#1e293b'
-                }}
+                className="form-input selector-input"
               >
                 {notes.map(n => (
                   <option key={`current-${n.id}`} value={n.id}>
@@ -260,174 +205,89 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
             </div>
           </div>
 
-          <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-            <span>Notes logged for this patient: <strong>{notes.length}</strong></span>
-          </div>
+          <span className="notes-counter">
+            Total notes logged: <strong>{notes.length}</strong>
+          </span>
         </div>
       )}
 
-      {/* Main Viewport Content */}
+      {/* Main Comparison Body */}
       {loading ? (
-        <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-          <RefreshCw size={24} className="spin" style={{ margin: '0 auto 0.5rem' }} />
-          <div>Loading handover history...</div>
+        <div className="hospital-card loading-state-card">
+          <RefreshCw size={24} className="animate-spin text-primary" />
+          <span>Calculating consecutive shift differences...</span>
         </div>
       ) : notes.length < 2 ? (
-        /* Empty State */
-        <div style={{
-          background: '#ffffff',
-          border: '1px dashed #cbd5e1',
-          borderRadius: '8px',
-          padding: '2.5rem 1.5rem',
-          textAlign: 'center',
-          maxWidth: '680px',
-          margin: '1.5rem auto'
-        }}>
-          <GitCompare size={36} color="#94a3b8" style={{ margin: '0 auto 0.75rem' }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.5rem' }}>
-            Consecutive Handover Tracking Needs at Least 2 Notes
-          </h3>
-          <p style={{ fontSize: '0.875rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+        <div className="hospital-card empty-state-card">
+          <GitCompare size={36} className="text-muted" />
+          <h3>Consecutive Handover Tracking Requires at Least 2 Notes</h3>
+          <p>
             PULSE compares consecutive clinical shifts (e.g. Morning vs Evening) to identify what changed:
             temperature observations, diagnostic test report statuses, scheduled task progression, and persistent symptoms.
           </p>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+          <div className="empty-state-buttons">
             <button
               onClick={handleLoadConsecutiveDemo}
               disabled={seedingDemo}
-              className="btn-primary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              className="btn btn-primary"
             >
               <Sparkles size={15} />
-              {seedingDemo ? 'Creating Demo Notes...' : 'Load Rahul 2-Shift Demonstration Notes'}
+              <span>{seedingDemo ? 'Creating Demo Notes...' : 'Load Rahul 2-Shift Demo'}</span>
             </button>
             <button
               onClick={() => onNavigate && onNavigate('notes')}
-              className="btn-secondary"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+              className="btn btn-outline"
             >
               <FileText size={15} />
-              Enter Handover Note
+              <span>Enter Handover Note</span>
             </button>
           </div>
         </div>
       ) : comparison ? (
-        /* Active Comparison Cards */
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          {/* Executive Delta Synthesis Banner */}
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #0284c7',
-            borderRadius: '6px',
-            padding: '1rem 1.25rem'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-              <Layers size={16} color="#0284c7" />
-              <strong style={{ fontSize: '0.875rem', color: '#0f172a' }}>Consecutive Shift Delta Synthesis:</strong>
-              <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: 'auto' }}>
+        <div className="comparison-results-stack">
+          {/* Executive Delta Banner */}
+          <div className="hospital-card delta-synthesis-card">
+            <div className="delta-header">
+              <Layers size={16} className="text-primary" />
+              <strong>Consecutive Shift Delta Synthesis:</strong>
+              <span className="delta-range-pill">
                 Note #{comparison.prior_note_id} → Note #{comparison.current_note_id}
               </span>
             </div>
-            <p style={{ margin: 0, fontSize: '0.875rem', color: '#334155', lineHeight: 1.5 }}>
+            <p className="delta-narrative">
               {comparison.summary_narrative}
             </p>
           </div>
 
-          {/* 1. Changed Clinical Observations */}
-          <div className="card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <TrendingDown size={18} color="#0284c7" />
-                Changed Clinical Observations
+          {/* Observations Changed */}
+          <div className="hospital-card delta-section-card">
+            <div className="delta-card-header">
+              <h3 className="section-heading text-primary">
+                <TrendingDown size={18} />
+                <span>Changed Clinical Observations</span>
               </h3>
-              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', color: '#475569' }}>
-                {comparison.observations_changed?.length || 0} documented change(s)
+              <span className="count-pill">
+                {comparison.observations_changed?.length || 0} change(s)
               </span>
             </div>
 
             {comparison.observations_changed?.length === 0 ? (
-              <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic' }}>
-                No significant numeric observation or vital changes identified between these consecutive handovers.
-              </div>
+              <span className="empty-delta-text">No physiological observations changed between shifts.</span>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="delta-items-grid">
                 {comparison.observations_changed.map((obs, idx) => (
-                  <div key={idx} style={{
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    padding: '1rem'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.9375rem', color: '#0f172a' }}>
-                          {obs.type}:
-                        </span>
-                        <span style={{
-                          background: '#e0f2fe',
-                          color: '#0369a1',
-                          padding: '0.2rem 0.6rem',
-                          borderRadius: '12px',
-                          fontWeight: 700,
-                          fontSize: '0.875rem'
-                        }}>
-                          {obs.prior_value} → {obs.current_value}
-                        </span>
-                        <span style={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          color: obs.direction === 'Decreased' ? '#16a34a' : (obs.direction === 'Increased' ? '#dc2626' : '#64748b'),
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.2rem'
-                        }}>
-                          {obs.direction === 'Decreased' ? <TrendingDown size={14} /> : <TrendingUp size={14} />}
-                          {obs.delta} ({obs.direction})
-                        </span>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                        {obs.prior_time} → {obs.current_time}
-                      </span>
+                  <div key={idx} className="delta-item-card">
+                    <div className="item-title-row">
+                      <strong className="param-name">{obs.parameter}</strong>
+                      <span className="pill-mini pill-changed">Changed</span>
                     </div>
-
-                    {/* Source Sentences Traceability */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
-                      <div style={{ background: '#ffffff', padding: '0.625rem 0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                        <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
-                          Prior Shift Evidence:
-                        </span>
-                        <div style={{ fontSize: '0.8125rem', color: '#1e293b', marginTop: '0.2rem', fontStyle: 'italic' }}>
-                          "{obs.prior_sentence || 'Not documented'}"
-                        </div>
-                      </div>
-
-                      <div style={{ background: '#ffffff', padding: '0.625rem 0.75rem', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                        <span style={{ fontSize: '0.6875rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>
-                          Current Shift Evidence:
-                        </span>
-                        <div style={{ fontSize: '0.8125rem', color: '#1e293b', marginTop: '0.2rem', fontStyle: 'italic' }}>
-                          "{obs.current_sentence || 'Not documented'}"
-                        </div>
-                      </div>
+                    <div className="value-transition-row">
+                      <span className="prior-val">Prior: {obs.prior_value}</span>
+                      <ArrowRight size={14} className="text-primary" />
+                      <span className="current-val">Current: {obs.current_value}</span>
                     </div>
-
-                    {/* Safety Precaution Disclaimer */}
-                    {obs.clinical_caution && (
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '0.4rem',
-                        fontSize: '0.75rem',
-                        color: '#b45309',
-                        background: '#fefce8',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '4px',
-                        border: '1px solid #fef08a'
-                      }}>
-                        <ShieldAlert size={14} style={{ marginTop: '0.1rem', flexShrink: 0 }} />
-                        <span>{obs.clinical_caution}</span>
-                      </div>
+                    {obs.clinical_significance && (
+                      <div className="significance-note">{obs.clinical_significance}</div>
                     )}
                   </div>
                 ))}
@@ -435,203 +295,61 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate }
             )}
           </div>
 
-          {/* 2. Diagnostic & Laboratory Status Updates */}
-          <div className="card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FileCheck2 size={18} color="#059669" />
-                Diagnostic & Laboratory Status Updates
+          {/* New Events or Orders */}
+          <div className="hospital-card delta-section-card">
+            <div className="delta-card-header">
+              <h3 className="section-heading text-emerald">
+                <FileCheck2 size={18} />
+                <span>New Events & Diagnostic Updates</span>
               </h3>
-              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', color: '#475569' }}>
-                {comparison.investigations_updated?.length || 0} transition(s)
+              <span className="count-pill">
+                {comparison.new_events?.length || 0} new item(s)
               </span>
             </div>
 
-            {comparison.investigations_updated?.length === 0 ? (
-              <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic' }}>
-                No diagnostic test status transitions identified between these handovers.
-              </div>
+            {comparison.new_events?.length === 0 ? (
+              <span className="empty-delta-text">No new clinical events reported during this shift.</span>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-                {comparison.investigations_updated.map((inv, idx) => (
-                  <div key={idx} style={{
-                    background: '#f0fdf4',
-                    border: '1px solid #bbf7d0',
-                    borderRadius: '6px',
-                    padding: '0.875rem 1rem'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                      <span style={{ fontWeight: 600, fontSize: '0.875rem', color: '#166534' }}>
-                        {inv.name}
-                      </span>
-                      <span style={{
-                        background: '#dcfce7',
-                        color: '#15803d',
-                        border: '1px solid #86efac',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700
-                      }}>
-                        {inv.transition}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.5rem' }}>
-                      <div style={{ fontSize: '0.75rem', color: '#374151' }}>
-                        <strong>Prior Shift:</strong> <em>"{inv.prior_sentence}"</em>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#374151' }}>
-                        <strong>Current Shift:</strong> <em>"{inv.current_sentence}"</em>
-                      </div>
-                    </div>
-
-                    {inv.clinical_implication && (
-                      <div style={{ fontSize: '0.75rem', color: '#15803d', marginTop: '0.5rem' }}>
-                        • {inv.clinical_implication}
-                      </div>
-                    )}
+              <div className="delta-events-list">
+                {comparison.new_events.map((ev, idx) => (
+                  <div key={idx} className="delta-event-pill">
+                    <CheckCircle2 size={15} className="text-emerald" />
+                    <span>{typeof ev === 'string' ? ev : ev.description || ev.text}</span>
                   </div>
                 ))}
               </div>
             )}
           </div>
 
-          {/* 3. Task Progression & Actions Completed */}
-          <div className="card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: '#1e293b', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <CheckCircle2 size={18} color="#16a34a" />
-                Task Progression & Documented Completions
+          {/* Tasks & Directives Progression */}
+          <div className="hospital-card delta-section-card">
+            <div className="delta-card-header">
+              <h3 className="section-heading text-amber">
+                <Clock size={18} />
+                <span>Task Progression & Follow-ups</span>
               </h3>
-              <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '4px', color: '#475569' }}>
-                {comparison.tasks_progressed?.length || 0} progressed
+              <span className="count-pill">
+                {comparison.task_status_updates?.length || 0} progression(s)
               </span>
             </div>
 
-            {comparison.tasks_progressed?.length === 0 ? (
-              <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic' }}>
-                No task state transitions detected across consecutive handovers.
-              </div>
+            {comparison.task_status_updates?.length === 0 ? (
+              <span className="empty-delta-text">No task updates detected between these handovers.</span>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {comparison.tasks_progressed.map((t, idx) => (
-                  <div key={idx} style={{
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '6px',
-                    padding: '0.875rem 1rem'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                      <strong style={{ fontSize: '0.875rem', color: '#1e293b' }}>{t.task}</strong>
-                      <span style={{
-                        background: '#dcfce7',
-                        color: '#15803d',
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: 600
-                      }}>
-                        {t.prior_status} → {t.current_status}
-                      </span>
+              <div className="delta-tasks-list">
+                {comparison.task_status_updates.map((tsk, idx) => (
+                  <div key={idx} className="delta-task-row">
+                    <div className="task-desc">
+                      <strong>{tsk.task}</strong>
+                      <span className="task-evidence">{tsk.evidence}</span>
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: '#475569', fontStyle: 'italic' }}>
-                      Documented Evidence: "{t.current_sentence}"
-                    </div>
+                    <span className={`status-pill status-${(tsk.new_status || 'Pending').toLowerCase().replace(' ', '-')}`}>
+                      {tsk.new_status}
+                    </span>
                   </div>
                 ))}
               </div>
             )}
-          </div>
-
-          {/* 4. Ongoing Conditions & New Directives */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
-            {/* Ongoing Conditions */}
-            <div className="card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem' }}>
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <Clock size={16} color="#d97706" />
-                Ongoing / Persisting Conditions
-              </h3>
-
-              {comparison.ongoing_conditions?.length === 0 ? (
-                <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic' }}>
-                  No ongoing conditions explicitly documented across both handovers.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {comparison.ongoing_conditions.map((oc, idx) => (
-                    <div key={idx} style={{
-                      background: '#fffbeb',
-                      border: '1px solid #fef3c7',
-                      borderRadius: '4px',
-                      padding: '0.625rem 0.75rem'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#92400e' }}>
-                          {oc.condition}
-                        </span>
-                        <span style={{ fontSize: '0.6875rem', background: '#fde68a', color: '#78350f', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>
-                          {oc.status}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#451a03', marginTop: '0.25rem', fontStyle: 'italic' }}>
-                        Current shift: "{oc.current_sentence}"
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* New Directives & Instructions */}
-            <div className="card" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '1.25rem' }}>
-              <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <UserCheck size={16} color="#7c3aed" />
-                New Directives & Clinician Instructions
-              </h3>
-
-              {comparison.new_directives?.length === 0 ? (
-                <div style={{ fontSize: '0.8125rem', color: '#64748b', fontStyle: 'italic' }}>
-                  No new directives documented in current handover note.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {comparison.new_directives.map((nd, idx) => (
-                    <div key={idx} style={{
-                      background: '#f5f3ff',
-                      border: '1px solid #ddd6fe',
-                      borderRadius: '4px',
-                      padding: '0.625rem 0.75rem'
-                    }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.8125rem', color: '#5b21b6' }}>
-                        {nd.directive}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: '#4c1d95', marginTop: '0.25rem', fontStyle: 'italic' }}>
-                        "{nd.source_sentence}"
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Clinician Non-Hallucinatory Audit Guarantee */}
-          <div style={{
-            background: '#f8fafc',
-            border: '1px solid #e2e8f0',
-            borderRadius: '6px',
-            padding: '0.875rem 1.25rem',
-            fontSize: '0.75rem',
-            color: '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem'
-          }}>
-            <ShieldAlert size={16} color="#94a3b8" />
-            <span>
-              <strong>Clinical Guardrail Compliance:</strong> PULSE compares notes strictly on documented facts. It never marks an omitted condition as resolved, nor does it infer full patient recovery from a numeric temperature reduction.
-            </span>
           </div>
         </div>
       ) : null}

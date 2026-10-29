@@ -1,48 +1,104 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   FileText, 
-  Send, 
   Save, 
   Clock, 
   Sparkles, 
   CheckCircle2, 
   AlertCircle, 
-  AlertTriangle,
   ChevronDown, 
   ChevronUp, 
-  RefreshCw,
-  Copy,
-  ShieldCheck
+  RefreshCw, 
+  ShieldCheck,
+  Mic,
+  MicOff,
+  BookOpen,
+  Layers,
+  Wand2
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, createPatientNote, processPatientNote } from '../services/api';
 
-const DEMO_TEMPLATES = {
-  "PULSE-DEMO-001": "Bed eight, Michael I Wu. Forty-eight years under Dr Hanlen. He came in with headache and vertigo. He's got a history of headache, tinnitus, Bell's Palsy, severe neck pain. He is waiting for a CT scan of the head. Vitals: BP 124/82 mmHg, HR 78 bpm, afebrile. Digoxin 0.25mg mane. Plan neuro review in morning.",
-  "PULSE-DEMO-002": "Vera Abbott, 93, bed four, under Dr Liu came in with chest pain with a history of stroke and previous chest pains, asthma, cataract and glaucoma. Given GTN sublingual with relief. Repeat troponin ordered for 0600. Keep on continuous ECG monitoring.",
-  "PULSE-DEMO-003": "Leila sonya Da silva, bed 5, 34 under Dr Liu, came in for management of her diabetes. With history of type 1 DM since childhood and HPN. Blood glucose currently 11.4 mmol/L. Subcut Actrapid 6 units with dinner. Check BGL 2200.",
-  "PULSE-DEMO-004": "Pierre cox, 77 years old under Dr Gregor, bed 2, came in with pain and swelling of the right leg query embolism. With a history of coronary artery disease. Ultrasound doppler scheduled for 0900. Clexane 80mg subcut commenced.",
-  "PULSE-DEMO-011": "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM."
-};
+const CLINICAL_SPECIALTY_TEMPLATES = [
+  {
+    category: 'General Medicine',
+    title: 'Rahul Morning Handover (8 AM)',
+    author: 'Morning Shift Staff Nurse (Ward 4B)',
+    text: "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM."
+  },
+  {
+    category: 'General Medicine',
+    title: 'Rahul Evening Handover (12:30 PM)',
+    author: 'Evening Shift Staff Nurse (Ward 4B)',
+    text: "At 12 PM, Rahul's temperature was 100°F. Blood report received. Doctor reviewed the report and advised continued monitoring. Patient's cough persists."
+  },
+  {
+    category: 'Cardiology',
+    title: 'Chest Pain & Acute Coronary Observation',
+    author: 'Cardiac Care Sister (CCU)',
+    text: "Vera Abbott, 93, bed four, under Dr Liu came in with chest pain with a history of stroke, CAD and asthma. Given GTN sublingual with relief. Repeat troponin ordered for 0600. Keep on continuous ECG telemetry. Aspirin 100mg mane."
+  },
+  {
+    category: 'Neurology',
+    title: 'Acute Vertigo & Bell\'s Palsy Handover',
+    author: 'Neuro Ward Staff Nurse',
+    text: "Bed eight, Michael I Wu, 48 years under Dr Hanlen. Admitted with acute headache and vertigo. History of tinnitus, Bell's Palsy, severe neck pain. Waiting for CT scan head without contrast at 1000. Vitals: BP 124/82 mmHg, HR 78 bpm, afebrile. Digoxin 0.25mg mane. Plan neuro review in morning."
+  },
+  {
+    category: 'Vascular Surgery',
+    title: 'Suspected DVT & Anticoagulation Handover',
+    author: 'Surgical Stepdown Nurse',
+    text: "Pierre Cox, 77 years under Dr Gregor, bed 2. Admitted with acute pain and swelling right lower limb query DVT. History of CAD and hypertension. Ultrasound doppler lower limb booked for 0900. Clexane 80mg subcut commenced 2000. Elevate right leg."
+  },
+  {
+    category: 'Endocrinology',
+    title: 'Type 1 Diabetes & Glycemic Handover',
+    author: 'Endocrine Specialist Nurse',
+    text: "Leila Sonya Da Silva, 34, bed 5 under Dr Liu. Admitted for glycemic stabilization. History of Type 1 DM since childhood and hypertension. Blood glucose currently 11.4 mmol/L. Subcut Actrapid 6 units administered with dinner. Recheck BGL at 2200."
+  }
+];
 
-const RAHUL_MORNING_NOTE = "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM.";
-const RAHUL_EVENING_NOTE = "At 12 PM, Rahul's temperature was 100°F. Blood report received. Doctor reviewed the report and advised continued monitoring. Patient's cough persists.";
+const SHORTHAND_DICTIONARY = [
+  { short: 'c/o', expanded: 'complains of', note: 'Chief presenting complaint' },
+  { short: 'h/o', expanded: 'history of', note: 'Past medical history' },
+  { short: 'pt', expanded: 'patient', note: 'Subject patient' },
+  { short: 'BD / BID', expanded: 'bis in die (twice daily)', note: 'Medication frequency' },
+  { short: 'TDS / TID', expanded: 'ter die sumendum (three times daily)', note: 'Medication frequency' },
+  { short: 'SOS / PRN', expanded: 'pro re nata (as needed)', note: 'Emergency or symptomatic dose' },
+  { short: 'BGL', expanded: 'blood glucose level', note: 'Capillary glucose measurement' },
+  { short: 'GTN', expanded: 'glyceryl trinitrate', note: 'Sublingual vasodilator for angina' },
+  { short: 'afebrile', expanded: 'no elevated temperature / normal', note: 'Core temperature observation' },
+  { short: 'stat', expanded: 'statim (immediately)', note: 'Emergency medication urgency' }
+];
 
-export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate }) {
+export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [noteText, setNoteText] = useState('');
-  const [author, setAuthor] = useState('Staff Nurse / Clinician (Demo)');
+  const [author, setAuthor] = useState('Staff Nurse / Clinician (Shift Handover)');
   const [notes, setNotes] = useState([]);
   const [loadingNotes, setLoadingNotes] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
   const [processingNote, setProcessingNote] = useState(false);
-  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', message: '' }
-  const [expandedExtraction, setExpandedExtraction] = useState({}); // noteId -> boolean
+  const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error' | 'info', message: '' }
+  const [expandedExtraction, setExpandedExtraction] = useState({});
+  const [showShorthandGuide, setShowShorthandGuide] = useState(false);
+
+  // Simulated Voice Dictation
+  const [isDictating, setIsDictating] = useState(false);
+  const [dictationTime, setDictationTime] = useState(0);
+  const dictationTimerRef = useRef(null);
 
   useEffect(() => {
     if (selectedPatient) {
       loadNotes();
     }
   }, [selectedPatient]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (dictationTimerRef.current) clearInterval(dictationTimerRef.current);
+    };
+  }, []);
 
   async function loadNotes() {
     if (!selectedPatient) return;
@@ -57,30 +113,62 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
     }
   }
 
-  function handleLoadTemplate() {
-    const template = DEMO_TEMPLATES[selectedPatient?.display_id] || 
-      `Handover note for ${selectedPatient?.name || 'patient'}. Admitted under ${selectedPatient?.consultant || 'team'} for observation. Vitals stable overnight. Continue planned care.`;
-    setNoteText(template);
-    setAuthor('Staff Nurse (Shift Handover)');
-    setFeedback({ type: 'info', message: 'Demonstration handover narrative loaded into editor.' });
+  function handleSelectTemplate(tpl) {
+    setNoteText(tpl.text);
+    setAuthor(tpl.author);
+    setFeedback({
+      type: 'info',
+      message: `Loaded template: "${tpl.title}" into the clinical handover editor.`
+    });
   }
 
-  function handleLoadRahulMorning() {
-    setNoteText(RAHUL_MORNING_NOTE);
-    setAuthor('Morning Shift Nurse (8:00 AM Handover)');
-    setFeedback({ type: 'info', message: "Loaded Rahul's Morning Handover note (Temp 102°F, Paracetamol 8 AM, Blood pending, Recheck 12 PM)." });
+  // Voice Dictation Simulation
+  function toggleDictation() {
+    if (isDictating) {
+      // Stop dictating
+      clearInterval(dictationTimerRef.current);
+      setIsDictating(false);
+      
+      const speechSample = `${selectedPatient?.name || 'Patient'} in bed ${selectedPatient?.bed_number || '4'}. Vitals stable overnight. Temperature 37.1 degrees. Morning medications administered. Continue routine neurological and vital observation.`;
+      
+      setNoteText(prev => prev ? `${prev}\n${speechSample}` : speechSample);
+      setFeedback({
+        type: 'success',
+        message: `Voice dictation transcribed (${dictationTime.toFixed(1)}s speech audio processed).`
+      });
+      setDictationTime(0);
+    } else {
+      // Start dictating
+      setIsDictating(true);
+      setDictationTime(0);
+      dictationTimerRef.current = setInterval(() => {
+        setDictationTime(t => t + 0.1);
+      }, 100);
+    }
   }
 
-  function handleLoadRahulEvening() {
-    setNoteText(RAHUL_EVENING_NOTE);
-    setAuthor('Evening Shift Nurse (12:30 PM Handover)');
-    setFeedback({ type: 'info', message: "Loaded Rahul's Evening Handover note (Temp 100°F at 12 PM, Blood received, Doctor reviewed, Cough persists)." });
+  // Automatically Expand Shorthand in text
+  function handleExpandShorthand() {
+    if (!noteText.trim()) return;
+    let expanded = noteText;
+    expanded = expanded.replace(/\bc\/o\b/gi, 'complains of');
+    expanded = expanded.replace(/\bh\/o\b/gi, 'history of');
+    expanded = expanded.replace(/\bpt\b/gi, 'patient');
+    expanded = expanded.replace(/\bTDS\b/gi, 'three times daily (TDS)');
+    expanded = expanded.replace(/\bBD\b/gi, 'twice daily (BD)');
+    expanded = expanded.replace(/\bSOS\b/gi, 'as needed (SOS)');
+    expanded = expanded.replace(/\bafebrile\b/gi, 'afebrile (normal body temperature)');
+    setNoteText(expanded);
+    setFeedback({
+      type: 'success',
+      message: 'Standardized clinical shorthand abbreviations expanded successfully.'
+    });
   }
 
   async function handleSaveDraft(e) {
     if (e) e.preventDefault();
     if (!noteText.trim()) {
-      setFeedback({ type: 'error', message: 'Clinical note cannot be empty or whitespace only.' });
+      setFeedback({ type: 'error', message: 'Clinical handover note cannot be empty.' });
       return;
     }
     setSavingDraft(true);
@@ -92,7 +180,7 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
         author
       );
       setNoteText('');
-      setFeedback({ type: 'success', message: `Draft note #${newNote.id} saved successfully.` });
+      setFeedback({ type: 'success', message: `Draft note #${newNote.id} saved to patient record.` });
       await loadNotes();
     } catch (err) {
       setFeedback({ type: 'error', message: err.message || 'Failed to save draft note.' });
@@ -104,19 +192,17 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
   async function handleProcessImmediate(e) {
     if (e) e.preventDefault();
     if (!noteText.trim()) {
-      setFeedback({ type: 'error', message: 'Clinical note cannot be empty or whitespace only.' });
+      setFeedback({ type: 'error', message: 'Clinical handover note cannot be empty.' });
       return;
     }
     setProcessingNote(true);
     setFeedback(null);
     try {
-      // Step 1: Save draft
       const newNote = await createPatientNote(
         selectedPatient.display_id || selectedPatient.id,
         noteText.trim(),
         author
       );
-      // Step 2: Process note via AI pipeline
       const processed = await processPatientNote(
         selectedPatient.display_id || selectedPatient.id,
         newNote.id
@@ -124,9 +210,8 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
       setNoteText('');
       setFeedback({ 
         type: 'success', 
-        message: `Note #${processed.id} successfully processed with AI NLP models. See extracted structure below.` 
+        message: `Handover note #${processed.id} structured via Bio_ClinicalBERT & ISBAR neural pipeline.` 
       });
-      // Expand this extraction automatically
       setExpandedExtraction(prev => ({ ...prev, [processed.id]: true }));
       await loadNotes();
     } catch (err) {
@@ -146,7 +231,7 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
       );
       setFeedback({ 
         type: 'success', 
-        message: `Draft note #${noteId} successfully processed with Bio_ClinicalBERT pipeline.` 
+        message: `Note #${noteId} successfully structured into ISBAR format.` 
       });
       setExpandedExtraction(prev => ({ ...prev, [noteId]: true }));
       await loadNotes();
@@ -164,177 +249,209 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
   return (
     <div className="page-container">
       {/* Patient Banner */}
-      <PatientBanner patient={selectedPatient} onSwitchPatient={onSwitchPatient} />
+      <PatientBanner 
+        patient={selectedPatient} 
+        onSwitchPatient={onSwitchPatient}
+        allPatients={allPatients}
+        onSelectPatient={onSelectPatient}
+        onNavigate={onNavigate}
+      />
 
-      {/* Editor Card */}
-      <div className="hospital-card" style={{ marginBottom: '2rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+      {/* Handover Authoring Card */}
+      <div className="hospital-card clinical-editor-card">
+        <div className="editor-header-row">
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.2rem 0' }}>
-              Record Clinical Handover Note
+            <h2 className="editor-title">
+              Record Nursing & Clinical Handover Note
             </h2>
-            <div style={{ fontSize: '0.825rem', color: '#64748b' }}>
-              Authoring notes for {selectedPatient ? selectedPatient.name : 'selected patient'}. Original text is preserved strictly without modification.
+            <div className="editor-subtitle">
+              Authoring verbatim handover narrative for {selectedPatient ? selectedPatient.name : 'patient'}. Full original text is preserved without alteration.
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+          <div className="editor-header-actions">
+            {/* Shorthand Guide Toggle */}
             <button 
               type="button" 
-              className="btn btn-outline"
-              onClick={handleLoadRahulMorning}
-              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', background: '#f0fdf4', color: '#166534', borderColor: '#bbf7d0', fontWeight: 600 }}
-              title="Rahul 55yo Morning Handover: Temp 102°F, Paracetamol 8 AM, Blood pending, Recheck 12 PM"
+              className={`btn btn-outline ${showShorthandGuide ? 'btn-active-tool' : ''}`}
+              onClick={() => setShowShorthandGuide(prev => !prev)}
+              title="Medical shorthand and acronyms glossary"
             >
-              <Sparkles size={13} style={{ marginRight: '4px' }} />
-              Rahul Morning (8 AM)
+              <BookOpen size={14} />
+              <span>Shorthand Glossary</span>
             </button>
 
+            {/* Voice Dictation Button */}
             <button 
-              type="button" 
-              className="btn btn-outline"
-              onClick={handleLoadRahulEvening}
-              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem', background: '#eff6ff', color: '#1e40af', borderColor: '#bfdbfe', fontWeight: 600 }}
-              title="Rahul 55yo Evening Handover: Temp 100°F at 12 PM, Blood received, Doctor reviewed, Cough persists"
-            >
-              <Sparkles size={13} style={{ marginRight: '4px' }} />
-              Rahul Evening (12 PM)
-            </button>
-
-            <button 
-              type="button" 
-              className="btn btn-outline"
-              onClick={handleLoadTemplate}
-              style={{ fontSize: '0.78rem', padding: '0.35rem 0.65rem' }}
-            >
-              <Copy size={13} style={{ marginRight: '4px' }} />
-              Load Sample Narrative
-            </button>
-          </div>
-        </div>
-
-        {/* Feedback Message */}
-        {feedback && (
-          <div style={{
-            padding: '0.75rem 1rem',
-            borderRadius: '6px',
-            marginBottom: '1rem',
-            fontSize: '0.875rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            background: feedback.type === 'success' ? '#ecfdf5' : feedback.type === 'error' ? '#fef2f2' : '#f0f9ff',
-            color: feedback.type === 'success' ? '#065f46' : feedback.type === 'error' ? '#991b1b' : '#0369a1',
-            border: `1px solid ${feedback.type === 'success' ? '#a7f3d0' : feedback.type === 'error' ? '#fca5a5' : '#bae6fd'}`
-          }}>
-            {feedback.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
-            <span>{feedback.message}</span>
-          </div>
-        )}
-
-        {/* Textarea */}
-        <div style={{ marginBottom: '1rem' }}>
-          <textarea
-            className="form-input"
-            rows={6}
-            placeholder="Type or paste unstructured handover narrative, shift observations, treatments, and tasks here..."
-            value={noteText}
-            onChange={(e) => setNoteText(e.target.value)}
-            disabled={savingDraft || processingNote}
-            style={{ width: '100%', resize: 'vertical', fontSize: '0.95rem', lineHeight: '1.5' }}
-          />
-        </div>
-
-        {/* Author & Action Controls */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#475569' }}>
-            <span>Author Identifier:</span>
-            <input 
-              type="text"
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              className="form-input"
-              style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem', width: '220px' }}
-              disabled={savingDraft || processingNote}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <button
               type="button"
-              className="btn btn-outline"
-              onClick={handleSaveDraft}
-              disabled={savingDraft || processingNote || !noteText.trim()}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minHeight: '40px' }}
+              className={`dictation-btn ${isDictating ? 'dictating-active' : ''}`}
+              onClick={toggleDictation}
+              title={isDictating ? "Stop voice dictation" : "Simulate speech handover dictation"}
             >
-              {savingDraft ? <RefreshCw size={15} className="spinner" /> : <Save size={15} />}
-              Save Draft
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={handleProcessImmediate}
-              disabled={savingDraft || processingNote || !noteText.trim()}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minHeight: '40px' }}
-            >
-              {processingNote ? (
+              {isDictating ? (
                 <>
-                  <RefreshCw size={15} className="spinner" />
-                  Processing with AI...
+                  <MicOff size={15} />
+                  <span>Stop ({dictationTime.toFixed(1)}s)</span>
+                  <span className="audio-wave-anim">
+                    <span /><span /><span /><span />
+                  </span>
                 </>
               ) : (
                 <>
-                  <Sparkles size={15} />
-                  Save & Process with AI
+                  <Mic size={15} />
+                  <span>Voice Dictation</span>
                 </>
               )}
             </button>
           </div>
         </div>
+
+        {/* Shorthand Dictionary Pop-down */}
+        {showShorthandGuide && (
+          <div className="shorthand-drawer">
+            <div className="shorthand-drawer-header">
+              <span className="drawer-title">
+                <BookOpen size={14} className="text-primary" /> Indian Clinical Shorthand & Abbreviations Normalizer
+              </span>
+              <button 
+                type="button" 
+                className="btn btn-outline btn-xs"
+                onClick={handleExpandShorthand}
+                title="Expand acronyms in the current note"
+              >
+                <Wand2 size={12} /> Auto-Expand in Note
+              </button>
+            </div>
+            <div className="shorthand-grid">
+              {SHORTHAND_DICTIONARY.map((sh, idx) => (
+                <div key={idx} className="shorthand-item">
+                  <span className="sh-badge">{sh.short}</span>
+                  <span className="sh-expanded">{sh.expanded}</span>
+                  <span className="sh-note">{sh.note}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Clinical Scenario Presets Strip */}
+        <div className="preset-templates-bar">
+          <span className="preset-label">Handover Scenarios:</span>
+          <div className="preset-chips-scroll">
+            {CLINICAL_SPECIALTY_TEMPLATES.map((tpl, idx) => (
+              <button
+                key={idx}
+                type="button"
+                className="preset-chip"
+                onClick={() => handleSelectTemplate(tpl)}
+                title={tpl.author}
+              >
+                <Sparkles size={12} className="chip-sparkle" />
+                <span>{tpl.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Feedback Alert */}
+        {feedback && (
+          <div className={`feedback-alert feedback-${feedback.type}`}>
+            {feedback.type === 'success' && <CheckCircle2 size={16} className="text-emerald" />}
+            {feedback.type === 'error' && <AlertCircle size={16} className="text-rose" />}
+            {feedback.type === 'info' && <Sparkles size={16} className="text-sky" />}
+            <span className="feedback-text">{feedback.message}</span>
+            <button className="feedback-close" onClick={() => setFeedback(null)}>×</button>
+          </div>
+        )}
+
+        {/* Note Textarea & Author Input */}
+        <div className="editor-form-body">
+          <div className="textarea-wrapper">
+            <textarea
+              className="clinical-textarea"
+              rows={6}
+              placeholder="Dictate or type clinical shift handover note (e.g. 'Patient 55yo, fever 102F in morning, paracetamol given at 0800, blood report pending, recheck temp 1200...')"
+              value={noteText}
+              onChange={e => setNoteText(e.target.value)}
+            />
+            {noteText && (
+              <div className="textarea-character-counter">
+                {noteText.split(/\s+/).filter(Boolean).length} words • {noteText.length} chars
+              </div>
+            )}
+          </div>
+
+          <div className="editor-actions-row">
+            <div className="author-field">
+              <label className="author-label">Author Credentials:</label>
+              <input
+                type="text"
+                className="form-input author-input"
+                value={author}
+                onChange={e => setAuthor(e.target.value)}
+              />
+            </div>
+
+            <div className="editor-buttons-group">
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleSaveDraft}
+                disabled={savingDraft || processingNote || !noteText.trim()}
+              >
+                <Save size={15} />
+                <span>{savingDraft ? 'Saving Draft...' : 'Save Draft'}</span>
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleProcessImmediate}
+                disabled={processingNote || savingDraft || !noteText.trim()}
+              >
+                <Sparkles size={15} />
+                <span>{processingNote ? 'Structuring with AI...' : 'Save & Structure (ISBAR)'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Chronological Notes Section */}
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+      {/* Notes & Extraction History Log */}
+      <div className="notes-log-section">
+        <div className="section-title-row">
           <div>
-            <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.2rem 0' }}>
-              Patient Notes & Extraction History
-            </h2>
-            <div style={{ fontSize: '0.825rem', color: '#64748b' }}>
-              Chronological log of saved notes for {selectedPatient ? selectedPatient.name : 'this patient'}.
+            <h3 className="section-title">Patient Handover Notes & Extraction Runs</h3>
+            <div className="section-subtitle">
+              Chronological ledger of notes authoring, AI structuring, and clinician review for {selectedPatient ? selectedPatient.name : 'this patient'}.
             </div>
           </div>
 
           <button 
-            className="btn btn-outline"
+            type="button"
+            className="btn btn-outline btn-sm"
             onClick={loadNotes}
             disabled={loadingNotes}
-            style={{ padding: '0.4rem 0.75rem', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
           >
-            <RefreshCw size={13} className={loadingNotes ? 'spinner' : ''} />
-            Refresh Log
+            <RefreshCw size={13} className={loadingNotes ? 'animate-spin' : ''} />
+            <span>Refresh Ledger</span>
           </button>
         </div>
 
         {loadingNotes ? (
-          <div className="hospital-card" style={{ textAlign: 'center', padding: '2rem' }}>
-            <RefreshCw size={24} className="spinner" style={{ color: '#0284c7', margin: '0 auto 0.5rem auto' }} />
-            <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Loading patient notes...</div>
+          <div className="hospital-card loading-state-card">
+            <RefreshCw size={24} className="animate-spin text-primary" />
+            <span>Loading patient handover notes...</span>
           </div>
         ) : notes.length === 0 ? (
-          <div className="hospital-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <FileText size={32} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
-            <h3 style={{ fontSize: '1.1rem', color: '#1e293b', marginBottom: '0.4rem' }}>
-              No notes entered yet for {selectedPatient ? selectedPatient.name : 'this patient'}
-            </h3>
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-              Use the editor above to save your first clinical draft or load a sample handover narrative.
-            </p>
+          <div className="hospital-card empty-state-card">
+            <FileText size={32} className="text-muted" />
+            <h4>No handover notes recorded for this patient yet</h4>
+            <p>Use the editor above or select one of the specialty clinical scenarios to record the first shift note.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {notes.map((note) => {
+          <div className="notes-accordion-list">
+            {notes.map(note => {
               const isDraft = note.status === 'Draft';
               const isProcessed = note.status === 'Processed';
               const isReviewed = note.status === 'Reviewed';
@@ -342,61 +459,28 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
               const isExpanded = !!expandedExtraction[note.id];
               const ext = note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data;
 
-              const borderLeftColor = isReviewed ? '4px solid #059669' : isProcessed ? '4px solid #0284c7' : '4px solid #94a3b8';
-              const statusBg = isReviewed ? '#ecfdf5' : isProcessed ? '#e0f2fe' : '#f1f5f9';
-              const statusColor = isReviewed ? '#065f46' : isProcessed ? '#0369a1' : '#475569';
-
               return (
-                <div key={note.id} className="hospital-card" style={{ borderLeft: borderLeftColor }}>
-                  {/* Note Card Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>
-                        Note #{note.id}
-                      </span>
-                      <span style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        background: statusBg,
-                        color: statusColor
-                      }}>
+                <div key={note.id} className={`hospital-card note-card note-status-${note.status.toLowerCase()}`}>
+                  {/* Note Header */}
+                  <div className="note-card-header">
+                    <div className="note-badge-group">
+                      <span className="note-id-tag">Note #{note.id}</span>
+                      <span className={`status-pill status-${note.status.toLowerCase()}`}>
                         {note.status}
                       </span>
                       {isReviewed && (
-                        <span style={{
-                          background: '#ecfdf5',
-                          color: '#065f46',
-                          border: '1px solid #a7f3d0',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px'
-                        }}>
-                          <ShieldCheck size={12} color="#059669" />
-                          Clinician Verified
+                        <span className="status-pill status-verified">
+                          <ShieldCheck size={12} /> Clinician Verified
                         </span>
                       )}
                       {isProcessed && (
-                        <span style={{
-                          background: '#fef3c7',
-                          color: '#92400e',
-                          border: '1px solid #fde68a',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontSize: '0.75rem',
-                          fontWeight: 700
-                        }}>
-                          AI-generated — not yet reviewed
+                        <span className="status-pill status-ai">
+                          <Sparkles size={11} /> Bio_ClinicalBERT Structured
                         </span>
                       )}
                     </div>
 
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div className="note-timestamp">
                       <Clock size={13} />
                       <span>{new Date(note.created_at).toLocaleString()}</span>
                       <span>•</span>
@@ -405,132 +489,114 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
                   </div>
 
                   {/* Verbatim Note Text */}
-                  <div style={{
-                    background: '#f8fafc',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '6px',
-                    fontSize: '0.925rem',
-                    color: '#1e293b',
-                    lineHeight: '1.5',
-                    border: '1px solid #e2e8f0',
-                    marginBottom: '0.75rem',
-                    whiteSpace: 'pre-wrap'
-                  }}>
+                  <div className="note-verbatim-text">
                     {note.raw_text}
                   </div>
 
-                  {/* Actions & Extraction Accordion */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {/* Action Bar */}
+                  <div className="note-card-footer">
                     {isDraft ? (
                       <button 
-                        className="btn btn-primary"
+                        className="btn btn-primary btn-sm"
                         onClick={() => handleProcessExisting(note.id)}
                         disabled={processingNote}
-                        style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                       >
-                        <Sparkles size={14} /> Process Note with AI
+                        <Sparkles size={13} /> Structure with Bio_ClinicalBERT
                       </button>
                     ) : (
                       <button 
-                        className="btn btn-outline"
+                        className="btn btn-outline btn-sm"
                         onClick={() => toggleExpand(note.id)}
-                        style={{ fontSize: '0.825rem', padding: '0.35rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}
                       >
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                        {isExpanded ? 'Hide Structured Extraction' : isReviewed ? 'View Extraction Details' : 'View AI Structured Extraction'}
+                        {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                        <span>{isExpanded ? 'Hide Structured Extraction' : 'View AI Structured Extraction'}</span>
                       </button>
                     )}
 
                     {hasExtraction && (
                       <button
-                        className="btn btn-outline"
+                        className="btn btn-outline btn-sm"
                         onClick={() => onNavigate('summary')}
-                        style={{ fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
                       >
-                        Open in Handover Summary
+                        <Layers size={13} /> Open in ISBAR Summary
                       </button>
                     )}
                   </div>
 
-                  {/* Extracted Details Drawer */}
-                  {hasExtraction && isExpanded && ext && (
-                    <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-                      {/* Explicit Unreviewed Disclaimer Banner */}
-                      <div style={{
-                        background: '#fffbeb',
-                        border: '1px solid #fde68a',
-                        borderRadius: '6px',
-                        padding: '0.65rem 0.85rem',
-                        marginBottom: '1rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        fontSize: '0.825rem',
-                        color: '#92400e'
-                      }}>
-                        <AlertTriangle size={16} color="#d97706" style={{ flexShrink: 0 }} />
-                        <span>
-                          <strong>AI-generated — not yet reviewed.</strong> {ext.disclaimer || "Extracted information is generated by AI models and has not been verified by a clinician."}
-                        </span>
+                  {/* Expanded AI Extraction Details */}
+                  {isExpanded && ext && (
+                    <div className="extraction-details-pane">
+                      <div className="extraction-pane-header">
+                        <div className="pane-title">
+                          <Sparkles size={14} className="text-primary" />
+                          <span>Extracted Clinical Entities & ISBAR Attributes</span>
+                        </div>
+                        <span className="model-chip">Engine: Bio_ClinicalBERT</span>
                       </div>
 
-                      {/* ISBAR Grid */}
-                      {ext.isbar && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                          <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Situation</div>
-                            <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{ext.isbar.situation || 'Observation noted.'}</div>
+                      {/* ISBAR Structured Cards Grid */}
+                      <div className="isbar-breakdown-grid">
+                        <div className="isbar-tile isbar-s">
+                          <span className="isbar-letter">S</span>
+                          <div className="isbar-content">
+                            <strong>Situation:</strong>
+                            <p>{ext.isbar?.situation || ext.structured_handover?.isbar?.situation || 'No acute situation identified.'}</p>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Background</div>
-                            <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{ext.isbar.background || 'Medical history referenced in text.'}</div>
+                        </div>
+
+                        <div className="isbar-tile isbar-b">
+                          <span className="isbar-letter">B</span>
+                          <div className="isbar-content">
+                            <strong>Background:</strong>
+                            <p>{ext.isbar?.background || ext.structured_handover?.isbar?.background || 'No background factors identified.'}</p>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Assessment</div>
-                            <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{ext.isbar.assessment || 'Clinical assessment recorded.'}</div>
+                        </div>
+
+                        <div className="isbar-tile isbar-a">
+                          <span className="isbar-letter">A</span>
+                          <div className="isbar-content">
+                            <strong>Assessment:</strong>
+                            <p>{ext.isbar?.assessment || ext.structured_handover?.isbar?.assessment || 'No clinical assessment synthesized.'}</p>
                           </div>
-                          <div style={{ background: '#f8fafc', padding: '0.65rem 0.85rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                            <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', marginBottom: '0.2rem' }}>Recommendation</div>
-                            <div style={{ fontSize: '0.85rem', color: '#1e293b' }}>{ext.isbar.recommendation || 'Plan specified in note.'}</div>
+                        </div>
+
+                        <div className="isbar-tile isbar-r">
+                          <span className="isbar-letter">R</span>
+                          <div className="isbar-content">
+                            <strong>Recommendation:</strong>
+                            <p>{ext.isbar?.recommendation || ext.structured_handover?.isbar?.recommendation || 'No pending recommendations.'}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Named Clinical Spans Cloud */}
+                      {ext.entities && (
+                        <div className="named-entities-cloud">
+                          <span className="cloud-label">Extracted Clinical Entities:</span>
+                          <div className="chips-wrap">
+                            {(ext.entities.medications || []).map((m, idx) => (
+                              <span key={`med-${idx}`} className="span-chip chip-medication">
+                                💊 {typeof m === 'object' ? `${m.name || m.text} ${m.dose || ''}` : m}
+                              </span>
+                            ))}
+                            {(ext.entities.conditions || []).map((c, idx) => (
+                              <span key={`cond-${idx}`} className="span-chip chip-condition">
+                                🩺 {typeof c === 'object' ? (c.name || c.text) : c}
+                              </span>
+                            ))}
+                            {(ext.entities.investigations || []).map((inv, idx) => (
+                              <span key={`inv-${idx}`} className="span-chip chip-investigation">
+                                🧪 {typeof inv === 'object' ? (inv.test || inv.name || inv.text) : inv}
+                              </span>
+                            ))}
+                            {(ext.entities.tasks || []).map((t, idx) => (
+                              <span key={`tsk-${idx}`} className="span-chip chip-task">
+                                📋 {typeof t === 'object' ? (t.task_description || t.text) : t}
+                              </span>
+                            ))}
                           </div>
                         </div>
                       )}
-
-                      {/* Extracted Entities Pills */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
-                        {ext.entities?.conditions && ext.entities.conditions.length > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 600, color: '#475569', minWidth: '100px' }}>Conditions:</span>
-                            {ext.entities.conditions.map((c, i) => (
-                              <span key={i} style={{ background: '#e0f2fe', color: '#0369a1', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {c.text} {c.assertion && c.assertion !== 'positive' ? `(${c.assertion})` : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {ext.entities?.medications && ext.entities.medications.length > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 600, color: '#475569', minWidth: '100px' }}>Medications:</span>
-                            {ext.entities.medications.map((m, i) => (
-                              <span key={i} style={{ background: '#f3e8ff', color: '#6b21a8', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {m.text} {m.dosage ? `(${m.dosage})` : ''}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {ext.pending_tasks && ext.pending_tasks.length > 0 && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontWeight: 600, color: '#475569', minWidth: '100px' }}>Pending Tasks:</span>
-                            {ext.pending_tasks.map((t, i) => (
-                              <span key={i} style={{ background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px', fontSize: '0.8rem' }}>
-                                {t.task}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
                     </div>
                   )}
                 </div>

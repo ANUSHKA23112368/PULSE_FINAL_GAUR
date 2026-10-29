@@ -2,17 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { 
   History, 
   Clock, 
-  FileText, 
   Layers, 
-  CheckCircle2, 
   RefreshCw,
-  Search,
-  ShieldCheck
+  ShieldCheck,
+  Sparkles
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, fetchHistory } from '../services/api';
 
-export function HistoryPage({ selectedPatient, onSwitchPatient, onNavigate }) {
+export function HistoryPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [patientNotes, setPatientNotes] = useState([]);
   const [globalHistory, setGlobalHistory] = useState([]);
   const [viewScope, setViewScope] = useState('patient'); // 'patient' or 'system'
@@ -41,166 +39,142 @@ export function HistoryPage({ selectedPatient, onSwitchPatient, onNavigate }) {
   return (
     <div className="page-container">
       {/* Patient Banner */}
-      <PatientBanner patient={selectedPatient} onSwitchPatient={onSwitchPatient} />
+      <PatientBanner 
+        patient={selectedPatient} 
+        onSwitchPatient={onSwitchPatient}
+        allPatients={allPatients}
+        onSelectPatient={onSelectPatient}
+        onNavigate={onNavigate}
+      />
 
-      {/* Header and Toggle */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
+      {/* Header and Scope Toggle */}
+      <div className="section-header-row">
         <div>
-          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: '0 0 0.25rem 0' }}>
-            Clinical Note & Execution History
+          <h2 className="page-heading">
+            Clinical Handover & Audit Trail
           </h2>
-          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Auditable chronological record of clinical note authoring and NLP structuring runs.
-          </div>
+          <p className="page-subheading">
+            Chronological log of clinical note authoring, AI structuring runs, and clinician verification timestamps.
+          </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <div style={{ background: '#f1f5f9', padding: '3px', borderRadius: '6px', display: 'flex' }}>
+        <div className="header-actions-group">
+          <div className="segmented-control">
             <button
-              className="btn"
+              className={`segmented-btn ${viewScope === 'patient' ? 'active' : ''}`}
               onClick={() => setViewScope('patient')}
-              style={{
-                background: viewScope === 'patient' ? '#ffffff' : 'transparent',
-                color: viewScope === 'patient' ? '#0f172a' : '#64748b',
-                fontWeight: viewScope === 'patient' ? 700 : 500,
-                boxShadow: viewScope === 'patient' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.8rem',
-                border: 'none'
-              }}
             >
-              This Patient's Notes ({patientNotes.length})
+              Patient Notes ({patientNotes.length})
             </button>
             <button
-              className="btn"
+              className={`segmented-btn ${viewScope === 'system' ? 'active' : ''}`}
               onClick={() => setViewScope('system')}
-              style={{
-                background: viewScope === 'system' ? '#ffffff' : 'transparent',
-                color: viewScope === 'system' ? '#0f172a' : '#64748b',
-                fontWeight: viewScope === 'system' ? 700 : 500,
-                boxShadow: viewScope === 'system' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.8rem',
-                border: 'none'
-              }}
             >
-              System History ({globalHistory.length})
+              System Ledger ({globalHistory.length})
             </button>
           </div>
 
           <button 
-            className="btn btn-outline" 
+            className="btn btn-outline btn-icon-only" 
             onClick={loadHistory}
             disabled={loading}
-            style={{ padding: '0.45rem', fontSize: '0.8rem' }}
+            title="Refresh history"
           >
-            <RefreshCw size={14} className={loading ? 'spinner' : ''} />
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
           </button>
         </div>
       </div>
 
       {/* History Items */}
       {loading ? (
-        <div className="hospital-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-          <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Loading execution records...</div>
+        <div className="hospital-card loading-state-card">
+          <RefreshCw size={24} className="animate-spin text-primary" />
+          <span>Loading execution records...</span>
         </div>
       ) : viewScope === 'patient' ? (
         patientNotes.length === 0 ? (
-          <div className="hospital-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <History size={32} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
-            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', marginBottom: '0.4rem' }}>No notes logged for this patient</h3>
-            <p style={{ color: '#64748b', fontSize: '0.875rem' }}>
-              Create a note in Clinical Notes to begin building this patient's chronological history.
-            </p>
+          <div className="hospital-card empty-state-card">
+            <History size={36} className="text-muted" />
+            <h3>No notes logged for this patient yet</h3>
+            <p>Create a note on the Clinical Notes page to start building this patient's chronological history.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="history-list">
             {patientNotes.map((n) => {
               const isReviewed = n.status === 'Reviewed';
               const isProcessed = n.status === 'Processed';
-              const borderLeftColor = isReviewed ? '4px solid #059669' : isProcessed ? '4px solid #0284c7' : '4px solid #94a3b8';
-              const statusBg = isReviewed ? '#ecfdf5' : isProcessed ? '#e0f2fe' : '#f1f5f9';
-              const statusColor = isReviewed ? '#065f46' : isProcessed ? '#0369a1' : '#475569';
 
               return (
-                <div key={n.id} className="hospital-card" style={{ padding: '1rem', borderLeft: borderLeftColor }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontWeight: 700, color: '#0f172a' }}>Note #{n.id}</span>
-                      <span style={{
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        background: statusBg,
-                        color: statusColor
-                      }}>
+                <div key={n.id} className={`hospital-card history-card history-status-${n.status.toLowerCase()}`}>
+                  <div className="history-card-header">
+                    <div className="history-tags-group">
+                      <span className="history-id-tag">Note #{n.id}</span>
+                      <span className={`status-pill status-${n.status.toLowerCase()}`}>
                         {n.status}
                       </span>
                       {isReviewed && (
-                        <span style={{
-                          fontSize: '0.75rem',
-                          color: '#065f46',
-                          background: '#ecfdf5',
-                          border: '1px solid #a7f3d0',
-                          padding: '2px 8px',
-                          borderRadius: '4px',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px'
-                        }}>
-                          <ShieldCheck size={12} color="#059669" />
-                          Clinician Verified
-                          {n.reviewer_identifier ? ` (${n.reviewer_identifier})` : ''}
+                        <span className="status-pill status-verified">
+                          <ShieldCheck size={12} /> Verified by Clinician
                         </span>
                       )}
                       {isProcessed && (
-                        <span style={{ fontSize: '0.75rem', color: '#92400e', background: '#fef3c7', padding: '2px 6px', borderRadius: '4px' }}>
-                          AI-generated (Unreviewed)
+                        <span className="status-pill status-ai">
+                          <Sparkles size={11} /> Bio_ClinicalBERT Processed
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+
+                    <div className="history-timestamp">
                       <Clock size={13} />
                       <span>{new Date(n.created_at).toLocaleString()}</span>
+                      <span>•</span>
+                      <span>{n.author_identifier || 'Clinician'}</span>
                     </div>
                   </div>
-                <div style={{ fontSize: '0.875rem', color: '#334155', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0', whiteSpace: 'pre-wrap' }}>
-                  {n.raw_text}
+
+                  <div className="history-verbatim-text">
+                    {n.raw_text}
+                  </div>
+
+                  {n.status !== 'Draft' && (
+                    <div className="history-footer-actions">
+                      <button
+                        className="btn btn-outline btn-xs"
+                        onClick={() => onNavigate && onNavigate('summary')}
+                      >
+                        <Layers size={12} /> View Structured ISBAR
+                      </button>
+                    </div>
+                  )}
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
           </div>
         )
       ) : (
+        /* System Execution History */
         globalHistory.length === 0 ? (
-          <div className="hospital-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-            <History size={32} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
-            <h3 style={{ fontSize: '1.1rem', color: '#0f172a', marginBottom: '0.4rem' }}>No system executions recorded</h3>
+          <div className="hospital-card empty-state-card">
+            <History size={36} className="text-muted" />
+            <h3>No system execution events logged yet</h3>
+            <p>System audit events appear as notes are parsed and handovers verified.</p>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {globalHistory.map((h) => (
-              <div key={h.id} className="hospital-card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span style={{ fontWeight: 700, color: '#0f172a' }}>Run #{h.id}</span>
-                    <span style={{ fontSize: '0.8rem', color: '#0369a1', background: '#e0f2fe', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
-                      Report: {h.report_id}
-                    </span>
-                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      {h.word_count} words
-                    </span>
+          <div className="history-list">
+            {globalHistory.map((h, idx) => (
+              <div key={idx} className="hospital-card history-card">
+                <div className="history-card-header">
+                  <div className="history-tags-group">
+                    <span className="history-id-tag">{h.action || 'NLP Execution'}</span>
+                    <span className="status-pill status-processed">{h.status || 'Success'}</span>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <div className="history-timestamp">
                     <Clock size={13} />
-                    <span>{new Date(h.timestamp).toLocaleString()}</span>
+                    <span>{h.timestamp ? new Date(h.timestamp).toLocaleString() : 'Recent'}</span>
                   </div>
                 </div>
-                <div style={{ fontSize: '0.85rem', color: '#475569' }}>
-                  {h.snippet}...
+                <div className="history-verbatim-text">
+                  {h.details || h.description || JSON.stringify(h)}
                 </div>
               </div>
             ))}

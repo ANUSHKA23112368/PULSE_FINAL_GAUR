@@ -1,20 +1,66 @@
-import React from 'react';
-import { User, Bed, Stethoscope, AlertCircle, ArrowRightLeft } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  Bed, 
+  Stethoscope, 
+  AlertCircle, 
+  ArrowRightLeft, 
+  Copy, 
+  Check, 
+  Activity, 
+  FileText, 
+  Layers, 
+  ListTodo, 
+  ChevronDown,
+  Flame,
+  CheckCircle2
+} from 'lucide-react';
 
-export function PatientBanner({ patient, onSwitchPatient }) {
+export function PatientBanner({ 
+  patient, 
+  onSwitchPatient, 
+  allPatients = [], 
+  onSelectPatient,
+  onNavigate 
+}) {
+  const [copied, setCopied] = useState(false);
+  const [showQuickSelect, setShowQuickSelect] = useState(false);
+
+  function handleCopyId(e) {
+    e.stopPropagation();
+    if (!patient?.display_id) return;
+    navigator.clipboard.writeText(patient.display_id).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  // Calculate clinical acuity tag based on diagnosis/vitals
+  function getAcuity() {
+    if (!patient) return null;
+    const diag = (patient.admitting_diagnosis || '').toLowerCase();
+    const vitals = patient.vitals || {};
+    
+    if (diag.includes('embolism') || diag.includes('chest pain') || diag.includes('vertigo') || (vitals.hr && vitals.hr > 100)) {
+      return { label: 'High Attention', color: 'amber', icon: AlertCircle };
+    }
+    if (diag.includes('icu') || diag.includes('sepsis') || diag.includes('critical')) {
+      return { label: 'Critical Unit', color: 'rose', icon: Flame };
+    }
+    return { label: 'Clinical Stable', color: 'emerald', icon: CheckCircle2 };
+  }
+
   if (!patient) {
     return (
-      <div className="hospital-card" style={{ marginBottom: '1.25rem', borderLeft: '4px solid #0284c7', background: '#f0f9ff' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <AlertCircle size={20} color="#0284c7" />
-            <span style={{ fontWeight: 600, color: '#0369a1' }}>No patient currently selected.</span>
+      <div className="hospital-card patient-banner-empty">
+        <div className="banner-empty-inner">
+          <div className="banner-empty-text">
+            <AlertCircle size={20} className="text-primary" />
+            <span><strong>No patient currently selected.</strong> Choose a synthetic demonstration patient to evaluate handover flows.</span>
           </div>
           {onSwitchPatient && (
             <button 
               className="btn btn-primary" 
               onClick={onSwitchPatient}
-              style={{ padding: '0.4rem 0.85rem', fontSize: '0.85rem' }}
             >
               Select Patient from Dashboard
             </button>
@@ -24,84 +70,148 @@ export function PatientBanner({ patient, onSwitchPatient }) {
     );
   }
 
+  const acuity = getAcuity();
+  const AcuityIcon = acuity?.icon || CheckCircle2;
+
   return (
-    <div className="patient-banner" style={{
-      background: '#ffffff',
-      border: '1px solid #e2e8f0',
-      borderLeft: '5px solid #0284c7',
-      borderRadius: '8px',
-      padding: '1rem 1.25rem',
-      marginBottom: '1.5rem',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
-            <span style={{
-              background: '#e0f2fe',
-              color: '#0369a1',
-              fontWeight: 700,
-              fontSize: '0.8rem',
-              padding: '2px 8px',
-              borderRadius: '4px',
-              letterSpacing: '0.04em'
-            }}>
+    <div className="patient-banner">
+      <div className="banner-top-row">
+        {/* Left: Patient Demographics & Ward */}
+        <div className="patient-main-info">
+          <div className="patient-title-group">
+            <span 
+              className="patient-id-badge" 
+              onClick={handleCopyId} 
+              title="Click to copy Patient MRN ID"
+            >
               {patient.display_id}
+              {copied ? <Check size={12} className="copy-check-icon" /> : <Copy size={11} className="copy-icon" />}
             </span>
-            <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#0f172a' }}>
+
+            <h2 className="patient-name">
               {patient.name}
             </h2>
-            <span style={{ color: '#64748b', fontSize: '0.9rem' }}>
-              ({patient.age || 'Age unavailable'} • {patient.gender || 'Gender unavailable'})
+
+            <span className="patient-meta-pill">
+              {patient.age || 'Age unrecorded'} • {patient.gender || 'Unspecified'}
             </span>
-            <span style={{
-              background: '#f1f5f9',
-              color: '#475569',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              padding: '2px 6px',
-              borderRadius: '4px'
-            }}>
-              Synthetic Demo
-            </span>
+
+            {acuity && (
+              <span className={`acuity-pill acuity-${acuity.color}`}>
+                <AcuityIcon size={12} />
+                <span>{acuity.label}</span>
+              </span>
+            )}
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', fontSize: '0.875rem', color: '#334155' }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Bed size={15} color="#0284c7" />
-              <strong>Ward:</strong> {patient.ward || 'General'}
-              {patient.bed_number && ` (${patient.bed_number})`}
+          {/* Clinical Location & Attending Team */}
+          <div className="patient-sub-details">
+            <span className="detail-item">
+              <Bed size={14} className="detail-icon" />
+              <strong>Ward:</strong> {patient.ward || 'General Medical'}
+              {patient.bed_number ? ` (${patient.bed_number})` : ''}
             </span>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Stethoscope size={15} color="#0284c7" />
-              <strong>Consultant:</strong> {patient.consultant || 'Not specified'}
+            <span className="detail-separator">•</span>
+            <span className="detail-item">
+              <Stethoscope size={14} className="detail-icon" />
+              <strong>Consultant:</strong> {patient.consultant || 'Dr. Attending'}
             </span>
+            {patient.admitting_diagnosis && (
+              <>
+                <span className="detail-separator">•</span>
+                <span className="detail-item presenting-item">
+                  <strong>Admitting Presentation:</strong> {patient.admitting_diagnosis}
+                </span>
+              </>
+            )}
           </div>
+        </div>
 
-          {patient.admitting_diagnosis && (
-            <div style={{ marginTop: '0.4rem', fontSize: '0.825rem', color: '#64748b' }}>
-              <strong style={{ color: '#475569' }}>Admitting Presentation:</strong> {patient.admitting_diagnosis}
+        {/* Right: Fast Navigation & Patient Switcher */}
+        <div className="banner-actions">
+          {/* Quick patient switch dropdown */}
+          {allPatients && allPatients.length > 0 && onSelectPatient ? (
+            <div className="quick-switch-dropdown-container">
+              <button 
+                type="button"
+                className="btn btn-outline btn-quick-switch"
+                onClick={() => setShowQuickSelect(prev => !prev)}
+                title="Quick switch patient"
+              >
+                <ArrowRightLeft size={13} />
+                <span>Change Patient</span>
+                <ChevronDown size={13} />
+              </button>
+
+              {showQuickSelect && (
+                <div className="quick-patient-menu">
+                  <div className="quick-menu-header">Select Demo Patient:</div>
+                  <div className="quick-menu-list">
+                    {allPatients.map(p => (
+                      <div 
+                        key={p.id}
+                        className={`quick-menu-item ${p.id === patient.id ? 'active' : ''}`}
+                        onClick={() => {
+                          onSelectPatient(p);
+                          setShowQuickSelect(false);
+                        }}
+                      >
+                        <div className="quick-menu-item-info">
+                          <strong>{p.name}</strong>
+                          <small>{p.display_id} • {p.ward}</small>
+                        </div>
+                        {p.id === patient.id && <Check size={14} className="quick-menu-check" />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : onSwitchPatient ? (
+            <button 
+              className="btn btn-outline"
+              onClick={onSwitchPatient}
+              title="Return to Dashboard to select patient"
+            >
+              <ArrowRightLeft size={13} />
+              <span>Switch Patient</span>
+            </button>
+          ) : null}
+
+          {/* Quick Jump Buttons if onNavigate provided */}
+          {onNavigate && (
+            <div className="banner-quick-links">
+              <button 
+                className="quick-link-btn" 
+                onClick={() => onNavigate('vitals')}
+                title="Jump to Simulated Vitals"
+              >
+                <Activity size={13} /> Vitals
+              </button>
+              <button 
+                className="quick-link-btn" 
+                onClick={() => onNavigate('notes')}
+                title="Jump to Clinical Notes"
+              >
+                <FileText size={13} /> Notes
+              </button>
+              <button 
+                className="quick-link-btn" 
+                onClick={() => onNavigate('summary')}
+                title="Jump to Handover Summary"
+              >
+                <Layers size={13} /> ISBAR
+              </button>
+              <button 
+                className="quick-link-btn" 
+                onClick={() => onNavigate('tasks')}
+                title="Jump to Clinical Tasks"
+              >
+                <ListTodo size={13} /> Tasks
+              </button>
             </div>
           )}
         </div>
-
-        {onSwitchPatient && (
-          <button 
-            className="btn btn-outline"
-            onClick={onSwitchPatient}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '0.45rem 0.85rem',
-              fontSize: '0.85rem',
-              alignSelf: 'center'
-            }}
-          >
-            <ArrowRightLeft size={14} />
-            Switch Patient
-          </button>
-        )}
       </div>
     </div>
   );

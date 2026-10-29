@@ -3,27 +3,25 @@ import {
   Layers, 
   AlertTriangle, 
   CheckCircle2, 
-  Clock, 
   FileText, 
   ArrowRight,
-  ListOrdered,
-  Pill,
-  Activity,
-  Calendar,
   AlertCircle,
   Edit3,
-  Save,
   RotateCcw,
-  Plus,
-  Trash2,
   ShieldCheck,
   Eye,
-  Check
+  Check,
+  Volume2,
+  VolumeX,
+  Printer,
+  Copy,
+  FileCode,
+  Download
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, reviewPatientNote } from '../services/api';
 
-export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNavigate }) {
+export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [notes, setNotes] = useState([]);
   const [selectedNoteId, setSelectedNoteId] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +29,14 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   // Tab view: 'handover' (Reviewed/Current Handover), 'original_ai' (Original AI Extraction), 'source_note' (Verbatim Source Note)
   const [activeTab, setActiveTab] = useState('handover');
   const [isEditing, setIsEditing] = useState(false);
+
+  // Audio Readout (TTS) State
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  // FHIR Export Modal State
+  const [showFhirModal, setShowFhirModal] = useState(false);
+  const [copiedFhir, setCopiedFhir] = useState(false);
+  const [copiedIsbar, setCopiedIsbar] = useState(false);
 
   // Editable review state
   const [reviewerIdentifier, setReviewerIdentifier] = useState('Dr. Hanlen, MD (Attending Consultant)');
@@ -58,20 +64,27 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     }
   }, [selectedPatient]);
 
+  // Clean up audio on unmount
+  useEffect(() => {
+    return () => {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+    };
+  }, []);
+
   async function loadNotes() {
     setLoading(true);
     setSaveError(null);
     setSaveSuccess(null);
     try {
       const data = await fetchPatientNotes(selectedPatient.display_id || selectedPatient.id);
-      // Support both Processed and Reviewed notes
       const validNotes = (data.notes || []).filter(
         n => (n.status === 'Processed' || n.status === 'Reviewed') &&
              (n.extraction?.data || n.extracted_data || n.latest_extraction?.extracted_data || n.latest_extraction?.data)
       );
       setNotes(validNotes);
       if (validNotes.length > 0) {
-        // Default to first note if not already selected or if selected is gone
         if (!selectedNoteId || !validNotes.some(n => n.id === selectedNoteId)) {
           setSelectedNoteId(validNotes[0].id);
           initFormData(validNotes[0]);
@@ -94,7 +107,6 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     setSaveError(null);
     setSaveSuccess(null);
 
-    // If human review exists, initialize from latest review, else from AI extraction
     const sourceData = note.review?.reviewed_data || note.extraction?.data || note.extracted_data || note.latest_extraction?.extracted_data || note.latest_extraction?.data || {};
     const isbarData = sourceData.isbar || sourceData.structured_handover?.isbar || {};
     const conditionsList = sourceData.entities?.conditions || sourceData.conditions || [];
@@ -158,7 +170,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
 
     const defaultReviewer = selectedPatient?.consultant 
       ? `${selectedPatient.consultant} (Attending Consultant)` 
-      : 'Dr. Khurana (Attending Consultant)';
+      : 'Dr. Sarah Hanlen (Attending Consultant)';
 
     if (note.review) {
       setReviewerIdentifier(note.review.reviewer_identifier || defaultReviewer);
@@ -178,14 +190,14 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
 
   function handleResetToAI() {
     if (!activeNote) return;
-    const aiData = activeNote.extraction?.data || activeNote.extracted_data || {};
-    const isbarData = aiData.isbar || aiData.structured_handover?.isbar || {};
-    const conditionsList = aiData.entities?.conditions || [];
-    const symptomsList = aiData.entities?.symptoms || [];
+    const sourceData = activeNote.extraction?.data || activeNote.extracted_data || activeNote.latest_extraction?.extracted_data || activeNote.latest_extraction?.data || {};
+    const isbarData = sourceData.isbar || sourceData.structured_handover?.isbar || {};
+    const conditionsList = sourceData.entities?.conditions || sourceData.conditions || [];
+    const symptomsList = sourceData.entities?.symptoms || sourceData.symptoms || [];
     const combinedConditions = [...conditionsList, ...symptomsList];
-    const medicationsData = aiData.entities?.medications || [];
-    const investigationsData = aiData.entities?.investigations || [];
-    const tasksData = aiData.pending_tasks || [];
+    const medicationsData = sourceData.entities?.medications || sourceData.medications || [];
+    const investigationsData = sourceData.entities?.investigations || sourceData.investigations || [];
+    const tasksData = sourceData.pending_tasks || [];
 
     const formatSection = (val) => Array.isArray(val) ? val.join('\n') : (val || '');
 
@@ -195,7 +207,7 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
       assessment: formatSection(isbarData.assessment),
       recommendation: formatSection(isbarData.recommendation)
     });
-    setEditedExecutiveSummary(aiData.executive_summary || aiData.structured_handover?.executive_summary || '');
+    setEditedExecutiveSummary(sourceData.executive_summary || sourceData.structured_handover?.executive_summary || '');
     setEditedConditions(
       combinedConditions.map(c => ({
         text: c.text || c.normalized || '',
@@ -229,7 +241,138 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     setTimeout(() => setSaveSuccess(null), 3000);
   }
 
-  // Handlers for modifying items
+  // Audio Readout Toggle (TTS)
+  function toggleAudioBriefing() {
+    if (!('speechSynthesis' in window)) {
+      alert("Speech synthesis is not supported by this browser.");
+      return;
+    }
+    if (isPlayingAudio) {
+      window.speechSynthesis.cancel();
+      setIsPlayingAudio(false);
+      return;
+    }
+
+    const narrative = `Clinical Shift Handover for ${selectedPatient?.name || 'patient'}. ` +
+      `Ward: ${selectedPatient?.ward || 'General Medical'}, Bed ${selectedPatient?.bed_number || 'unassigned'}. ` +
+      `Situation: ${editedIsbar.situation || 'Not recorded'}. ` +
+      `Background: ${editedIsbar.background || 'Not recorded'}. ` +
+      `Assessment: ${editedIsbar.assessment || 'Not recorded'}. ` +
+      `Recommendation: ${editedIsbar.recommendation || 'Not recorded'}.`;
+
+    const utterance = new SpeechSynthesisUtterance(narrative);
+    utterance.rate = 0.95;
+    utterance.onend = () => setIsPlayingAudio(false);
+    utterance.onerror = () => setIsPlayingAudio(false);
+    setIsPlayingAudio(true);
+    window.speechSynthesis.speak(utterance);
+  }
+
+  // FHIR R4 Generation
+  function generateFhirBundle() {
+    return {
+      resourceType: "Bundle",
+      type: "document",
+      id: `pulse-handover-${selectedPatient?.display_id || 'demo'}-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      entry: [
+        {
+          resource: {
+            resourceType: "Composition",
+            id: `comp-${activeNote?.id || 1}`,
+            status: isReviewed ? "final" : "preliminary",
+            type: {
+              coding: [{
+                system: "http://loinc.org",
+                code: "28651-8",
+                display: "Nurse Transfer note"
+              }]
+            },
+            subject: {
+              reference: `Patient/${selectedPatient?.display_id || selectedPatient?.id}`,
+              display: selectedPatient?.name
+            },
+            date: new Date().toISOString(),
+            author: [{
+              display: reviewerIdentifier || activeNote?.author_identifier || "Staff Clinician"
+            }],
+            title: "PULSE Structured ISBAR Shift Handover Record",
+            section: [
+              {
+                title: "Identify",
+                code: { coding: [{ system: "http://loinc.org", code: "55188-7", display: "Patient summary" }] },
+                text: { status: "generated", div: `<div>Patient: ${selectedPatient?.name}, MRN: ${selectedPatient?.display_id}, Ward: ${selectedPatient?.ward}, Bed: ${selectedPatient?.bed_number}</div>` }
+              },
+              {
+                title: "Situation",
+                code: { coding: [{ system: "http://loinc.org", code: "46241-6", display: "Hospital admission reason" }] },
+                text: { status: "generated", div: `<div>${editedIsbar.situation}</div>` }
+              },
+              {
+                title: "Background",
+                code: { coding: [{ system: "http://loinc.org", code: "11348-0", display: "History of Past illness" }] },
+                text: { status: "generated", div: `<div>${editedIsbar.background}</div>` }
+              },
+              {
+                title: "Assessment",
+                code: { coding: [{ system: "http://loinc.org", code: "51848-0", display: "Evaluation note" }] },
+                text: { status: "generated", div: `<div>${editedIsbar.assessment}</div>` }
+              },
+              {
+                title: "Recommendation",
+                code: { coding: [{ system: "http://loinc.org", code: "18776-5", display: "Plan of treatment" }] },
+                text: { status: "generated", div: `<div>${editedIsbar.recommendation}</div>` }
+              }
+            ]
+          }
+        }
+      ]
+    };
+  }
+
+  function handleCopyFhir() {
+    const json = JSON.stringify(generateFhirBundle(), null, 2);
+    navigator.clipboard.writeText(json).then(() => {
+      setCopiedFhir(true);
+      setTimeout(() => setCopiedFhir(false), 2000);
+    });
+  }
+
+  function handleDownloadFhir() {
+    const json = JSON.stringify(generateFhirBundle(), null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `FHIR_ISBAR_${selectedPatient?.display_id || 'HANDOVER'}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function handleCopyIsbar() {
+    const isbarText = `=== PULSE ISBAR CLINICAL SHIFT HANDOVER ===\n` +
+      `PATIENT: ${selectedPatient?.name} (${selectedPatient?.display_id})\n` +
+      `WARD / BED: ${selectedPatient?.ward} / ${selectedPatient?.bed_number || 'Bed 4'}\n` +
+      `ATTENDING: ${selectedPatient?.consultant}\n` +
+      `TIMESTAMP: ${new Date().toLocaleString()}\n\n` +
+      `[I - IDENTIFY]\n${selectedPatient?.name}, ${selectedPatient?.age || ''}, ${selectedPatient?.gender || ''}\n\n` +
+      `[S - SITUATION]\n${editedIsbar.situation}\n\n` +
+      `[B - BACKGROUND]\n${editedIsbar.background}\n\n` +
+      `[A - ASSESSMENT]\n${editedIsbar.assessment}\n\n` +
+      `[R - RECOMMENDATION]\n${editedIsbar.recommendation}\n` +
+      `==========================================`;
+
+    navigator.clipboard.writeText(isbarText).then(() => {
+      setCopiedIsbar(true);
+      setTimeout(() => setCopiedIsbar(false), 2000);
+    });
+  }
+
+  function handlePrint() {
+    window.print();
+  }
+
+  // Modifiers for condition/med/task items
   function handleAddCondition() {
     setEditedConditions(prev => [...prev, { text: '', status: 'active', source_sentence: '' }]);
   }
@@ -270,14 +413,12 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     setEditedTasks(prev => prev.map((item, i) => i === index ? { ...item, task: value } : item));
   }
 
-  // Save clinician review
   async function handleSaveReview() {
     if (!activeNote || !selectedPatient) return;
     setSaving(true);
     setSaveError(null);
     setSaveSuccess(null);
 
-    // Construct full reviewed structured extraction payload
     const reviewedPayload = {
       isbar: {
         situation: editedIsbar.situation,
@@ -337,11 +478,9 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
         reviewNotes.trim() || null
       );
 
-      // Successfully saved review
-      setSaveSuccess(`Clinician review saved successfully! Handover is now verified by ${res.reviewer_identifier}.`);
+      setSaveSuccess(`Clinician review saved! Handover verified by ${res.reviewer_identifier}.`);
       setIsEditing(false);
 
-      // Update local state without losing unsaved fields or resetting to original
       const updatedReview = {
         id: res.review_id,
         reviewer_identifier: res.reviewer_identifier,
@@ -365,7 +504,6 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
       }));
     } catch (err) {
       console.error("Save review failed:", err);
-      // Retain unsaved edits so user can retry or correct
       setSaveError(err.message || "Failed to save clinician review. Edits have been preserved.");
     } finally {
       setSaving(false);
@@ -378,851 +516,633 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   const latestReview = activeNote?.review;
 
   return (
-    <div className="page-container">
+    <div className="page-container printable-summary-root">
       {/* Patient Banner */}
-      <PatientBanner patient={selectedPatient} onSwitchPatient={onSwitchPatient} />
+      <PatientBanner 
+        patient={selectedPatient} 
+        onSwitchPatient={onSwitchPatient}
+        allPatients={allPatients}
+        onSelectPatient={onSelectPatient}
+        onNavigate={onNavigate}
+      />
 
       {/* Header and Controls */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+      <div className="handover-header-row">
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-              Clinical Handover & Verification Workstation
+          <div className="handover-title-group">
+            <h2 className="page-heading">
+              Structured ISBAR Clinical Handover Workstation
             </h2>
             {activeNote && (
-              <span style={{
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                padding: '3px 8px',
-                borderRadius: '9999px',
-                background: isReviewed ? '#ecfdf5' : '#fffbeb',
-                color: isReviewed ? '#065f46' : '#92400e',
-                border: `1px solid ${isReviewed ? '#a7f3d0' : '#fde68a'}`,
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px'
-              }}>
-                {isReviewed ? <ShieldCheck size={13} color="#059669" /> : <AlertTriangle size={13} color="#d97706" />}
-                {isReviewed ? 'Clinician Verified' : 'AI-generated — not yet reviewed'}
+              <span className={`status-pill ${isReviewed ? 'status-verified' : 'status-ai'}`}>
+                {isReviewed ? <ShieldCheck size={13} className="text-emerald" /> : <AlertTriangle size={13} className="text-amber" />}
+                <span>{isReviewed ? 'Clinician Verified' : 'AI-generated — not yet reviewed'}</span>
               </span>
             )}
           </div>
-          <div style={{ fontSize: '0.85rem', color: '#64748b' }}>
-            Standardized ISBAR clinical structure for {selectedPatient ? selectedPatient.name : 'patient'} with human-in-the-loop review and audit trail.
+          <div className="page-subheading">
+            Interoperable ISBAR handover record for {selectedPatient ? selectedPatient.name : 'patient'} with digital verification & EHR export tools.
           </div>
         </div>
 
-        {/* Note Selector & Edit Toggle */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
+        {/* Global Handover Action Suite */}
+        <div className="handover-toolbar-actions">
+          {/* Note Selector */}
           {notes.length > 1 && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}>
-              <span style={{ color: '#475569', fontWeight: 600 }}>Note:</span>
+            <div className="note-select-group">
+              <label>Note:</label>
               <select 
                 value={selectedNoteId || ''}
                 onChange={(e) => handleSelectNote(Number(e.target.value))}
-                className="form-input"
-                style={{ padding: '0.35rem 0.65rem', fontSize: '0.85rem' }}
+                className="form-input note-select"
               >
                 {notes.map(n => (
                   <option key={n.id} value={n.id}>
-                    Note #{n.id} ({n.status}) — {new Date(n.created_at).toLocaleDateString()} {new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Note #{n.id} ({n.status})
                   </option>
                 ))}
               </select>
             </div>
           )}
 
+          {/* Audio TTS Briefing Button */}
+          <button
+            type="button"
+            className={`btn btn-outline ${isPlayingAudio ? 'btn-audio-active' : ''}`}
+            onClick={toggleAudioBriefing}
+            title={isPlayingAudio ? "Stop audio briefing" : "Listen to audio handover briefing"}
+          >
+            {isPlayingAudio ? <VolumeX size={14} /> : <Volume2 size={14} />}
+            <span>{isPlayingAudio ? "Stop Audio" : "Listen Briefing"}</span>
+          </button>
+
+          {/* Copy ISBAR Button */}
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={handleCopyIsbar}
+            title="Copy formatted ISBAR note to clipboard"
+          >
+            {copiedIsbar ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
+            <span>{copiedIsbar ? "Copied!" : "Copy ISBAR"}</span>
+          </button>
+
+          {/* FHIR Export Button */}
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={() => setShowFhirModal(true)}
+            title="Export standard HL7 FHIR R4 JSON Bundle"
+          >
+            <FileCode size={14} />
+            <span>FHIR R4</span>
+          </button>
+
+          {/* Print Button */}
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={handlePrint}
+            title="Print or save PDF shift handover sheet"
+          >
+            <Printer size={14} />
+            <span>Print Sheet</span>
+          </button>
+
+          {/* Edit Toggle Button */}
           {activeNote && activeTab === 'handover' && (
             <button
               className={`btn ${isEditing ? 'btn-primary' : 'btn-outline'}`}
               onClick={() => setIsEditing(!isEditing)}
-              style={{ fontSize: '0.85rem', padding: '0.4rem 0.85rem', gap: '0.4rem' }}
             >
               <Edit3 size={14} />
-              {isEditing ? 'Done Editing (Review Form)' : 'Edit Extracted Fields'}
+              <span>{isEditing ? 'Close Editor' : 'Edit Handover'}</span>
             </button>
           )}
         </div>
       </div>
 
       {loading ? (
-        <div className="hospital-card" style={{ textAlign: 'center', padding: '3rem 1rem' }}>
-          <div style={{ color: '#64748b', fontSize: '0.9rem' }}>Loading structured handover records...</div>
+        <div className="hospital-card loading-state-card">
+          <div className="animate-spin text-primary">⟳</div>
+          <span>Loading structured handover records...</span>
         </div>
       ) : !activeNote ? (
-        <div className="hospital-card" style={{ textAlign: 'center', padding: '3.5rem 1.5rem' }}>
-          <Layers size={36} color="#94a3b8" style={{ margin: '0 auto 1rem auto' }} />
-          <h3 style={{ fontSize: '1.15rem', color: '#0f172a', marginBottom: '0.5rem' }}>
-            No processed handover notes available for this patient
-          </h3>
-          <p style={{ color: '#64748b', fontSize: '0.9rem', maxWidth: '500px', margin: '0 auto 1.5rem auto' }}>
-            To generate a structured ISBAR handover summary, enter a clinical note and click "Save & Process with AI" on the Clinical Notes workstation.
+        <div className="hospital-card empty-state-card">
+          <Layers size={36} className="text-muted" />
+          <h3>No structured handover notes available for this patient</h3>
+          <p>
+            To generate a structured ISBAR handover summary, enter a clinical note and click "Save & Process with AI" on the Clinical Notes page.
           </p>
           <button 
             className="btn btn-primary"
             onClick={() => onNavigate('notes')}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            Go to Clinical Notes Workstation <ArrowRight size={15} />
+            Go to Clinical Notes <ArrowRight size={15} />
           </button>
         </div>
       ) : (
         <>
-          {/* View Mode Tabs */}
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
+          {/* View Mode Navigation Tabs */}
+          <div className="handover-tabs-nav">
             <button
               onClick={() => setActiveTab('handover')}
-              className="btn"
-              style={{
-                fontSize: '0.875rem',
-                padding: '0.45rem 1rem',
-                background: activeTab === 'handover' ? '#0284c7' : '#ffffff',
-                color: activeTab === 'handover' ? '#ffffff' : '#475569',
-                borderColor: activeTab === 'handover' ? '#0284c7' : '#cbd5e1',
-                gap: '0.4rem'
-              }}
+              className={`tab-btn ${activeTab === 'handover' ? 'active' : ''}`}
             >
-              {isReviewed ? <ShieldCheck size={15} /> : <FileText size={15} />}
-              {isReviewed ? 'Clinician Verified Handover' : 'Structured Handover (Editable)'}
+              {isReviewed ? <ShieldCheck size={14} /> : <FileText size={14} />}
+              <span>{isReviewed ? 'Clinician Verified Handover' : 'Structured Handover (ISBAR)'}</span>
             </button>
             <button
               onClick={() => setActiveTab('original_ai')}
-              className="btn"
-              style={{
-                fontSize: '0.875rem',
-                padding: '0.45rem 1rem',
-                background: activeTab === 'original_ai' ? '#0284c7' : '#ffffff',
-                color: activeTab === 'original_ai' ? '#ffffff' : '#475569',
-                borderColor: activeTab === 'original_ai' ? '#0284c7' : '#cbd5e1',
-                gap: '0.4rem'
-              }}
+              className={`tab-btn ${activeTab === 'original_ai' ? 'active' : ''}`}
             >
-              <Eye size={15} /> Original AI Extraction (Unedited Archive)
+              <Eye size={14} />
+              <span>Original AI Extraction (Archive)</span>
             </button>
             <button
               onClick={() => setActiveTab('source_note')}
-              className="btn"
-              style={{
-                fontSize: '0.875rem',
-                padding: '0.45rem 1rem',
-                background: activeTab === 'source_note' ? '#0284c7' : '#ffffff',
-                color: activeTab === 'source_note' ? '#ffffff' : '#475569',
-                borderColor: activeTab === 'source_note' ? '#0284c7' : '#cbd5e1',
-                gap: '0.4rem'
-              }}
+              className={`tab-btn ${activeTab === 'source_note' ? 'active' : ''}`}
             >
-              <FileText size={15} /> Verbatim Source Note & Evidence
+              <FileText size={14} />
+              <span>Verbatim Source Note</span>
             </button>
           </div>
 
           {/* Feedback Alerts */}
           {saveSuccess && (
-            <div style={{
-              background: '#ecfdf5',
-              border: '1px solid #a7f3d0',
-              borderRadius: '6px',
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#065f46',
-              fontSize: '0.875rem'
-            }}>
-              <CheckCircle2 size={18} color="#059669" />
-              <span>{saveSuccess}</span>
+            <div className="feedback-alert feedback-success">
+              <CheckCircle2 size={18} className="text-emerald" />
+              <span className="feedback-text">{saveSuccess}</span>
             </div>
           )}
 
           {saveError && (
-            <div style={{
-              background: '#fef2f2',
-              border: '1px solid #fca5a5',
-              borderRadius: '6px',
-              padding: '0.75rem 1rem',
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              color: '#991b1b',
-              fontSize: '0.875rem'
-            }}>
-              <AlertCircle size={18} color="#dc2626" />
-              <div>
-                <strong>Save Review Failed:</strong> {saveError}
-                <div style={{ fontSize: '0.8rem', marginTop: '2px', color: '#b91c1c' }}>
-                  Your entered corrections are safe and preserved on this screen.
-                </div>
+            <div className="feedback-alert feedback-error">
+              <AlertCircle size={18} className="text-rose" />
+              <div className="feedback-text">
+                <strong>Save Failed:</strong> {saveError}
               </div>
             </div>
           )}
 
-          {/* TAB 1: Handover Summary / Editable Review */}
+          {/* TAB 1: Structured ISBAR Handover */}
           {activeTab === 'handover' && (
             <>
-              {/* Status Header Banner */}
-              {isReviewed ? (
-                <div style={{
-                  background: '#f0fdf4',
-                  border: '1px solid #bbf7d0',
-                  borderLeft: '5px solid #16a34a',
-                  borderRadius: '8px',
-                  padding: '0.85rem 1.25rem',
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  justifyContent: 'space-between',
-                  gap: '1rem',
-                  flexWrap: 'wrap'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                    <ShieldCheck size={22} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#166534' }}>
-                        Clinician Verified Handover
-                      </div>
-                      <div style={{ fontSize: '0.825rem', color: '#15803d', marginTop: '2px' }}>
-                        Reviewed by: <strong>{latestReview?.reviewer_identifier || activeNote.reviewer_identifier}</strong>
-                        {activeNote.reviewed_at && (
-                          <span> • Verified at: {new Date(activeNote.reviewed_at).toLocaleString()}</span>
-                        )}
-                      </div>
-                      {latestReview?.review_notes && (
-                        <div style={{ fontSize: '0.825rem', color: '#374151', background: '#ffffff', padding: '0.35rem 0.65rem', borderRadius: '4px', border: '1px solid #dcfce7', marginTop: '0.4rem' }}>
-                          <strong>Audit Note:</strong> {latestReview.review_notes}
-                        </div>
-                      )}
-                      {activeNote.review_history && activeNote.review_history.length > 1 && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#166534' }}>
-                          <details style={{ cursor: 'pointer' }}>
-                            <summary style={{ fontWeight: 600 }}>
-                              Review Audit History ({activeNote.review_history.length} reviews recorded)
-                            </summary>
-                            <div style={{ marginTop: '0.4rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                              {activeNote.review_history.map((rev, idx) => (
-                                <div key={rev.id || idx} style={{ background: '#ffffff', padding: '0.35rem 0.6rem', borderRadius: '4px', border: '1px solid #dcfce7', fontSize: '0.775rem' }}>
-                                  <strong>{idx === 0 ? 'Active / Latest: ' : `Prior Review: `}</strong>
-                                  <span>{rev.reviewer_identifier}</span>
-                                  <span style={{ color: '#64748b' }}> • {new Date(rev.reviewed_at).toLocaleString()}</span>
-                                  {rev.review_notes && <div style={{ color: '#374151', fontStyle: 'italic', marginTop: '2px' }}>"{rev.review_notes}"</div>}
-                                </div>
-                              ))}
-                            </div>
-                          </details>
-                        </div>
+              {/* Clinician Verified Badge Banner */}
+              {isReviewed && (
+                <div className="verified-banner-card">
+                  <ShieldCheck size={24} className="text-emerald" />
+                  <div>
+                    <div className="verified-banner-title">
+                      Clinician Verified Shift Handover Record
+                    </div>
+                    <div className="verified-banner-sub">
+                      Signed off by <strong>{latestReview?.reviewer_identifier || activeNote.reviewer_identifier}</strong>
+                      {activeNote.reviewed_at && (
+                        <span> • Verified at {new Date(activeNote.reviewed_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       )}
                     </div>
-                  </div>
-                  {isEditing && (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '4px' }}>
-                      Edit Mode Active
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div style={{
-                  background: '#fffbeb',
-                  border: '1px solid #fde68a',
-                  borderLeft: '5px solid #f59e0b',
-                  borderRadius: '8px',
-                  padding: '0.85rem 1.25rem',
-                  marginBottom: '1.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.75rem'
-                }}>
-                  <AlertTriangle size={20} color="#d97706" style={{ flexShrink: 0 }} />
-                  <div style={{ fontSize: '0.875rem', color: '#92400e' }}>
-                    <strong>AI-generated — not yet reviewed.</strong>
-                    <span style={{ display: 'block', fontSize: '0.8rem', color: '#b45309', marginTop: '2px' }}>
-                      Extracted information is generated by AI models and has not been verified by a clinician. Review and correct items below, then click "Save Review & Verify Handover".
-                    </span>
+                    {latestReview?.review_notes && (
+                      <div className="verified-audit-note">
+                        <strong>Audit Note:</strong> {latestReview.review_notes}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {/* ISBAR Framework Cards (Editable or Read-Only) */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                {/* [S] Situation */}
-                <div className="hospital-card" style={{ borderTop: '4px solid #0284c7' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
-                    [S] Situation
-                  </div>
-                  {isEditing ? (
-                    <textarea
-                      value={editedIsbar.situation}
-                      onChange={(e) => setEditedIsbar({ ...editedIsbar, situation: e.target.value })}
-                      className="form-input"
-                      rows={3}
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="Current patient clinical situation..."
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
-                      {editedIsbar.situation || 'Patient under observation.'}
+              {/* ISBAR Structured Cards Grid */}
+              <div className="isbar-dashboard-grid">
+                {/* Identify (I) */}
+                <div className="hospital-card isbar-quadrant isbar-quadrant-i">
+                  <div className="quadrant-header">
+                    <span className="quadrant-letter">I</span>
+                    <div>
+                      <h4 className="quadrant-title">IDENTIFY</h4>
+                      <span className="quadrant-sub">Patient, Location & Team</span>
                     </div>
-                  )}
+                  </div>
+                  <div className="quadrant-body">
+                    <div className="isbar-fact-row">
+                      <strong>Patient:</strong> <span>{selectedPatient?.name} ({selectedPatient?.display_id})</span>
+                    </div>
+                    <div className="isbar-fact-row">
+                      <strong>Location:</strong> <span>{selectedPatient?.ward} • Bed {selectedPatient?.bed_number || 'Bed 4'}</span>
+                    </div>
+                    <div className="isbar-fact-row">
+                      <strong>Consultant:</strong> <span>{selectedPatient?.consultant}</span>
+                    </div>
+                    <div className="isbar-fact-row">
+                      <strong>Handover Author:</strong> <span>{activeNote.author_identifier || 'Staff Clinician'}</span>
+                    </div>
+                  </div>
                 </div>
 
-                {/* [B] Background */}
-                <div className="hospital-card" style={{ borderTop: '4px solid #6366f1' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#4338ca', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
-                    [B] Background
-                  </div>
-                  {isEditing ? (
-                    <textarea
-                      value={editedIsbar.background}
-                      onChange={(e) => setEditedIsbar({ ...editedIsbar, background: e.target.value })}
-                      className="form-input"
-                      rows={3}
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="Clinical background and context..."
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
-                      {editedIsbar.background || 'Clinical history referenced in handover narrative.'}
+                {/* Situation (S) */}
+                <div className="hospital-card isbar-quadrant isbar-quadrant-s">
+                  <div className="quadrant-header">
+                    <span className="quadrant-letter">S</span>
+                    <div>
+                      <h4 className="quadrant-title">SITUATION</h4>
+                      <span className="quadrant-sub">Acute admission reason & current status</span>
                     </div>
-                  )}
+                  </div>
+                  <div className="quadrant-body">
+                    {isEditing ? (
+                      <textarea
+                        className="form-input isbar-edit-area"
+                        rows={3}
+                        value={editedIsbar.situation}
+                        onChange={e => setEditedIsbar({ ...editedIsbar, situation: e.target.value })}
+                        placeholder="Current clinical situation..."
+                      />
+                    ) : (
+                      <p className="quadrant-text">
+                        {editedIsbar.situation || 'No acute clinical situation documented.'}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* [A] Assessment */}
-                <div className="hospital-card" style={{ borderTop: '4px solid #0d9488' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f766e', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
-                    [A] Assessment
-                  </div>
-                  {isEditing ? (
-                    <textarea
-                      value={editedIsbar.assessment}
-                      onChange={(e) => setEditedIsbar({ ...editedIsbar, assessment: e.target.value })}
-                      className="form-input"
-                      rows={3}
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="Ongoing shift assessment and vitals..."
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
-                      {editedIsbar.assessment || 'Ongoing shift observations and clinical monitoring.'}
+                {/* Background (B) */}
+                <div className="hospital-card isbar-quadrant isbar-quadrant-b">
+                  <div className="quadrant-header">
+                    <span className="quadrant-letter">B</span>
+                    <div>
+                      <h4 className="quadrant-title">BACKGROUND</h4>
+                      <span className="quadrant-sub">Clinical history & co-morbidities</span>
                     </div>
-                  )}
+                  </div>
+                  <div className="quadrant-body">
+                    {isEditing ? (
+                      <textarea
+                        className="form-input isbar-edit-area"
+                        rows={3}
+                        value={editedIsbar.background}
+                        onChange={e => setEditedIsbar({ ...editedIsbar, background: e.target.value })}
+                        placeholder="Past medical history..."
+                      />
+                    ) : (
+                      <p className="quadrant-text">
+                        {editedIsbar.background || 'No background factors identified.'}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                {/* [R] Recommendation */}
-                <div className="hospital-card" style={{ borderTop: '4px solid #f59e0b' }}>
-                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#b45309', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '0.4rem' }}>
-                    [R] Recommendation
-                  </div>
-                  {isEditing ? (
-                    <textarea
-                      value={editedIsbar.recommendation}
-                      onChange={(e) => setEditedIsbar({ ...editedIsbar, recommendation: e.target.value })}
-                      className="form-input"
-                      rows={3}
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="Next steps, monitoring, pending tasks..."
-                    />
-                  ) : (
-                    <div style={{ fontSize: '0.925rem', color: '#0f172a', lineHeight: '1.5', whiteSpace: 'pre-line' }}>
-                      {editedIsbar.recommendation || 'Continue routine care and observe.'}
+                {/* Assessment (A) */}
+                <div className="hospital-card isbar-quadrant isbar-quadrant-a">
+                  <div className="quadrant-header">
+                    <span className="quadrant-letter">A</span>
+                    <div>
+                      <h4 className="quadrant-title">ASSESSMENT</h4>
+                      <span className="quadrant-sub">Clinical findings & current trajectory</span>
                     </div>
-                  )}
+                  </div>
+                  <div className="quadrant-body">
+                    {isEditing ? (
+                      <textarea
+                        className="form-input isbar-edit-area"
+                        rows={3}
+                        value={editedIsbar.assessment}
+                        onChange={e => setEditedIsbar({ ...editedIsbar, assessment: e.target.value })}
+                        placeholder="Clinical assessment and findings..."
+                      />
+                    ) : (
+                      <p className="quadrant-text">
+                        {editedIsbar.assessment || 'No clinical assessment synthesized.'}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recommendation (R) */}
+                <div className="hospital-card isbar-quadrant isbar-quadrant-r isbar-quadrant-full">
+                  <div className="quadrant-header">
+                    <span className="quadrant-letter">R</span>
+                    <div>
+                      <h4 className="quadrant-title">RECOMMENDATION</h4>
+                      <span className="quadrant-sub">Next actions, pending orders & escalation triggers</span>
+                    </div>
+                  </div>
+                  <div className="quadrant-body">
+                    {isEditing ? (
+                      <textarea
+                        className="form-input isbar-edit-area"
+                        rows={3}
+                        value={editedIsbar.recommendation}
+                        onChange={e => setEditedIsbar({ ...editedIsbar, recommendation: e.target.value })}
+                        placeholder="Recommended actions for incoming shift..."
+                      />
+                    ) : (
+                      <p className="quadrant-text">
+                        {editedIsbar.recommendation || 'No pending recommendations.'}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Structured Entities: Conditions, Medications, Tasks */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-                {/* Conditions & Observations */}
-                <div className="hospital-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Activity size={16} color="#0284c7" /> Clinical Conditions & Observations
-                    </h3>
+              {/* Clinical Entities Breakdown (Conditions, Medications, Investigations, Tasks) */}
+              <div className="entities-summary-grid">
+                {/* Conditions Tile */}
+                <div className="hospital-card entity-breakdown-card">
+                  <div className="entity-card-header">
+                    <span className="entity-title text-rose">🩺 Clinical Conditions</span>
                     {isEditing && (
-                      <button 
-                        onClick={handleAddCondition}
-                        className="btn btn-outline"
-                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', gap: '2px' }}
-                      >
-                        <Plus size={12} /> Add Condition
+                      <button className="btn btn-outline btn-xs" onClick={handleAddCondition}>
+                        + Add
                       </button>
                     )}
                   </div>
-
-                  {editedConditions.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>None recorded.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {editedConditions.map((c, i) => (
-                        <div key={i} style={{ background: '#f8fafc', padding: '0.5rem 0.6rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                  <div className="entity-items-list">
+                    {editedConditions.length === 0 ? (
+                      <span className="empty-text">No active conditions recorded</span>
+                    ) : (
+                      editedConditions.map((c, idx) => (
+                        <div key={idx} className="entity-item-row">
                           {isEditing ? (
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <input
+                            <div className="item-edit-row">
+                              <input 
                                 type="text"
+                                className="form-input input-xs"
                                 value={c.text}
-                                onChange={(e) => handleConditionChange(i, 'text', e.target.value)}
-                                className="form-input"
-                                style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                placeholder="Condition description"
+                                onChange={e => handleConditionChange(idx, 'text', e.target.value)}
+                                placeholder="Condition name"
                               />
-                              <select
+                              <select 
+                                className="form-input input-xs select-xs"
                                 value={c.status}
-                                onChange={(e) => handleConditionChange(i, 'status', e.target.value)}
-                                className="form-input"
-                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', width: '95px' }}
+                                onChange={e => handleConditionChange(idx, 'status', e.target.value)}
                               >
                                 <option value="active">Active</option>
-                                <option value="historical">Historical</option>
-                                <option value="negated">Negated</option>
+                                <option value="historical">Past / History</option>
+                                <option value="negated">Negated / Ruled Out</option>
                               </select>
-                              <button
-                                onClick={() => handleRemoveCondition(i)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}
-                                title="Remove condition"
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <button className="btn-delete-item" onClick={() => handleRemoveCondition(idx)}>×</button>
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 600, color: '#1e293b' }}>{c.text}</span>
-                              <span style={{
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                padding: '1px 6px',
-                                borderRadius: '3px',
-                                background: c.status === 'negated' ? '#fee2e2' : c.status === 'historical' ? '#f1f5f9' : '#e0f2fe',
-                                color: c.status === 'negated' ? '#991b1b' : c.status === 'historical' ? '#475569' : '#0369a1'
-                              }}>
-                                {c.status === 'negated' ? 'Negated' : c.status === 'historical' ? 'Historical' : 'Active'}
-                              </span>
+                            <div className="item-view-row">
+                              <strong>{c.text}</strong>
+                              <span className={`pill-mini pill-${c.status}`}>{c.status}</span>
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
 
-                {/* Medications & Dosages */}
-                <div className="hospital-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Pill size={16} color="#9333ea" /> Medications & Dosages
-                    </h3>
+                {/* Medications Tile */}
+                <div className="hospital-card entity-breakdown-card">
+                  <div className="entity-card-header">
+                    <span className="entity-title text-sky">💊 Active Medications</span>
                     {isEditing && (
-                      <button 
-                        onClick={handleAddMedication}
-                        className="btn btn-outline"
-                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', gap: '2px' }}
-                      >
-                        <Plus size={12} /> Add Medication
+                      <button className="btn btn-outline btn-xs" onClick={handleAddMedication}>
+                        + Add
                       </button>
                     )}
                   </div>
-
-                  {editedMedications.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>None recorded.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {editedMedications.map((m, i) => (
-                        <div key={i} style={{ background: '#f8fafc', padding: '0.5rem 0.6rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
+                  <div className="entity-items-list">
+                    {editedMedications.length === 0 ? (
+                      <span className="empty-text">No medications documented</span>
+                    ) : (
+                      editedMedications.map((m, idx) => (
+                        <div key={idx} className="entity-item-row">
                           {isEditing ? (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                <input
-                                  type="text"
-                                  value={m.text}
-                                  onChange={(e) => handleMedicationChange(i, 'text', e.target.value)}
-                                  className="form-input"
-                                  style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                  placeholder="Medication name"
-                                />
-                                <button
-                                  onClick={() => handleRemoveMedication(i)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}
-                                  title="Remove medication"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
-                              </div>
-                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.35rem' }}>
-                                <input
-                                  type="text"
-                                  value={m.dosage}
-                                  onChange={(e) => handleMedicationChange(i, 'dosage', e.target.value)}
-                                  className="form-input"
-                                  style={{ padding: '0.25rem 0.45rem', fontSize: '0.8rem' }}
-                                  placeholder="Dose (e.g. 50mg)"
-                                />
-                                <input
-                                  type="text"
-                                  value={m.frequency}
-                                  onChange={(e) => handleMedicationChange(i, 'frequency', e.target.value)}
-                                  className="form-input"
-                                  style={{ padding: '0.25rem 0.45rem', fontSize: '0.8rem' }}
-                                  placeholder="Freq (e.g. BD)"
-                                />
-                                <input
-                                  type="text"
-                                  value={m.route}
-                                  onChange={(e) => handleMedicationChange(i, 'route', e.target.value)}
-                                  className="form-input"
-                                  style={{ padding: '0.25rem 0.45rem', fontSize: '0.8rem' }}
-                                  placeholder="Route (e.g. IV)"
-                                />
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <div style={{ fontWeight: 600, color: '#1e293b' }}>{m.text}</div>
-                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                                Dose: {m.dosage || 'Unspecified'} • Freq: {m.frequency || 'Unspecified'} • Route: {m.route || 'Unspecified'}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                {/* Investigations & Diagnostic Tests */}
-                <div className="hospital-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <Activity size={16} color="#0d9488" /> Investigations & Diagnostic Tests
-                    </h3>
-                    {isEditing && (
-                      <button 
-                        onClick={handleAddInvestigation}
-                        className="btn btn-outline"
-                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', gap: '2px' }}
-                      >
-                        <Plus size={12} /> Add Test
-                      </button>
-                    )}
-                  </div>
-
-                  {editedInvestigations.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>None recorded.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {editedInvestigations.map((inv, i) => (
-                        <div key={i} style={{ background: '#f8fafc', padding: '0.5rem 0.6rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.85rem' }}>
-                          {isEditing ? (
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <input
+                            <div className="item-edit-row">
+                              <input 
                                 type="text"
+                                className="form-input input-xs"
+                                value={m.text}
+                                onChange={e => handleMedicationChange(idx, 'text', e.target.value)}
+                                placeholder="Drug name"
+                              />
+                              <input 
+                                type="text"
+                                className="form-input input-xs"
+                                value={m.dosage}
+                                onChange={e => handleMedicationChange(idx, 'dosage', e.target.value)}
+                                placeholder="Dose (e.g. 100mg)"
+                              />
+                              <button className="btn-delete-item" onClick={() => handleRemoveMedication(idx)}>×</button>
+                            </div>
+                          ) : (
+                            <div className="item-view-row">
+                              <strong>{m.text}</strong>
+                              <span className="item-details">{m.dosage} {m.frequency} {m.route}</span>
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                {/* Investigations Tile */}
+                <div className="hospital-card entity-breakdown-card">
+                  <div className="entity-card-header">
+                    <span className="entity-title text-teal">🧪 Investigations & Diagnostics</span>
+                    {isEditing && (
+                      <button className="btn btn-outline btn-xs" onClick={handleAddInvestigation}>
+                        + Add
+                      </button>
+                    )}
+                  </div>
+                  <div className="entity-items-list">
+                    {editedInvestigations.length === 0 ? (
+                      <span className="empty-text">No diagnostics requested</span>
+                    ) : (
+                      editedInvestigations.map((inv, idx) => (
+                        <div key={idx} className="entity-item-row">
+                          {isEditing ? (
+                            <div className="item-edit-row">
+                              <input 
+                                type="text"
+                                className="form-input input-xs"
                                 value={inv.text}
-                                onChange={(e) => handleInvestigationChange(i, 'text', e.target.value)}
-                                className="form-input"
-                                style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                placeholder="Investigation name (e.g. Serum Calcium Test)"
+                                onChange={e => handleInvestigationChange(idx, 'text', e.target.value)}
+                                placeholder="Investigation name"
                               />
-                              <select
+                              <select 
+                                className="form-input input-xs select-xs"
                                 value={inv.status}
-                                onChange={(e) => handleInvestigationChange(i, 'status', e.target.value)}
-                                className="form-input"
-                                style={{ padding: '0.3rem 0.5rem', fontSize: '0.8rem', width: '105px' }}
+                                onChange={e => handleInvestigationChange(idx, 'status', e.target.value)}
                               >
-                                <option value="planned">Planned / Ordered</option>
-                                <option value="completed">Completed</option>
+                                <option value="planned">Planned / Pending</option>
+                                <option value="completed">Completed / Received</option>
                               </select>
-                              <button
-                                onClick={() => handleRemoveInvestigation(i)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}
-                                title="Remove investigation"
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <button className="btn-delete-item" onClick={() => handleRemoveInvestigation(idx)}>×</button>
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontWeight: 600, color: '#1e293b' }}>{inv.text}</span>
-                              <span style={{
-                                fontSize: '0.75rem',
-                                fontWeight: 600,
-                                padding: '1px 6px',
-                                borderRadius: '3px',
-                                background: inv.status === 'planned' ? '#fef3c7' : '#dcfce7',
-                                color: inv.status === 'planned' ? '#92400e' : '#166534'
-                              }}>
-                                {inv.status === 'planned' ? 'Planned / Ordered' : 'Completed'}
-                              </span>
+                            <div className="item-view-row">
+                              <strong>{inv.text}</strong>
+                              <span className={`pill-mini pill-${inv.status}`}>{inv.status}</span>
                             </div>
                           )}
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
 
-                {/* Pending Actions & Tasks */}
-                <div className="hospital-card">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      <ListOrdered size={16} color="#d97706" /> Pending Actions & Tasks
-                    </h3>
+                {/* Pending Actions Tile */}
+                <div className="hospital-card entity-breakdown-card">
+                  <div className="entity-card-header">
+                    <span className="entity-title text-amber">📋 Shift Actions & Orders</span>
                     {isEditing && (
-                      <button 
-                        onClick={handleAddTask}
-                        className="btn btn-outline"
-                        style={{ padding: '0.2rem 0.5rem', fontSize: '0.75rem', gap: '2px' }}
-                      >
-                        <Plus size={12} /> Add Task
+                      <button className="btn btn-outline btn-xs" onClick={handleAddTask}>
+                        + Add
                       </button>
                     )}
                   </div>
-
-                  {editedTasks.length === 0 ? (
-                    <div style={{ color: '#64748b', fontSize: '0.85rem' }}>No pending tasks recorded.</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                      {editedTasks.map((t, i) => (
-                        <div key={i} style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '0.4rem 0.6rem', borderRadius: '4px', fontSize: '0.85rem' }}>
+                  <div className="entity-items-list">
+                    {editedTasks.length === 0 ? (
+                      <span className="empty-text">No pending actions</span>
+                    ) : (
+                      editedTasks.map((t, idx) => (
+                        <div key={idx} className="entity-item-row">
                           {isEditing ? (
-                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                              <input
+                            <div className="item-edit-row">
+                              <input 
                                 type="text"
+                                className="form-input input-xs"
                                 value={t.task}
-                                onChange={(e) => handleTaskChange(i, e.target.value)}
-                                className="form-input"
-                                style={{ flex: 1, padding: '0.3rem 0.5rem', fontSize: '0.85rem' }}
-                                placeholder="Task description..."
+                                onChange={e => handleTaskChange(idx, e.target.value)}
+                                placeholder="Task description"
                               />
-                              <button
-                                onClick={() => handleRemoveTask(i)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#dc2626', padding: '2px' }}
-                                title="Remove task"
-                              >
-                                <Trash2 size={15} />
-                              </button>
+                              <button className="btn-delete-item" onClick={() => handleRemoveTask(idx)}>×</button>
                             </div>
                           ) : (
-                            <div style={{ color: '#92400e' }}>
-                              • {t.task}
+                            <div className="item-view-row">
+                              <strong>{t.task}</strong>
                             </div>
                           )}
                         </div>
-                      ))}
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Clinician Review & Verification Form (When in Edit Mode) */}
+              {isEditing && (
+                <div className="hospital-card review-signing-panel">
+                  <div className="panel-header">
+                    <ShieldCheck size={20} className="text-emerald" />
+                    <h4>Clinician Sign-off & Audit Attribution</h4>
+                  </div>
+                  <div className="form-grid-2col">
+                    <div className="form-group">
+                      <label className="form-label">Reviewing Clinician Credentials *</label>
+                      <input 
+                        type="text"
+                        className="form-input"
+                        value={reviewerIdentifier}
+                        onChange={e => setReviewerIdentifier(e.target.value)}
+                        placeholder="e.g. Dr. A. Gupta, MD (Attending Consultant)"
+                        required
+                      />
                     </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Clinician Review & Verification Action Card */}
-              <div className="hospital-card" style={{ border: '2px solid #0284c7', background: '#f8fafc', marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
-                  <ShieldCheck size={20} color="#0284c7" />
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    Clinician Review & Handover Verification
-                  </h3>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>
-                      Reviewer Identifier (Name / Role):
-                    </label>
-                    <input
-                      type="text"
-                      value={reviewerIdentifier}
-                      onChange={(e) => setReviewerIdentifier(e.target.value)}
-                      className="form-input"
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="e.g. Dr. Hanlen, MD (Attending Consultant)"
-                    />
+                    <div className="form-group">
+                      <label className="form-label">Audit Notes & Clinical Remarks</label>
+                      <input 
+                        type="text"
+                        className="form-input"
+                        value={reviewNotes}
+                        onChange={e => setReviewNotes(e.target.value)}
+                        placeholder="e.g. Handover verified during ward multidisciplinary rounds."
+                      />
+                    </div>
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>
-                      Clinical Review Audit Notes (Optional):
-                    </label>
-                    <input
-                      type="text"
-                      value={reviewNotes}
-                      onChange={(e) => setReviewNotes(e.target.value)}
-                      className="form-input"
-                      style={{ width: '100%', fontSize: '0.875rem' }}
-                      placeholder="e.g. Corrected medication dose; verified respiratory observations."
-                    />
+                  <div className="review-actions-bar">
+                    <button 
+                      type="button" 
+                      className="btn btn-outline"
+                      onClick={handleResetToAI}
+                    >
+                      <RotateCcw size={14} /> Reset to Original AI
+                    </button>
+                    <button 
+                      type="button" 
+                      className="btn btn-primary"
+                      onClick={handleSaveReview}
+                      disabled={saving}
+                    >
+                      <ShieldCheck size={15} />
+                      <span>{saving ? 'Verifying & Signing...' : 'Verify & Sign-off Handover'}</span>
+                    </button>
                   </div>
                 </div>
-
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    onClick={handleSaveReview}
-                    disabled={saving}
-                    className="btn btn-primary"
-                    style={{ gap: '0.5rem', padding: '0.65rem 1.25rem', fontSize: '0.925rem' }}
-                  >
-                    <Save size={16} />
-                    {saving ? 'Saving Review...' : 'Save Review & Verify Handover'}
-                  </button>
-
-                  <button
-                    onClick={handleResetToAI}
-                    disabled={saving}
-                    className="btn btn-outline"
-                    style={{ gap: '0.4rem', fontSize: '0.85rem' }}
-                    title="Restore unedited AI extraction content"
-                  >
-                    <RotateCcw size={14} /> Reset to Original AI Output
-                  </button>
-                </div>
-              </div>
+              )}
             </>
           )}
 
           {/* TAB 2: Original AI Extraction Archive */}
           {activeTab === 'original_ai' && (
-            <div className="hospital-card" style={{ marginBottom: '1.5rem', background: '#ffffff', border: '1px solid #cbd5e1' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
-                    Original AI Extraction (Unedited Archive)
-                  </h3>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    Engine: <strong>{activeNote.extraction?.engine_used || 'Bio_ClinicalBERT Pipeline'}</strong> • Processed at: {activeNote.extraction?.extracted_at || activeNote.created_at}
-                  </div>
-                </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, background: '#f1f5f9', color: '#475569', padding: '3px 8px', borderRadius: '4px' }}>
-                  Read-Only System Archive
-                </span>
+            <div className="hospital-card ai-archive-panel">
+              <div className="archive-header">
+                <Eye size={18} className="text-primary" />
+                <h4>Original Bio_ClinicalBERT Structured Extraction Archive</h4>
               </div>
-
-              {/* ISBAR AI Original */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#0369a1', display: 'block', marginBottom: '4px' }}>[S] Situation:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
-                    {Array.isArray(originalExt.isbar?.situation) ? originalExt.isbar.situation.join('\n') : (originalExt.isbar?.situation || 'None')}
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#4338ca', display: 'block', marginBottom: '4px' }}>[B] Background:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
-                    {Array.isArray(originalExt.isbar?.background) ? originalExt.isbar.background.join('\n') : (originalExt.isbar?.background || 'None')}
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#0f766e', display: 'block', marginBottom: '4px' }}>[A] Assessment:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
-                    {Array.isArray(originalExt.isbar?.assessment) ? originalExt.isbar.assessment.join('\n') : (originalExt.isbar?.assessment || 'None')}
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#b45309', display: 'block', marginBottom: '4px' }}>[R] Recommendation:</strong>
-                  <div style={{ fontSize: '0.85rem', color: '#1e293b', whiteSpace: 'pre-line' }}>
-                    {Array.isArray(originalExt.isbar?.recommendation) ? originalExt.isbar.recommendation.join('\n') : (originalExt.isbar?.recommendation || 'None')}
-                  </div>
-                </div>
-              </div>
-
-              {/* Conditions, Medications, Investigations & Tasks AI Original */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.75rem' }}>
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#0284c7', display: 'block', marginBottom: '6px' }}>Extracted Conditions & Symptoms:</strong>
-                  {[...(originalExt.entities?.conditions || []), ...(originalExt.entities?.symptoms || [])].length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {[...(originalExt.entities?.conditions || []), ...(originalExt.entities?.symptoms || [])].map((c, i) => (
-                        <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
-                          • {c.text || c.normalized} {c.is_negated ? '(Negated)' : c.is_historical ? '(Historical)' : '(Active)'}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#9333ea', display: 'block', marginBottom: '6px' }}>Extracted Medications:</strong>
-                  {(originalExt.entities?.medications || []).length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {originalExt.entities.medications.map((m, i) => (
-                        <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
-                          • {m.text || m.normalized} {m.dosage ? `[${m.dosage}]` : ''} {m.frequency ? `[${m.frequency}]` : ''}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#0d9488', display: 'block', marginBottom: '6px' }}>Extracted Investigations:</strong>
-                  {(originalExt.entities?.investigations || []).length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {originalExt.entities.investigations.map((inv, i) => (
-                        <div key={i} style={{ fontSize: '0.825rem', color: '#1e293b' }}>
-                          • {inv.text || inv.normalized} {inv.is_planned ? '[Planned / Pending]' : '[Completed]'}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                  <strong style={{ fontSize: '0.8rem', color: '#d97706', display: 'block', marginBottom: '6px' }}>Extracted Pending Tasks:</strong>
-                  {(originalExt.pending_tasks || []).length === 0 ? (
-                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>None</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      {originalExt.pending_tasks.map((pt, i) => (
-                        <div key={i} style={{ fontSize: '0.825rem', color: '#92400e' }}>
-                          • [{pt.priority || 'Medium'}] {pt.task}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
+              <p className="archive-sub">
+                Immutable snapshot of the AI model's automated extraction prior to any human clinician edits.
+              </p>
+              <pre className="archive-json-preview">
+                {JSON.stringify(originalExt, null, 2)}
+              </pre>
             </div>
           )}
 
-          {/* TAB 3: Verbatim Source Note & Evidence */}
+          {/* TAB 3: Verbatim Source Note */}
           {activeTab === 'source_note' && (
-            <div className="hospital-card" style={{ marginBottom: '1.5rem', background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.5rem' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 700, color: '#334155' }}>
-                  Source Clinical Note #{activeNote.id} (Verbatim Record)
-                </span>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                  Author: {activeNote.author_identifier || 'Staff Clinician'} • Recorded: {new Date(activeNote.created_at).toLocaleString()}
+            <div className="hospital-card verbatim-panel">
+              <div className="verbatim-header">
+                <span>Source Note #{activeNote.id} (Verbatim Record)</span>
+                <span className="verbatim-meta">
+                  Author: {activeNote.author_identifier || 'Staff Clinician'} • {new Date(activeNote.created_at).toLocaleString()}
                 </span>
               </div>
-              <div style={{ fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'pre-wrap', lineHeight: '1.6', background: '#ffffff', padding: '1rem', borderRadius: '6px', border: '1px solid #cbd5e1', marginBottom: '1rem' }}>
+              <div className="verbatim-box">
                 {activeNote.raw_text}
-              </div>
-
-              {/* Source Sentence Evidence Linking */}
-              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#475569', marginBottom: '0.5rem' }}>
-                Source Evidence Map (Sentence Attribution)
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {(originalExt.entities?.conditions || []).filter(c => c.source_sentence).map((c, i) => (
-                  <div key={`cond-ev-${i}`} style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
-                    <span style={{ fontWeight: 600, color: '#0284c7' }}>Condition: "{c.text}"</span>
-                    <div style={{ color: '#475569', marginTop: '2px', fontStyle: 'italic' }}>
-                      "{c.source_sentence}"
-                    </div>
-                  </div>
-                ))}
-                {(originalExt.entities?.medications || []).filter(m => m.source_sentence).map((m, i) => (
-                  <div key={`med-ev-${i}`} style={{ background: '#ffffff', padding: '0.5rem 0.75rem', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.8rem' }}>
-                    <span style={{ fontWeight: 600, color: '#9333ea' }}>Medication: "{m.text}"</span>
-                    <div style={{ color: '#475569', marginTop: '2px', fontStyle: 'italic' }}>
-                      "{m.source_sentence}"
-                    </div>
-                  </div>
-                ))}
               </div>
             </div>
           )}
         </>
+      )}
+
+      {/* FHIR R4 JSON Export Modal */}
+      {showFhirModal && (
+        <div className="modal-backdrop" onClick={() => setShowFhirModal(false)}>
+          <div className="fhir-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <FileCode size={20} className="modal-icon text-primary" />
+                <h3>HL7® FHIR® R4 Clinical Document Bundle</h3>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowFhirModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p className="fhir-description">
+                Interoperable FHIR R4 Composition Bundle formatted for Epic, Cerner, or NHS electronic health record ingestion.
+              </p>
+              <pre className="fhir-code-preview">
+                {JSON.stringify(generateFhirBundle(), null, 2)}
+              </pre>
+            </div>
+            <div className="modal-footer">
+              <button className="modal-action-btn secondary" onClick={handleCopyFhir}>
+                {copiedFhir ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
+                <span>{copiedFhir ? "Copied to Clipboard!" : "Copy FHIR JSON"}</span>
+              </button>
+              <button className="modal-action-btn primary" onClick={handleDownloadFhir}>
+                <Download size={14} />
+                <span>Download .json Bundle</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
