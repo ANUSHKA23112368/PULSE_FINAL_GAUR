@@ -79,35 +79,123 @@ export function DatasetPage({ onSelectReport, onNavigate }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
           <div style={{ background: '#0a0f1d', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Dataset Name</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Primary Gold Dataset</div>
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#ffffff', marginTop: '0.25rem' }}>
               Synthetic Nursing Handover
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Training & Development Corpus</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>NICTA/ANU 101 Gold Notes (2,103 Spans)</div>
           </div>
 
           <div style={{ background: '#0a0f1d', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Number of Reports</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Hospital Training Pack</div>
             <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#38bdf8', marginTop: '0.2rem' }}>
-              101 Reports
+              261 Reports
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Numbered 0.txt to 100.txt</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>101 Gold + 160 ISBAR Augmentations</div>
           </div>
 
           <div style={{ background: '#0a0f1d', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Primary Folder</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>External Ingestion Engine</div>
             <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a5b4fc', marginTop: '0.35rem' }} className="mono">
-              data/101writtenfreetextreports/
+              n2c2 2018 & i2b2 2010
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Automatically discovered</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Loaded via ExternalDatasetLoader</div>
           </div>
 
           <div style={{ background: '#0a0f1d', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>File Format & Purpose</div>
+            <div style={{ fontSize: '0.72rem', color: '#94a3b8', textTransform: 'uppercase', fontWeight: 600 }}>Pretrained Foundation</div>
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#34d399', marginTop: '0.25rem' }}>
-              TXT (Free-text)
+              MIMIC-III Clinical BERT
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>Primary clinical handover corpus</div>
+            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>emilyalsentzer/Bio_ClinicalBERT</div>
+          </div>
+        </div>
+
+        {/* Multi-Corpus Extended Catalog */}
+        <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
+          <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Database size={16} color="#38bdf8" /> Integrated Datasets & Clinical Benchmark Corpora
+          </h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+            {/* NICTA Gold */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8' }}>1. NICTA Synthetic Nursing Handover</span>
+                <span className="badge-tag" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>Primary Gold</span>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+                101 authentic nursing shift handovers from acute medical/surgical hospital wards. Annotated with 2,103 clinically verified entity spans and ground truth 9-category slot structures.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
+                <span className="pill-mini">101 Handover Notes</span>
+                <span className="pill-mini">2,103 Gold Spans</span>
+                <span className="pill-mini">9 Macro Categories</span>
+              </div>
+            </div>
+
+            {/* Hospital Training Pack */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399' }}>2. Hospital Training Pack (ISBAR)</span>
+                <span className="badge-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>Augmentation</span>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+                160 de-identified synthetic multi-shift handovers across ICU, PACU, and telemetry wards. Expands vocabulary with IV titration rates, NEWS2 early warning deterioration scores, and PRN analgesia.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
+                <span className="pill-mini">261 Total Reports</span>
+                <span className="pill-mini">9,500+ Tokens</span>
+                <span className="pill-mini">Multi-Ward ISBAR</span>
+              </div>
+            </div>
+
+            {/* n2c2 2018 Track 2 */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc' }}>3. n2c2 2018 Track 2 Benchmark</span>
+                <span className="badge-tag" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>Supported Ingestion</span>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+                National NLP Clinical Challenges benchmark for Adverse Drug Events (ADE) and medication extraction. Ingested via ExternalDatasetLoader with automated label mapping.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
+                <span className="pill-mini">.txt + .ann Ingestion</span>
+                <span className="pill-mini">Drugs & Dosages</span>
+                <span className="pill-mini">ADEs & Reasons</span>
+              </div>
+            </div>
+
+            {/* i2b2 2010 Challenge */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>4. i2b2 2010 Clinical Relations</span>
+                <span className="badge-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>Supported Ingestion</span>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+                Hospital discharge summaries and clinical progress notes. Ingests problem, treatment, and clinical test annotations normalized to PULSE macro categories.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
+                <span className="pill-mini">Discharge Summaries</span>
+                <span className="pill-mini">Problems & Treatments</span>
+                <span className="pill-mini">Configs/label_map.yaml</span>
+              </div>
+            </div>
+
+            {/* MIMIC-III Corpus */}
+            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#818cf8' }}>5. MIMIC-III Critical Care Corpus</span>
+                <span className="badge-tag" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>Pretraining Foundation</span>
+              </div>
+              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
+                Over 2 million de-identified critical care notes from Beth Israel Deaconess Medical Center. Provides foundational domain-specific clinical vocabulary for Bio_ClinicalBERT.
+              </p>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
+                <span className="pill-mini">2M+ Clinical Notes</span>
+                <span className="pill-mini">ICU Vocabulary</span>
+                <span className="pill-mini">Domain Embeddings</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
