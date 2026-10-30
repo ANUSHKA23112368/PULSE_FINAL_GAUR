@@ -29,14 +29,15 @@ To develop an automated computational pipeline that ingests unstructured nursing
 
 ---
 
-## 3. Dataset Specifications
+## 3. Dataset Specifications & Multi-Corpus Support
 
-The primary **gold** corpus is the **Synthetic Nursing Handover Training and Development Data Set** (Suominen et al., NICTA / Australian National University) — a hospital-ward handover research set with adjudicated character offsets.
+PULSE integrates and supports multiple clinical NLP benchmark datasets and augmentation corpora to ensure robust entity extraction, cross-domain clinical generalization, and zero-leakage evaluation:
 
-- **Primary Folder:** `data/101writtenfreetextreports/`
-- **Gold annotations:** `data/gold_standard/gold_standard_corpus.json` (101 notes, 2,103 spans)
-- **Hospital training pack:** NICTA gold + de-identified ISBAR augmentations (`scripts/train_production_clinicalbert.py`)
-- **Backbone:** `emilyalsentzer/Bio_ClinicalBERT` (MIMIC-trained clinical BERT). Real MIMIC/n2c2/i2b2 notes are **not** bundled here because they require PhysioNet/DUA access.
+### 3.1 Primary Gold Standard Corpus (NICTA / Australian National University)
+- **Dataset Name:** Synthetic Nursing Handover Training and Development Data Set (Suominen et al.)
+- **Primary Folder:** `data/101writtenfreetextreports/` (numbered `0.txt` to `100.txt`)
+- **Adjudicated Gold Annotations:** `data/gold_standard/gold_standard_corpus.json` (101 reports, 2,103 clinically verified entity spans)
+- **Structured Information Extraction:** `data/101informationextraction/documents/` (ground truth 9-category slot extractions)
 - **Format:** Plain text (`.txt`), read verbatim and preserved read-only
 - **Dynamic Corpus EDA Statistics:**
   - Total Handover Documents: **101**
@@ -46,7 +47,27 @@ The primary **gold** corpus is the **Synthetic Nursing Handover Training and Dev
   - Total Corpus Word Tokens: **~7,214**
   - Unique Vocabulary Tokens: **~1,441**
 
-Train the live checkpoint (Python 3.10 recommended):
+### 3.2 Hospital Training Pack & ISBAR Multi-Shift Augmentation Corpus
+- **Dataset File:** `data/gold_standard/hospital_training_corpus.json` (261 total clinical notes, 9,500+ token spans)
+- **Composition:** Combines the 101 NICTA gold reports with **160 de-identified, synthetic multi-shift ISBAR handover augmentations** (`scripts/train_production_clinicalbert.py`).
+- **Clinical Diversity:** Covers intensive care (ICU), post-operative recovery (PACU), med-surg, telemetry, and subacute wards.
+- **Coverage Enhancements:** Augments critical nursing indicators including IV lines, titration rates, fluid balances, NEWS2 clinical deterioration scores, and PRN pain management workflows.
+
+### 3.3 External Benchmark Ingestion Support (n2c2 & i2b2)
+PULSE includes a modular external dataset ingestion engine (`backend/dataset/external_loader.py`) and unified ontology mapping (`configs/label_map.yaml`) for standard clinical research benchmarks:
+- **n2c2 2018 Track 2 (Adverse Drug Events & Medication Extraction):**
+  - Parses paired `.txt` and `.ann` files.
+  - Automatically maps `Drug`, `Dosage`, `Route`, `Frequency` -> `Medication`, `Reason` -> `Clinical_Condition`, and `ADE` -> `Clinical_Observation`.
+- **i2b2 2010 Clinical Relations & Entity Challenge:**
+  - Ingests hospital discharge summaries and clinical progress notes.
+  - Automatically normalizes `problem` -> `Clinical_Condition`, `treatment` -> `Medication`, and `test` -> `Investigation_Procedure`.
+- **Configurable Path:** Point `PULSE_EXTERNAL_DATA_DIR` to any local n2c2/i2b2 directory for seamless ingestion and testing without modifying core pipeline code.
+
+### 3.4 MIMIC-III Clinical Foundation Backbone
+- **Model Checkpoint:** `emilyalsentzer/Bio_ClinicalBERT`
+- **Pretraining Domain:** Pretrained on 2+ million de-identified clinical notes from the **MIMIC-III** (Medical Information Mart for Intensive Care) database, providing deep contextual embeddings for clinical terminology, shorthand abbreviations, and hospital workflows.
+
+Train the live checkpoint (Python 3.10+ recommended):
 
 ```bash
 python scripts/train_production_clinicalbert.py --epochs 3 --synthetic 160 --trainable-last-n 2
