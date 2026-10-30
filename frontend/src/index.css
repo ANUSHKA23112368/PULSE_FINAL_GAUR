@@ -18,55 +18,39 @@
   --primary-light: #e0f2fe;
   --primary-border: #bae6fd;
 
-  /* Typography Colors */
-  --text-main: #0f172a;
-  --text-body: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #64748b;
-  --text-light: #94a3b8;
-
-  /* Status Colors */
-  --success: #059669;
-  --success-bg: #ecfdf5;
-  --success-border: #a7f3d0;
-
-  --warning: #d97706;
-  --warning-bg: #fffbeb;
-  --warning-border: #fde68a;
-
-  --danger: #dc2626;
-  --danger-bg: #fef2f2;
-  --danger-border: #fca5a5;
-
-  /* Borders & Shadows */
-  --border-color: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
-
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  /* Typography - Modern, Clean Clinical Sans */
+  --font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-family);
   background-color: var(--bg-page);
   color: var(--text-body);
-  line-height: 1.5;
-  min-height: 100vh;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.009em; /* Optimized for clinical readability at scale */
+  font-feature-settings: "cv02", "cv05", "cv08", "ss01"; /* Inter readability features */
+}
+
+h1, h2, h3, h4 {
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+/* Enhanced legibility for clinical content */
+.clinical-textarea, .note-verbatim-text, .quadrant-text, .verbatim-box {
+  font-family: var(--font-family);
+  font-size: 1.0625rem !important; /* Enlarged for medical workstation readability */
+  line-height: 1.75 !important; /* Increased breathing room for dense clinical notes */
+  letter-spacing: -0.005em !important;
 }
 
 code, pre, .mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
+  font-size: 0.9em;
 }
 
 /* App Container */
@@ -220,17 +204,22 @@ code, pre, .mono {
 /* Hospital Card */
 .hospital-card {
   background: var(--bg-surface);
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 8px);
   padding: 1.25rem;
-  box-shadow: var(--shadow-sm);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hospital-card:hover {
+  border-color: rgba(2, 132, 199, 0.3);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.03);
 }
 
 /* Interactive Patient Cards */
 .patient-card:hover {
   border-color: #94a3b8;
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
 }
 
 /* Forms & Inputs */
@@ -259,10 +248,10 @@ code, pre, .mono {
   font-family: inherit;
   font-weight: 600;
   font-size: 0.9rem;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm, 6px);
   border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 0.55rem 1rem;
   min-height: 38px;
 }
@@ -270,15 +259,25 @@ code, pre, .mono {
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
   color: #ffffff;
+  box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: var(--primary-hover);
+  background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.35);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(2, 132, 199, 0.2);
 }
 
 .btn-outline {
@@ -1101,8 +1100,8 @@ code, pre, .mono {
   border-radius: 8px;
   border: 1px solid #cbd5e1;
   font-family: inherit;
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 1.05rem;
+  line-height: 1.7;
   color: #0f172a;
   resize: vertical;
   min-height: 220px;
@@ -2416,6 +2415,9 @@ code, pre, .mono {
   color: var(--text-main);
   margin: 0 0 0.3rem 0;
   letter-spacing: -0.02em;
+  background: linear-gradient(to right, var(--text-main), #64748b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .page-subheading {
@@ -3211,8 +3213,8 @@ code, pre, .mono {
   width: 100%;
   border-radius: 8px;
   padding: 0.85rem 1rem;
-  font-size: 0.925rem;
-  line-height: 1.55;
+  font-size: 1.05rem;
+  line-height: 1.7;
   font-family: inherit;
   resize: vertical;
 }
@@ -3930,9 +3932,9 @@ code, pre, .mono {
 }
 
 .delta-narrative {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--text-body);
-  line-height: 1.5;
+  line-height: 1.65;
   margin: 0;
 }
 
@@ -4194,9 +4196,9 @@ code, pre, .mono {
 }
 
 .task-text {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   color: var(--text-main);
-  line-height: 1.45;
+  line-height: 1.6;
   margin: 0 0 0.45rem 0;
 }
 
