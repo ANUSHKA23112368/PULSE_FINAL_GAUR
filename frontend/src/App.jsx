@@ -28,6 +28,7 @@ import { PendingActionsPage } from './pages/PendingActionsPage';
 import { ResearchEvaluationPage } from './pages/ResearchEvaluationPage';
 import { ModelTrainingDashboardPage } from './pages/ModelTrainingDashboardPage';
 import { CommandPalette } from './components/CommandPalette';
+import { Logo } from './components/Logo';
 import { fetchHealth, fetchPatients } from './services/api';
 
 export function App() {
@@ -119,9 +120,7 @@ export function App() {
         <div className="header-inner">
           {/* Hospital Brand & Prototype Tag */}
           <div className="hospital-brand" onClick={() => setActiveTab('dashboard')} style={{ cursor: 'pointer' }}>
-            <div className="brand-icon">
-              <HeartPulse size={20} color="#ffffff" />
-            </div>
+            <Logo size={42} />
             <div className="brand-text">
               <div className="brand-title">
                 PULSE

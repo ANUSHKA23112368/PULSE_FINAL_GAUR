@@ -39,6 +39,14 @@ class AnalyzeRequest(BaseModel):
     raw_text: Optional[str] = Field(None, description="Raw handover text if custom or overriding")
     engine: Optional[str] = Field("hybrid", description="Extraction engine: 'hybrid', 'clinical_bert', or 'rule'")
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "report_id": "1",
+                "engine": "hybrid"
+            }
+        }
+
 class ExtractRequest(BaseModel):
     text: str = Field(..., description="Handover text to extract from")
     engine: Optional[str] = Field("hybrid", description="Extraction engine: 'hybrid', 'clinical_bert', or 'rule'")

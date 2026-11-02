@@ -43,10 +43,13 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Enable CORS for local development
+# Configure CORS from environment or default to local development
+cors_origins_str = os.getenv("PULSE_CORS_ORIGINS", "*")
+origins = [origin.strip() for origin in cors_origins_str.split(",")] if cors_origins_str != "*" else ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
