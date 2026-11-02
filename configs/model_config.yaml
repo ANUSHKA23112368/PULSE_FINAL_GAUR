@@ -1,0 +1,111 @@
+# model_config.yaml
+# PULSE Bio_ClinicalBERT Model Configuration
+# Controls training hyperparameters, label schema, and inference settings.
+
+# ─────────────────────────────────────────────
+# Model Backbone
+# ─────────────────────────────────────────────
+backbone:
+  name: "emilyalsentzer/Bio_ClinicalBERT"
+  type: "bert-base-uncased"
+  pretrained_domain: "MIMIC-III critical care notes"
+  max_position_embeddings: 512
+  hidden_size: 768
+  num_attention_heads: 12
+  num_hidden_layers: 12
+
+# ─────────────────────────────────────────────
+# Fine-Tuning Configuration
+# ─────────────────────────────────────────────
+training:
+  epochs: 3
+  learning_rate: 3.0e-5
+  batch_size: 4
+  max_sequence_length: 256
+  warmup_ratio: 0.10
+  weight_decay: 0.01
+  gradient_clip_norm: 1.0
+  trainable_last_n_layers: 2   # -1 = train all layers
+  optimizer: "AdamW"
+  scheduler: "linear_warmup"
+  class_weight_strategy: "inverse_frequency"
+  o_label_max_weight: 0.35     # cap weight on O (non-entity) tokens
+
+# ─────────────────────────────────────────────
+# Dataset Configuration
+# ─────────────────────────────────────────────
+dataset:
+  primary:
+    name: "NICTA Synthetic Nursing Handover"
+    path: "data/101writtenfreetextreports"
+    gold_annotations: "data/gold_standard/gold_standard_corpus.json"
+    total_documents: 101
+  augmentation:
+    enabled: true
+    synthetic_count: 160
+    combined_training_corpus: "data/gold_standard/hospital_training_corpus.json"
+  external:
+    enabled: false                  # set true to load n2c2/i2b2
+    path_env_var: "PULSE_EXTERNAL_DATA_DIR"
+    supported_formats:
+      - "i2b2_txt_ann"
+      - "n2c2_txt_ann"
+  evaluation:
+    strategy: "5_fold_cross_validation"
+    fold_ids: "data/gold_standard/train_test_splits.json"
+    held_out_fold: "fold_0"
+
+# ─────────────────────────────────────────────
+# NER Label Schema (BIO Tagging)
+# ─────────────────────────────────────────────
+labels:
+  macro_categories:
+    - Clinical_Condition
+    - Medication
+    - Investigation_Procedure
+    - Clinical_Observation
+    - Vital_Sign
+    - Patient_Info
+    - Temporal
+    - Pending_Task
+    - Other
+  bio_tags:
+    - "O"
+    - "B-Clinical_Condition"
+    - "I-Clinical_Condition"
+    - "B-Medication"
+    - "I-Medication"
+    - "B-Investigation_Procedure"
+    - "I-Investigation_Procedure"
+    - "B-Clinical_Observation"
+    - "I-Clinical_Observation"
+    - "B-Vital_Sign"
+    - "I-Vital_Sign"
+    - "B-Patient_Info"
+    - "I-Patient_Info"
+    - "B-Temporal"
+    - "I-Temporal"
+    - "B-Pending_Task"
+    - "I-Pending_Task"
+    - "B-Other"
+    - "I-Other"
+
+# ─────────────────────────────────────────────
+# Inference Configuration
+# ─────────────────────────────────────────────
+inference:
+  device: "auto"                   # "auto" | "cpu" | "cuda"
+  batch_size: 1
+  threshold: 0.5
+  span_merge_strategy: "bio_greedy"
+  negation_aware: true
+  uncertainty_aware: true
+  temporal_scoping: true
+
+# ─────────────────────────────────────────────
+# Output Paths
+# ─────────────────────────────────────────────
+output:
+  model_dir: "backend/models/clinical_bert"
+  results_path: "data/gold_standard/clinicalbert_production_results.json"
+  training_card: "backend/models/clinical_bert/training_card.json"
