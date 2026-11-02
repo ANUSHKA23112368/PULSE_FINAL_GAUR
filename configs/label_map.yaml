@@ -1,6 +1,11 @@
-# PULSE Label Mapping Configuration
-# Maps external dataset tags to internal PULSE categories
+# PULSE Clinical NLP Label Mapping Configuration
+# Maps external dataset annotation tags to PULSE standardized clinical macro-categories.
+# Version: 2.0.0
 
+# ─────────────────────────────────────────────
+# n2c2 2018 Track 2 (Adverse Drug Events)
+# → PULSE Clinical Macro-Categories
+# ─────────────────────────────────────────────
 n2c2_2018_to_pulse:
   Drug: Medication
   Dosage: Medication
@@ -8,8 +13,76 @@ n2c2_2018_to_pulse:
   Frequency: Medication
   Reason: Clinical_Condition
   ADE: Clinical_Observation
+  Duration: Temporal
+  Strength: Medication
 
+# ─────────────────────────────────────────────
+# i2b2 2010 (Clinical Relations & Entity)
+# → PULSE Clinical Macro-Categories
+# ─────────────────────────────────────────────
 i2b2_2010_to_pulse:
   problem: Clinical_Condition
   treatment: Medication
   test: Investigation_Procedure
+
+# ─────────────────────────────────────────────
+# i2b2 2012 (Temporal Relations)
+# → PULSE Clinical Macro-Categories
+# ─────────────────────────────────────────────
+i2b2_2012_to_pulse:
+  EVENT: Clinical_Condition
+  TIMEX3: Temporal
+  OCCURRENCE: Clinical_Observation
+
+# ─────────────────────────────────────────────
+# Bio-NER Generic (BioNER / JNLPBA)
+# → PULSE Clinical Macro-Categories
+# ─────────────────────────────────────────────
+bioner_to_pulse:
+  DNA: Investigation_Procedure
+  RNA: Investigation_Procedure
+  protein: Investigation_Procedure
+  cell_type: Clinical_Condition
+  cell_line: Investigation_Procedure
+
+# ─────────────────────────────────────────────
+# SNOMED-CT High-Level Hierarchy
+# → PULSE Clinical Macro-Categories
+# ─────────────────────────────────────────────
+snomed_concept_to_pulse:
+  "disorder": Clinical_Condition
+  "finding": Clinical_Observation
+  "procedure": Investigation_Procedure
+  "substance": Medication
+  "product": Medication
+  "observable entity": Vital_Sign
+  "situation": Pending_Task
+  "event": Clinical_Observation
+
+# ─────────────────────────────────────────────
+# PULSE Internal Macro-Category Registry
+# ─────────────────────────────────────────────
+pulse_macro_categories:
+  - Clinical_Condition
+  - Medication
+  - Investigation_Procedure
+  - Clinical_Observation
+  - Vital_Sign
+  - Patient_Info
+  - Temporal
+  - Pending_Task
+  - Other
+
+# ─────────────────────────────────────────────
+# Confidence Thresholds per Category
+# ─────────────────────────────────────────────
+confidence_thresholds:
+  Clinical_Condition: 0.45
+  Medication: 0.50
+  Investigation_Procedure: 0.50
+  Clinical_Observation: 0.40
+  Vital_Sign: 0.55
+  Patient_Info: 0.60
+  Temporal: 0.45
+  Pending_Task: 0.40
+  Other: 0.35
