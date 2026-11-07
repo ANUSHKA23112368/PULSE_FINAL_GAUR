@@ -1057,38 +1057,14 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
         </>
       )}
 
-      {/* FHIR R4 JSON Export Modal */}
-      {showFhirModal && (
-        <div className="modal-backdrop" onClick={() => setShowFhirModal(false)}>
-          <div className="fhir-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <FileCode size={20} className="modal-icon text-primary" />
-                <h3>HL7® FHIR® R4 Clinical Document Bundle</h3>
-              </div>
-              <button className="modal-close-btn" onClick={() => setShowFhirModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <p className="fhir-description">
-                Interoperable FHIR R4 Composition Bundle formatted for Epic, Cerner, or NHS electronic health record ingestion.
-              </p>
-              <pre className="fhir-code-preview">
-                {JSON.stringify(generateFhirBundle(), null, 2)}
-              </pre>
-            </div>
-            <div className="modal-footer">
-              <button className="modal-action-btn secondary" onClick={handleCopyFhir}>
-                {copiedFhir ? <Check size={14} className="text-emerald" /> : <Copy size={14} />}
-                <span>{copiedFhir ? "Copied to Clipboard!" : "Copy FHIR JSON"}</span>
-              </button>
-              <button className="modal-action-btn primary" onClick={handleDownloadFhir}>
-                <Download size={14} />
-                <span>Download .json Bundle</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FhirExportModal
+        isOpen={showFhirModal}
+        onClose={() => setShowFhirModal(false)}
+        bundle={generateFhirBundle()}
+        patient={selectedPatient}
+        isbar={editedIsbar}
+        title="ISBAR Clinical Shift Handover"
+      />
     </div>
   );
 }
