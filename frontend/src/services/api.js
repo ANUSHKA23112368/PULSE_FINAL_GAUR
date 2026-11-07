@@ -77,7 +77,7 @@ export async function fetchHealth() {
 
 export async function fetchStats() {
   try {
-    const res = await fetch(`${API_BASE}/stats`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/stats`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Backend stats offline");
     return await res.json();
   } catch (err) {
@@ -88,7 +88,7 @@ export async function fetchStats() {
 
 export async function fetchReports() {
   try {
-    const res = await fetch(`${API_BASE}/reports`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/reports`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Backend reports offline");
     return await res.json();
   } catch (err) {
@@ -99,7 +99,7 @@ export async function fetchReports() {
 
 export async function fetchReport(reportId) {
   try {
-    const res = await fetch(`${API_BASE}/reports/${reportId}`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/reports/${reportId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Backend report fetch offline");
     return await res.json();
   } catch (err) {
