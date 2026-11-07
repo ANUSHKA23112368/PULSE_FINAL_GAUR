@@ -873,6 +873,68 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
         </div>
       </section>
 
+      {/* Instant Latency & Entity Sandbox */}
+      <section className="latency-lab">
+        <div className="latency-lab-head">
+          <div>
+            <div className="section-badge"><Gauge size={14} /><span>Inference Lab</span></div>
+            <h2>Instant Latency Benchmark Sandbox</h2>
+            <p>Run a 25-pass local entity benchmark on arbitrary text and filter by confidence.</p>
+          </div>
+          <div className="latency-readout">
+            <span>Local span pass</span>
+            <strong>{latencyMeasured == null ? '—' : `${latencyMeasured.toFixed(2)} ms`}</strong>
+            <small>Bio_ClinicalBERT CPU p50: 18–25 ms</small>
+          </div>
+        </div>
+
+        <div className="latency-lab-grid">
+          <div className="latency-lab-input">
+            <label htmlFor="latency-sample">Arbitrary clinical sample</label>
+            <textarea
+              id="latency-sample"
+              rows={5}
+              value={latencyText}
+              onChange={(event) => setLatencyText(event.target.value)}
+              placeholder="Paste any clinical sentence to test entity recognition..."
+            />
+          </div>
+
+          <div className="latency-lab-controls">
+            <div className="latency-threshold-head">
+              <label htmlFor="latency-threshold">Confidence threshold</label>
+              <strong>{Math.round(latencyThreshold * 100)}%</strong>
+            </div>
+            <input
+              id="latency-threshold"
+              type="range"
+              min="0.7"
+              max="0.98"
+              step="0.01"
+              value={latencyThreshold}
+              onChange={(event) => setLatencyThreshold(Number(event.target.value))}
+              className="slider-input"
+            />
+            <button type="button" className="run-inference-btn" onClick={handleLatencyBenchmark}>
+              <Zap size={15} /> Run 25-pass Benchmark
+            </button>
+            <div className="latency-entity-row">
+              {latencyEntities.length ? (
+                latencyEntities.map((entity, index) => (
+                  <span key={`${entity.category}-${entity.text}-${index}`} className="latency-entity-chip">
+                    <strong>{entity.text}</strong>
+                    <span>{entity.category}</span>
+                    <em>{Math.round(entity.confidence * 100)}%</em>
+                  </span>
+                ))
+              ) : (
+                <span className="latency-empty">Run the benchmark to surface spans above the threshold.</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Model Benchmark Comparison Table */}
       <section className="benchmark-table-section">
         <div className="section-header-row">
@@ -902,15 +964,15 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
             <tbody>
               <tr className="row-featured">
                 <td>
-                  <strong>PULSE Bio_ClinicalBERT (Fine-Tuned)</strong>
-                  <span className="model-sub">emilyalsentzer/Bio_ClinicalBERT + 14-Class ISBAR Head</span>
+                  <strong>Hybrid CRF + Gazetteer (Measured)</strong>
+                  <span className="model-sub">CRF sequence model + clinical gazetteer; 5-fold micro (101 NICTA + 160 synthetic)</span>
                 </td>
-                <td className="highlight-f1">85.4%</td>
-                <td className="highlight-f1">92.1%</td>
-                <td>86.8%</td>
-                <td>84.1%</td>
-                <td>~18 ms</td>
-                <td><span className="pill-active">Active Engine</span></td>
+                <td className="highlight-f1">60.51%</td>
+                <td className="highlight-f1">74.46%</td>
+                <td>66.53%</td>
+                <td>55.49%</td>
+                <td>&lt;5 ms</td>
+                <td><span className="pill-active">Best honest (5-fold)</span></td>
               </tr>
               <tr>
                 <td>
