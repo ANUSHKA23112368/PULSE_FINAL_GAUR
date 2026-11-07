@@ -1,15 +1,27 @@
 <!doctype html>
-<html lang="en" data-theme="dark" style="background-color: #090d16; color: #f1f5f9;">
+<html lang="en" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content="PULSE: NLP-based Clinical Handover Information Extraction and Event Structuring System. College Research Prototype for structuring nursing shift handovers." />
+    <meta name="theme-color" content="#0f172a" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
     <title>PULSE - Clinical Handover & BioClinicalBERT Intelligence Engine</title>
+    <script>
+      // Apply the saved theme before first paint to avoid a light/dark flash.
+      (function () {
+        try {
+          var stored = localStorage.getItem('pulse_theme');
+          document.documentElement.setAttribute('data-theme', stored === 'light' ? 'light' : 'dark');
+        } catch (error) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
   </head>
-  <body style="background-color: #090d16; color: #f1f5f9; margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
