@@ -175,27 +175,24 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
       </div>
 
       {loading ? (
-        <div className="hospital-card loading-state-card">
-          <RefreshCw size={24} className="animate-spin text-primary" />
-          <span>Calculating empirical evaluation metrics...</span>
+        <div className="hospital-card loading-state-card" style={{ padding: '3rem', textAlign: 'center' }}>
+          <RefreshCw size={28} className="animate-spin text-primary" style={{ margin: '0 auto 1rem auto' }} />
+          <span>Calculating empirical cross-validation metrics across multi-corpus benchmarks...</span>
         </div>
-      ) : data ? (
-        <div className="evaluation-stack">
-          {/* Section 1: Live Prototype Activity Counters */}
-          <div className="evaluation-section">
-            <h3 className="section-title">
-              <Activity size={18} className="text-emerald" />
-              <span>Live Demonstration & Hospital Simulation Metrics</span>
-            </h3>
-
-            <div className="eval-metric-tiles-grid">
-              <div className="hospital-card eval-metric-tile">
-                <span className="eval-metric-label">Demo Patients</span>
-                <div className="eval-metric-value text-primary">
-                  {data.live_prototype_activity?.registered_demo_patients ?? 10}
+      ) : (
+        <div>
+          {/* TAB 1: MULTI-MODEL BENCHMARKS (5-FOLD CV) */}
+          {activeTab === 'benchmarks' && (
+            <div className="evaluation-stack">
+              {/* Summary Stats Row */}
+              <div className="eval-metric-tiles-grid" style={{ marginBottom: '1.5rem' }}>
+                <div className="hospital-card eval-metric-tile">
+                  <span className="eval-metric-label">Evaluation Protocol</span>
+                  <div className="eval-metric-value text-primary" style={{ fontSize: '1.25rem' }}>
+                    Stratified 5-Fold
+                  </div>
+                  <span className="eval-metric-sub">Zero document leakage</span>
                 </div>
-                <span className="eval-metric-sub">Isolated patient profiles</span>
-              </div>
 
               <div className="hospital-card eval-metric-tile">
                 <span className="eval-metric-label">Handover Notes Processed</span>
