@@ -429,16 +429,18 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
               title="Select NLP extraction engine"
             >
               <option value="hybrid">Hybrid (Bio_ClinicalBERT + ConText Rules)</option>
+              <option value="hybrid_crf">Hybrid CRF + Gazetteer (5-Fold, 61.1% Strict F1)</option>
               <option value="clinical_bert">Bio_ClinicalBERT (Pure Neural)</option>
               <option value="rule">Rule Baseline (Deterministic Regex/Dict)</option>
-            </select>
-            <span className="chip" style={{ 
-              background: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)', 
-              borderColor: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.4)' : 'rgba(99, 102, 241, 0.4)', 
-              color: selectedEngine === 'rule' ? '#fde68a' : '#a5b4fc',
+            </select>            <span className="chip" style={{ 
+              background: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.15)' : (selectedEngine === 'hybrid_crf' ? 'rgba(52, 211, 153, 0.15)' : 'rgba(99, 102, 241, 0.15)'), 
+              borderColor: selectedEngine === 'rule' ? 'rgba(245, 158, 11, 0.4)' : (selectedEngine === 'hybrid_crf' ? 'rgba(52, 211, 153, 0.4)' : 'rgba(99, 102, 241, 0.4)'),
+              color: selectedEngine === 'rule' ? '#fde68a' : (selectedEngine === 'hybrid_crf' ? '#a7f3d0' : '#a5b4fc'),
               fontSize: '0.72rem'
             }}>
-              {selectedEngine === 'rule' ? 'Deterministic Baseline' : 'Neural Token Classification'}
+              {selectedEngine === 'rule'
+                ? 'Deterministic Baseline'
+                : (selectedEngine === 'hybrid_crf' ? 'CRF + Gazetteer (5-Fold)' : 'Neural Token Classification')}
             </span>
           </div>
         </div>
