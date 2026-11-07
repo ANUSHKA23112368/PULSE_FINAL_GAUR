@@ -261,15 +261,16 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
         <form onSubmit={handleSearchSubmit} className="search-form-row">
           <div className="search-input-wrapper">
             <Search size={18} className="search-icon" />
-            <input
-              className="form-input search-input"
-              placeholder="Search by ID, Name, or Condition..."
+            <input 
+              type="text"
+              placeholder="Search by patient name, display ID (e.g. PULSE-DEMO-001), ward, or diagnosis..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              className="form-input search-input"
             />
           </div>
-          <button className="btn btn-outline">
-            <Filter size={16} /> Filters
+          <button type="submit" className="btn btn-primary">
+            <Search size={15} /> Search
           </button>
         </div>
       </div>
