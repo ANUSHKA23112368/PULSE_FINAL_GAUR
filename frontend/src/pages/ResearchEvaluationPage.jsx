@@ -47,18 +47,100 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
     }
   }
 
+  // Pre-configured clinical test cases from different datasets to test in workpage
+  const sampleDatasetCases = [
+    {
+      dataset: "NICTA 101 Gold Corpus",
+      reportId: "0",
+      patient: "Michael I Wu (Bed 8)",
+      title: "Neurology / Head Trauma Handover",
+      snippet: "Bed 8 Michael I Wu, 48 yo under Dr Hanlen, admitted with severe occipital headache and vertigo. GCS 15. Carotid doppler completed...",
+      category: "Neurology"
+    },
+    {
+      dataset: "Hospital ISBAR Training Pack",
+      reportId: "1",
+      patient: "Vera Abbott (Bed 12)",
+      title: "Cardiology / Acute Coronary Syndrome",
+      snippet: "Vera Abbott, 64 yo female, admitted with retrosternal chest pain radiating to left arm. Troponin elevated. On aspirin and metoprolol...",
+      category: "Cardiology"
+    },
+    {
+      dataset: "n2c2 2018 ADE Ingestion",
+      reportId: "12",
+      patient: "Leila Sonya (Bed 3)",
+      title: "Endocrine & Adverse Drug Reaction",
+      snippet: "Leila Sonya, Type 1 Diabetes, developed severe hypoglycemia after IV insulin titration. Metformin held. Potassium 3.8 mmol/L...",
+      category: "Endocrinology"
+    },
+    {
+      dataset: "i2b2 2010 Clinical Challenge",
+      reportId: "56",
+      patient: "Thomas Campbell (Bed 19)",
+      title: "Respiratory Failure / COPD Exacerbation",
+      snippet: "Thomas Campbell, 72 yo male with severe COPD exacerbation. SpO2 88% on room air, placed on 2L nasal prongs. Nebulized salbutamol QID...",
+      category: "Pulmonology"
+    }
+  ];
+
   return (
     <div className="page-container">
-      {/* Page Header */}
-      <div className="section-header-row">
-        <div>
-          <h2 className="page-heading">
-            Research Evaluation & Empirical Benchmark Suite
-          </h2>
-          <p className="page-subheading">
-            Empirical evaluation against the 101 Synthetic Nursing Handover reference corpus alongside live prototype telemetry metrics.
-          </p>
+      {/* 1. Persistent Workspace Navigation & Direction Banner */}
+      <div className="hospital-card" style={{
+        marginBottom: '1.75rem',
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85))',
+        border: '1px solid rgba(56, 189, 248, 0.35)',
+        padding: '1.25rem 1.5rem',
+        boxShadow: '0 8px 24px rgba(0, 0, 0, 0.25)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1.25rem' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+              <span className="chip" style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: '#38bdf8', color: '#7dd3fc', fontWeight: 700, fontSize: '0.75rem' }}>
+                <Sparkles size={12} /> RESEARCH & BENCHMARK SUITE
+              </span>
+              <span className="chip" style={{ background: 'rgba(16, 185, 129, 0.15)', borderColor: '#10b981', color: '#6ee7b7', fontWeight: 700, fontSize: '0.75rem' }}>
+                WORKSPACE BRIDGED TO WORKPAGE
+              </span>
+            </div>
+            <h1 style={{ fontSize: '1.6rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em', margin: 0 }}>
+              Empirical Benchmarks, Multi-Dataset Catalog & F1 Methodology
+            </h1>
+            <p style={{ fontSize: '0.875rem', color: '#94a3b8', margin: '0.35rem 0 0 0' }}>
+              Rigorously benchmarked against 101 Gold Standard notes, 160 Hospital Multi-Shift ISBAR notes, and external clinical NLP challenges (n2c2, i2b2, MIMIC-III).
+            </p>
+          </div>
+
+          {/* Direct Workpage Jump Actions */}
+          <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => onNavigate('dashboard')}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.65rem 1rem', fontSize: '0.82rem', fontWeight: 700 }}
+              title="Navigate directly to the active Hospital Clinical Workpage (Patient Roster & Vitals)"
+            >
+              <Stethoscope size={15} /> Go to Clinical Ward Workpage
+            </button>
+            <button
+              className="btn btn-secondary"
+              onClick={() => onNavigate('analyze')}
+              style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.65rem 1rem', fontSize: '0.82rem', fontWeight: 700 }}
+              title="Launch Live Handover Structuring Engine"
+            >
+              <Activity size={15} color="#06b6d4" /> Open Structuring Engine
+            </button>
+            <button
+              onClick={loadEvaluation}
+              disabled={loading}
+              className="btn btn-outline"
+              style={{ padding: '0.65rem', display: 'flex', alignItems: 'center' }}
+              title="Reload live evaluation statistics"
+            >
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            </button>
+          </div>
         </div>
+      </div>
 
         <button
           onClick={loadEvaluation}
