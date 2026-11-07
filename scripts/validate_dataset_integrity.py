@@ -17,9 +17,12 @@ def verify_dataset(data_dir: str = "data"):
     assert os.path.exists(gold_path), f"Gold standard corpus not found at {gold_path}"
     with open(gold_path, "r", encoding="utf-8") as f:
         gold_data = json.load(f)
-    assert len(gold_data) == 101, f"Expected 101 gold annotations, found {len(gold_data)}"
+    # The current corpus format stores metadata alongside the report list.
+    # Keep compatibility with the original list-shaped export as well.
+    gold_reports = gold_data.get("reports", []) if isinstance(gold_data, dict) else gold_data
+    assert len(gold_reports) == 101, f"Expected 101 gold annotations, found {len(gold_reports)}"
     
-    return {"status": "ok", "report_count": len(report_files), "gold_count": len(gold_data)}
+    return {"status": "ok", "report_count": len(report_files), "gold_count": len(gold_reports)}
 
 if __name__ == "__main__":
     res = verify_dataset()
