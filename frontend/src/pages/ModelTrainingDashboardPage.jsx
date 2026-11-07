@@ -991,12 +991,12 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
                   <strong>BERT→CRF Stack (Leak-free, fold 0)</strong>
                   <span className="model-sub">Fold-specific BERT probabilities as CRF features; not 5-fold averaged</span>
                 </td>
-                <td>69.8%</td>
-                <td>78.4%</td>
-                <td>72.5%</td>
-                <td>67.3%</td>
-                <td>~8 ms</td>
-                <td><span className="pill-secondary">Baseline</span></td>
+                <td>62.92%</td>
+                <td>76.23%</td>
+                <td>69.37%</td>
+                <td>57.56%</td>
+                <td>—</td>
+                <td><span className="pill-secondary">Measured (1 fold)</span></td>
               </tr>
               <tr>
                 <td>
@@ -1015,38 +1015,12 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
         </div>
       </section>
 
-      {/* FHIR R4 Export Modal */}
-      {showFhirModal && (
-        <div className="modal-backdrop" onClick={() => setShowFhirModal(false)}>
-          <div className="fhir-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div className="modal-title-group">
-                <FileCode size={20} className="modal-icon" />
-                <h3>HL7® FHIR® R4 Clinical Document Bundle</h3>
-              </div>
-              <button className="modal-close-btn" onClick={() => setShowFhirModal(false)}>×</button>
-            </div>
-            <div className="modal-body">
-              <p className="fhir-description">
-                Standardized interoperable FHIR R4 JSON document containing structured ISBAR Composition, Clinical Observations, and Medication Statements ready for Epic, Cerner, or hospital EHR ingestion.
-              </p>
-              <pre className="fhir-code-preview">
-                {JSON.stringify(generateFhirBundle(), null, 2)}
-              </pre>
-            </div>
-            <div className="modal-footer">
-              <button className="modal-action-btn secondary" onClick={handleCopyFhir}>
-                {copiedFhir ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
-                <span>{copiedFhir ? "Copied to Clipboard!" : "Copy FHIR JSON"}</span>
-              </button>
-              <button className="modal-action-btn primary" onClick={handleDownloadFhir}>
-                <Download size={14} />
-                <span>Download .json Bundle</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <FhirExportModal
+        isOpen={showFhirModal}
+        onClose={() => setShowFhirModal(false)}
+        bundle={generateFhirBundle()}
+        title="Bio_ClinicalBERT Sandbox Handover"
+      />
     </div>
   );
 }
