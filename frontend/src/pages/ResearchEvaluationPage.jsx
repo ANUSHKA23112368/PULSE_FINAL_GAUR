@@ -671,23 +671,87 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
             </div>
           )}
 
-              <div className="hospital-card model-stat-card">
-                <div className="model-stat-header">
-                  <strong>Regex / Keyword Extraction</strong>
-                  <span className="badge-tag badge-tag-alt">Heuristic Baseline</span>
+          {/* TAB 4: 8-STAGE NLP STRUCTURING PIPELINE */}
+          {activeTab === 'pipeline' && (
+            <div className="evaluation-stack">
+              <div className="hospital-card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <h3 className="section-title" style={{ margin: 0, color: '#38bdf8' }}>
+                      <GitBranch size={20} color="#38bdf8" />
+                      <span>PULSE 8-Stage Information Structuring Pipeline</span>
+                    </h3>
+                    <span className="eval-metric-sub">
+                      End-to-end deterministic and neural execution workflow from voice dictation/raw text to structured ISBAR and HL7 FHIR R4.
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => onNavigate('overview')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <span>View Dynamic EDA</span>
+                    <ArrowRight size={13} />
+                  </button>
                 </div>
-                <div className="model-stat-row">
-                  <span>Micro F1-Score:</span> <strong>68.7%</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Inference Latency:</span> <strong>2 ms / note</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Safety / Hallucination:</span> <strong className="text-rose">High False Positives</strong>
+
+                {/* 8 Pipeline Stages Timeline */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
+                  {[
+                    { step: 1, name: "Unstructured Clinical Ingestion", icon: FileText, desc: "Ingests raw nursing shift reports, EHR progress notes, or voice transcriptions. Preserves verbatim formatting for clinical safety auditing." },
+                    { step: 2, name: "Lexical Normalization & Symbol Safeguards", icon: ShieldCheck, desc: "Normalizes whitespace while strictly preserving clinical tokens: '@' (at times), '+' (positive signs), '_' (identifiers), dosages, and vital sign units." },
+                    { step: 3, name: "Medical Shorthand & Hinglish Expansion", icon: BookOpen, desc: "Expands ward-specific clinical shorthand (HPN, BGL, GCS, PRN, QID) and bilingual clinical phrasing via regex and dictionary lookups." },
+                    { step: 4, name: "Hybrid CRF + Neural NER", icon: BrainCircuit, desc: "Extracts clinical entities using a hybrid CRF + gazetteer model (5-fold strict 60.51% / lenient 74.46%) and Bio_ClinicalBERT with subword-to-character alignment. A BERT→CRF feature stack scored 62.92% / 76.23% on a leak-free fold-0 evaluation." },
+                    { step: 5, name: "ConText Clinical Assertion Scoping", icon: Zap, desc: "Determines clinical polarity for all extracted conditions: Affirmed, Negated ('no chest pain', 'denies SOB'), or Uncertain ('query pneumonia')." },
+                    { step: 6, name: "Temporal Anchor & Chronology Resolver", icon: Activity, desc: "Resolves clock times ('at 1430'), relative times ('2 hours post-op', 'this morning'), and sequences events chronologically." },
+                    { step: 7, name: "Action Item & Clinical Task Prioritizer", icon: Award, desc: "Extracts pending scans, repeated blood tests, and doctor reviews, categorizing them into High, Medium, and Low urgency triage orders." },
+                    { step: 8, name: "Structured ISBAR & HL7 FHIR Synthesis", icon: CheckCircle2, desc: "Synthesizes standard 9-category clinical handover and ISBAR briefing. Serializes to HL7 FHIR R4 compliant JSON Bundle for EHR interoperability." }
+                  ].map((st) => {
+                    const Icon = st.icon;
+                    return (
+                      <div
+                        key={st.step}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: '1rem',
+                          background: 'rgba(15, 23, 42, 0.7)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: '8px',
+                          padding: '1rem'
+                        }}
+                      >
+                        <div style={{
+                          background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                          color: '#ffffff',
+                          fontWeight: 800,
+                          fontSize: '0.85rem',
+                          width: '32px',
+                          height: '32px',
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {st.step}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                            <Icon size={15} color="#38bdf8" />
+                            <span>{st.name}</span>
+                          </div>
+                          <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                            {st.desc}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       ) : null}
     </div>
