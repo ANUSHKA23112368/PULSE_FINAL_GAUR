@@ -9,13 +9,27 @@ import {
   Zap,
   CheckCircle2,
   Layers,
-  ArrowUpRight
+  ArrowRight,
+  Database,
+  FileSpreadsheet,
+  Stethoscope,
+  ShieldCheck,
+  Cpu,
+  BookOpen,
+  Sparkles,
+  GitBranch,
+  ExternalLink,
+  ChevronRight,
+  AlertTriangle,
+  FileText
 } from 'lucide-react';
 import { fetchResearchEvaluation } from '../services/api';
 
-export function ResearchEvaluationPage({ onNavigate }) {
+export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('benchmarks'); // 'benchmarks' | 'methodology' | 'datasets' | 'pipeline'
+  const [selectedDatasetKey, setSelectedDatasetKey] = useState('nicta_101');
 
   useEffect(() => {
     loadEvaluation();
