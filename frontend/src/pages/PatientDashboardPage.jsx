@@ -51,12 +51,32 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
   const [selectedWard, setSelectedWard] = useState('All Wards');
   const [acuityFilter, setAcuityFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'STABLE'
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Add Patient Modal State
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formError, setFormError] = useState(null);
+  const [creationSuccess, setCreationSuccess] = useState(null);
+
+  const initialFormState = {
+    name: '',
+    age: '',
+    gender: 'Female',
+    ward: 'Surgical Ward 4B',
+    bed_number: 'Bed 4',
+    consultant: 'Dr. Sarah Hanlen',
+    admitting_diagnosis: '',
+    display_id: ''
+  };
+
+  const [newPatientForm, setNewPatientForm] = useState(initialFormState);
 
   useEffect(() => {
-    loadPatients();
+    loadPatients(searchTerm);
   }, []);
 
-  async function loadPatients() {
+  async function loadPatients(search = '') {
     setLoading(true);
     try {
       const data = await fetchPatients();
