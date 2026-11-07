@@ -272,26 +272,89 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
           <button type="submit" className="btn btn-primary">
             <Search size={15} /> Search
           </button>
+          {searchTerm && (
+            <button type="button" className="btn btn-outline" onClick={handleClearSearch}>
+              Clear
+            </button>
+          )}
+          <button 
+            type="button" 
+            className="btn btn-outline btn-icon-only" 
+            onClick={() => loadPatients(searchTerm)}
+            title="Refresh patient roster"
+          >
+            <RefreshCw size={15} />
+          </button>
+        </form>
+
+        {/* Quick Ward Filter Tabs */}
+        <div className="ward-filter-row">
+          <div className="ward-tabs">
+            {WARDS_FILTER.map(w => (
+              <button
+                key={w}
+                type="button"
+                className={`ward-filter-pill ${selectedWard === w ? 'active' : ''}`}
+                onClick={() => setSelectedWard(w)}
+              >
+                {w}
+              </button>
+            ))}
+          </div>
+
+          {/* Acuity Toggles */}
+          <div className="acuity-filter-group">
+            <button
+              type="button"
+              className={`acuity-toggle-btn ${acuityFilter === 'ALL' ? 'active' : ''}`}
+              onClick={() => setAcuityFilter('ALL')}
+            >
+              All Acuities
+            </button>
+            <button
+              type="button"
+              className={`acuity-toggle-btn ${acuityFilter === 'CRITICAL' ? 'active' : ''}`}
+              onClick={() => setAcuityFilter('CRITICAL')}
+            >
+              <AlertCircle size={12} className="text-amber" /> High Attention
+            </button>
+            <button
+              type="button"
+              className={`acuity-toggle-btn ${acuityFilter === 'STABLE' ? 'active' : ''}`}
+              onClick={() => setAcuityFilter('STABLE')}
+            >
+              <CheckCircle2 size={12} className="text-emerald" /> Stable
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Organized Patient Grid */}
-      <div className="patient-cards-grid">
-        {patients.map((p) => (
-          <div
-            key={p.id}
-            className={`hospital-card patient-card ${selectedPatient?.id === p.id ? 'patient-card-selected' : ''}`}
-            onClick={() => onSelectPatient(p)}
-          >
-            <div className="patient-card-header">
-              <span className="patient-card-id">{p.display_id}</span>
-              <span className={`acuity-pill ${p.admitting_diagnosis?.includes('icu') ? 'acuity-rose' : 'acuity-emerald'}`}>
-                {p.admitting_diagnosis?.includes('icu') ? 'Acute' : 'Stable'}
-              </span>
-            </div>
+      {/* Error Alert */}
+      {error && (
+        <div className="feedback-alert feedback-error">
+          <AlertCircle size={18} className="text-rose" />
+          <span className="feedback-text">{error}</span>
+          <button className="btn btn-outline btn-xs" onClick={() => loadPatients(searchTerm)}>Retry</button>
+        </div>
+      )}
 
-            <h3 className="patient-card-name">{p.name}</h3>
-            <div className="patient-card-demographics">{p.age} • {p.gender}</div>
+      {/* Loading State */}
+      {loading && (
+        <div className="hospital-card loading-state-card">
+          <RefreshCw size={28} className="animate-spin text-primary" />
+          <span>Loading synthetic patient roster...</span>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && !error && filteredPatients.length === 0 && (
+        <div className="hospital-card empty-state-card">
+          <AlertCircle size={32} className="text-muted" />
+          <h3>No patients found matching your search or filters</h3>
+          <p>Try resetting the ward filter or clearing the search query.</p>
+          <button className="btn btn-primary" onClick={handleClearSearch}>Reset Filters</button>
+        </div>
+      )}
 
             <div className="patient-card-locations">
               <div className="location-row"><Bed size={14} /> {p.ward} • {p.bed_number}</div>
