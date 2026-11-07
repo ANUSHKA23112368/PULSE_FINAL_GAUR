@@ -8,103 +8,13 @@ import {
   AlertTriangle, 
   Clock,
   ArrowRight,
-  ShieldAlert,
   Plus,
   CheckCircle2
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
+import { News2ScorePanel } from '../components/News2ScorePanel';
 import { fetchPatient } from '../services/api';
-
-// NEWS2 Calculator according to Royal College of Physicians UK guidelines
-function calculateNews2(vitals) {
-  if (!vitals) return { score: 0, level: 'Low', color: 'emerald', action: 'Routine observation every 12h' };
-
-  let score = 0;
-  const breakdown = [];
-
-  // 1. Respiration Rate
-  const rr = vitals.rr;
-  if (rr !== undefined && rr !== null) {
-    let p = 0;
-    if (rr <= 8) p = 3;
-    else if (rr >= 9 && rr <= 11) p = 1;
-    else if (rr >= 12 && rr <= 20) p = 0;
-    else if (rr >= 21 && rr <= 24) p = 2;
-    else if (rr >= 25) p = 3;
-    score += p;
-    if (p > 0) breakdown.push({ param: 'Respiration Rate', value: `${rr}/min`, points: p });
-  }
-
-  // 2. Oxygen Saturation (SpO2 Scale 1)
-  const spo2 = vitals.spo2;
-  if (spo2 !== undefined && spo2 !== null) {
-    let p = 0;
-    if (spo2 <= 91) p = 3;
-    else if (spo2 >= 92 && spo2 <= 93) p = 2;
-    else if (spo2 >= 94 && spo2 <= 95) p = 1;
-    else if (spo2 >= 96) p = 0;
-    score += p;
-    if (p > 0) breakdown.push({ param: 'SpO2 Saturation', value: `${spo2}%`, points: p });
-  }
-
-  // 3. Systolic BP
-  const sys = vitals.bp_sys;
-  if (sys !== undefined && sys !== null) {
-    let p = 0;
-    if (sys <= 90) p = 3;
-    else if (sys >= 91 && sys <= 100) p = 2;
-    else if (sys >= 101 && sys <= 110) p = 1;
-    else if (sys >= 111 && sys <= 219) p = 0;
-    else if (sys >= 220) p = 3;
-    score += p;
-    if (p > 0) breakdown.push({ param: 'Systolic BP', value: `${sys} mmHg`, points: p });
-  }
-
-  // 4. Heart Rate
-  const hr = vitals.hr;
-  if (hr !== undefined && hr !== null) {
-    let p = 0;
-    if (hr <= 40) p = 3;
-    else if (hr >= 41 && hr <= 50) p = 1;
-    else if (hr >= 51 && hr <= 90) p = 0;
-    else if (hr >= 91 && hr <= 110) p = 1;
-    else if (hr >= 111 && hr <= 130) p = 2;
-    else if (hr >= 131) p = 3;
-    score += p;
-    if (p > 0) breakdown.push({ param: 'Heart Rate', value: `${hr} bpm`, points: p });
-  }
-
-  // 5. Temperature
-  const temp = vitals.temperature;
-  if (temp !== undefined && temp !== null) {
-    let p = 0;
-    if (temp <= 35.0) p = 3;
-    else if (temp >= 35.1 && temp <= 36.0) p = 1;
-    else if (temp >= 36.1 && temp <= 38.0) p = 0;
-    else if (temp >= 38.1 && temp <= 39.0) p = 1;
-    else if (temp >= 39.1) p = 2;
-    score += p;
-    if (p > 0) breakdown.push({ param: 'Temperature', value: `${temp}°C`, points: p });
-  }
-
-  let level = 'Low';
-  let color = 'emerald';
-  let action = 'Routine ward-level monitoring (4–12 hourly). Minimum clinical risk.';
-
-  const hasScore3Param = breakdown.some(b => b.points >= 3);
-
-  if (score >= 7) {
-    level = 'High (Emergency Alert)';
-    color = 'rose';
-    action = 'Emergency escalation: Immediate assessment by Medical Emergency Team (MET) or Critical Care Outreach.';
-  } else if (score >= 5 || hasScore3Param) {
-    level = 'Medium (Urgent Clinical Review)';
-    color = 'amber';
-    action = 'Urgent review: Notify attending registrar or team doctor. Increase observation frequency to hourly.';
-  }
-
-  return { score, level, color, action, breakdown };
-}
+import { buildVitalsTrendSet, calculateNews2, getPatientVitals } from '../utils/news2';
 
 export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [patientDetails, setPatientDetails] = useState(selectedPatient);
