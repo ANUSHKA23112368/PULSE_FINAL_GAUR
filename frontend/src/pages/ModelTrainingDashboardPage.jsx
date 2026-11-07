@@ -315,14 +315,14 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
   return (
     <div className="training-dashboard-viewport">
       {/* Top Banner / Hero */}
-      <section className="training-hero">
+      <section className={`training-hero ${isHotReloading ? 'is-reloading' : hotReloadStatus?.success ? 'is-reloaded' : ''}`.trim()}>
         <div className="hero-content">
           <div className="hero-badge">
             <BrainCircuit size={16} className="badge-icon-spin" />
-            <span>Bio_ClinicalBERT Fine-Tuning & Real-Time Engine</span>
+            <span>Clinical NER Models: Hybrid CRF + Bio_ClinicalBERT</span>
           </div>
           <h1 className="hero-title">
-            Neural Clinical Handover Intelligence
+            Clinical Handover Extraction Models
           </h1>
           <p className="hero-subtitle">
             Fine-tune emilyalsentzer/Bio_ClinicalBERT on the NICTA adjudicated hospital corpus and synthetic ISBAR augmentations with live SSE metric tracking, checkpoint export, and hot-reload.
