@@ -192,7 +192,7 @@ export async function analyzeNote(rawText) {
 
 export async function fetchHistory() {
   try {
-    const res = await fetch(`${API_BASE}/history`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/history`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Backend history offline");
     return await res.json();
   } catch (err) {
@@ -203,7 +203,7 @@ export async function fetchHistory() {
 export async function fetchPatients(search = '') {
   try {
     const url = search ? `${API_BASE}/patients?search=${encodeURIComponent(search)}` : `${API_BASE}/patients`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(3000) });
+    const res = await request(url, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Failed to fetch patients list");
     return await res.json();
   } catch (err) {
@@ -213,7 +213,7 @@ export async function fetchPatients(search = '') {
 
 export async function fetchPatient(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/patients/${patientId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Patient ${patientId} not found`);
     return await res.json();
   } catch (err) {
