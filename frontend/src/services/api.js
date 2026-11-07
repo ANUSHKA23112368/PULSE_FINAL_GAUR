@@ -323,7 +323,7 @@ export async function reviewPatientNote(patientId, noteId, reviewedData, reviewe
 
 export async function fetchPatientTasks(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/patients/${patientId}/tasks`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Failed to fetch tasks for patient ${patientId}`);
     return await res.json();
   } catch (err) {
@@ -333,7 +333,7 @@ export async function fetchPatientTasks(patientId) {
 
 export async function createPatientTask(patientId, taskData) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks`, {
+    const res = await request(`${API_BASE}/patients/${patientId}/tasks`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(taskData),
@@ -348,7 +348,7 @@ export async function createPatientTask(patientId, taskData) {
 
 export async function updatePatientTask(patientId, taskId, updateData) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/tasks/${taskId}`, {
+    const res = await request(`${API_BASE}/patients/${patientId}/tasks/${taskId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData),
