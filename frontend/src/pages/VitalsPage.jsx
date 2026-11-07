@@ -496,6 +496,21 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
                       required 
                     />
                   </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Consciousness (ACVPU)</label>
+                    <select
+                      className="form-input"
+                      value={formVitals.acvpu || 'A'}
+                      onChange={e => setFormVitals({ ...formVitals, acvpu: e.target.value })}
+                    >
+                      <option value="A">A — Alert</option>
+                      <option value="C">C — New confusion</option>
+                      <option value="V">V — Responds to voice</option>
+                      <option value="P">P — Responds to pain</option>
+                      <option value="U">U — Unresponsive</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
