@@ -469,6 +469,7 @@ export function subscribeTrainingSSE(onEvent, onError) {
     }
   };
   sse.onerror = (e) => {
+    notify('Live training telemetry disconnected — the local studio remains available.', 'warning');
     if (onError) onError(e);
   };
   return () => {
