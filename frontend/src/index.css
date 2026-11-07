@@ -4492,29 +4492,31 @@ code, pre, .mono {
    App Shell: Deep-link routing, Focus Management & Mobile Navigation
    ========================================================================== */
 
-@media print {
-  .hospital-header,
-  .hospital-footer,
-  .clinical-scope-banner,
-  .handover-toolbar-actions,
-  .handover-tabs-nav,
-  .banner-actions,
-  .btn,
-  button {
-    display: none !important;
-  }
+.skip-link {
+  position: fixed;
+  top: -4rem;
+  left: 1rem;
+  z-index: 10001;
+  background: #0284c7;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(2, 132, 199, 0.35);
+  transition: top 0.18s ease;
+}
 
-  body, .app-container, .main-viewport {
-    background: #ffffff !important;
-    color: #000000 !important;
-    padding: 0 !important;
-  }
+.skip-link:focus {
+  top: 0.75rem;
+}
 
-  .patient-banner {
-    border: 2px solid #000000 !important;
-    border-left: 8px solid #0284c7 !important;
-    page-break-inside: avoid;
-  }
+#main-content:focus,
+#main-content:focus-visible {
+  outline: none;
+}
 
   .hospital-card {
     border: 1px solid #cccccc !important;
