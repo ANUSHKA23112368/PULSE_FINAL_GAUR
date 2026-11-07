@@ -78,13 +78,108 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
 
   async function loadPatients(search = '') {
     setLoading(true);
+    setError(null);
     try {
-      const data = await fetchPatients();
-      setPatients(data.patients || []);
+      const data = await fetchPatients(search);
+      const list = data.patients || [];
+      setPatients(list);
+      if (onPatientCountChange && (!search || search.trim() === '')) {
+        onPatientCountChange(data.total_patients ?? list.length);
+      }
+      if (!selectedPatient && list.length > 0) {
+        onSelectPatient(list[0]);
+      }
+    } catch (err) {
+      setError("Unable to load patient records from backend. Using local engine synthetic corpus.");
     } finally {
       setLoading(false);
     }
   }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    loadPatients(searchTerm);
+  }
+
+  function handleClearSearch() {
+    setSearchTerm('');
+    loadPatients('');
+  }
+
+  function handleFormChange(e) {
+    const { name, value } = e.target;
+    setNewPatientForm(prev => ({ ...prev, [name]: value }));
+  }
+
+  async function handleCreatePatientSubmit(e) {
+    e.preventDefault();
+    setFormError(null);
+
+    const trimmedName = newPatientForm.name.trim();
+    if (!trimmedName) {
+      setFormError("Patient display name is required.");
+      return;
+    }
+
+    let formattedAge = newPatientForm.age.trim();
+    if (formattedAge && /^\d+$/.test(formattedAge)) {
+      formattedAge = `${formattedAge} years`;
+    }
+
+    const payload = {
+      name: trimmedName,
+      age: formattedAge || undefined,
+      gender: newPatientForm.gender.trim() || undefined,
+      ward: newPatientForm.ward.trim() || undefined,
+      bed_number: newPatientForm.bed_number.trim() || undefined,
+      consultant: newPatientForm.consultant.trim() || undefined,
+      admitting_diagnosis: newPatientForm.admitting_diagnosis.trim() || undefined
+    };
+
+    if (newPatientForm.display_id.trim()) {
+      payload.display_id = newPatientForm.display_id.trim();
+    }
+
+    setFormSubmitting(true);
+    try {
+      const created = await createPatient(payload);
+      setCreationSuccess({
+        name: created.name,
+        display_id: created.display_id
+      });
+      setShowAddModal(false);
+      setNewPatientForm(initialFormState);
+      await loadPatients(searchTerm);
+      onSelectPatient(created);
+    } catch (err) {
+      setFormError(err.message || "Failed to create synthetic demonstration patient.");
+    } finally {
+      setFormSubmitting(false);
+    }
+  }
+
+  // Filter patients based on ward and acuity
+  const filteredPatients = patients.filter(p => {
+    // Ward match
+    if (selectedWard !== 'All Wards') {
+      const pWard = (p.ward || '').toLowerCase();
+      const sWard = selectedWard.toLowerCase();
+      if (!pWard.includes(sWard) && !sWard.includes(pWard)) {
+        return false;
+      }
+    }
+    // Acuity match
+    if (acuityFilter !== 'ALL') {
+      const highAttention = isHighAttention(p);
+      if (acuityFilter === 'CRITICAL' && !highAttention) return false;
+      if (acuityFilter === 'STABLE' && highAttention) return false;
+    }
+    return true;
+  });
+
+  const criticalCount = patients.filter(isHighAttention).length;
+  const stableCount = patients.length - criticalCount;
+  const wardCount = new Set(patients.map((p) => p.ward).filter(Boolean)).size;
 
   return (
     <div className="page-container">
