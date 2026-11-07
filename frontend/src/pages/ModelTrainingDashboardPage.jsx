@@ -21,9 +21,6 @@ import {
   Mic,
   MicOff,
   Volume2,
-  Download,
-  Copy,
-  Check,
   Share2,
   FileCode,
   Gauge,
@@ -33,7 +30,9 @@ import {
   XCircle,
   Stethoscope
 } from 'lucide-react';
-import {
+import { recognizeEntities } from '../utils/clinicalText';
+import { FhirExportModal } from '../components/FhirExportModal';
+import { 
   fetchTrainingStatus,
   startBioBertTraining,
   fetchModelCard,
@@ -95,6 +94,11 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
   const [sandboxResult, setSandboxResult] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [inferenceLatency, setInferenceLatency] = useState(null);
+  const [hoveredLoss, setHoveredLoss] = useState(null);
+  const [latencyText, setLatencyText] = useState(SAMPLE_CLINICAL_TESTS[0].text);
+  const [latencyThreshold, setLatencyThreshold] = useState(0.8);
+  const [latencyEntities, setLatencyEntities] = useState([]);
+  const [latencyMeasured, setLatencyMeasured] = useState(null);
 
   // Enhanced Workstation States
   const [isDictating, setIsDictating] = useState(false);
