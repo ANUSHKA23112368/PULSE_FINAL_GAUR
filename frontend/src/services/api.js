@@ -424,7 +424,7 @@ export async function fetchTrainingStatus() {
 }
 
 export async function startBioBertTraining(config = {}) {
-  const res = await fetch(`${API_BASE}/training/train`, {
+  const res = await request(`${API_BASE}/training/train`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(config)
@@ -438,7 +438,7 @@ export async function startBioBertTraining(config = {}) {
 
 export async function fetchModelCard() {
   try {
-    const res = await fetch(`${API_BASE}/training/card`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/training/card`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Model card not yet available");
     return await res.json();
   } catch (err) {
@@ -447,7 +447,7 @@ export async function fetchModelCard() {
 }
 
 export async function hotReloadModel() {
-  const res = await fetch(`${API_BASE}/training/hot-reload`, {
+  const res = await request(`${API_BASE}/training/hot-reload`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' }
   });
