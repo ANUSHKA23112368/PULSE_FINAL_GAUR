@@ -223,7 +223,7 @@ export async function fetchPatient(patientId) {
 
 export async function createPatient(patientData) {
   try {
-    const res = await fetch(`${API_BASE}/patients`, {
+    const res = await request(`${API_BASE}/patients`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(patientData),
@@ -242,7 +242,7 @@ export async function createPatient(patientData) {
 
 export async function fetchPatientNotes(patientId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/patients/${patientId}/notes`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Failed to fetch notes for patient ${patientId}`);
     return await res.json();
   } catch (err) {
@@ -252,7 +252,7 @@ export async function fetchPatientNotes(patientId) {
 
 export async function createPatientNote(patientId, rawText, authorIdentifier = "Staff Clinician (Demo)") {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes`, {
+    const res = await request(`${API_BASE}/patients/${patientId}/notes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw_text: rawText, author_identifier: authorIdentifier }),
