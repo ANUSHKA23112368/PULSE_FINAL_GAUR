@@ -338,8 +338,8 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
               <span className="stat-value text-emerald">60.51% / 74.46% (measured)</span>
             </div>
             <div className="quick-stat-item">
-              <span className="stat-title">VOCABULARY</span>
-              <span className="stat-value">Clinical WordPiece (28k tokens)</span>
+              <span className="stat-title">BERT EVAL (FOLD 0)</span>
+              <span className="stat-value">Strict 55.76% / Lenient 77.29%</span>
             </div>
           </div>
         </div>
@@ -347,14 +347,14 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
         {/* Model Status Card */}
         <div className="hero-status-card">
           <div className="card-header-row">
-            <span className="card-label">CURRENT MODEL WEIGHTS</span>
-            <span className={`status-pill ${modelCard ? 'pill-active' : 'pill-training'}`}>
-              {modelCard ? 'Production Checkpoint Ready' : (isTraining ? 'Training in Progress' : 'Weights Initializing')}
+            <span className="card-label">CURRENT MEASURED MODELS</span>
+            <span className={`status-pill ${modelCard?.hybrid_model?.available || modelCard ? 'pill-active' : 'pill-training'}`}>
+              {modelCard?.hybrid_model?.available ? 'Hybrid CRF Checkpoint Ready' : (modelCard ? 'BERT Checkpoint Ready' : (isTraining ? 'Training in Progress' : 'Weights Initializing'))}
             </span>
           </div>
           <div className="card-metric-primary">
-            <span className="metric-val">{modelCard?.metrics?.strict?.f1 ? `${modelCard.metrics.strict.f1}%` : '85.4%'}</span>
-            <span className="metric-unit">Strict F1 (Held-out Fold 0)</span>
+            <span className="metric-val">{modelCard?.hybrid_model?.metrics?.strict?.f1 != null ? `${modelCard.hybrid_model.metrics.strict.f1}%` : (modelCard?.metrics?.strict?.f1 != null ? `${modelCard.metrics.strict.f1}%` : '—')}</span>
+            <span className="metric-unit">Strict F1 ({modelCard?.hybrid_model?.metrics?.strict?.f1 != null ? 'CRF, 5-fold micro' : 'BERT, held-out fold 0'})</span>
           </div>
           <div className="card-sub-metrics">
             <div>
