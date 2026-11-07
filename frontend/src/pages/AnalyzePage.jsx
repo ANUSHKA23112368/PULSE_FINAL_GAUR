@@ -198,13 +198,115 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
     }
 
     navigator.clipboard.writeText(textToCopy);
-    showToast("Clinical handover copied to clipboard.", "success");
+    if (showToast) showToast('Clinical handover copied to clipboard.', 'success');
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
 
-  // Use the new ClinicalHighlighter instead of renderHighlightedText
-  // ...
+  // Extract patient avatar initials
+  function getPatientInitials() {
+    if (!analysisResult?.entities?.patient_information) return "PT";
+    const nameItem = analysisResult.entities.patient_information.find(p => p.field === "Patient Name");
+    if (!nameItem || !nameItem.value) return "PT";
+    const parts = nameItem.value.split(" ");
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return parts[0].substring(0, 2).toUpperCase();
+  }
+
+  function getPatientField(fieldName, fallback = "Not documented") {
+    if (!analysisResult?.entities?.patient_information) return fallback;
+    const item = analysisResult.entities.patient_information.find(p => p.field === fieldName);
+    return item ? item.value : fallback;
+  }
+
+  // Highlighted text generation
+  function renderHighlightedText() {
+    if (!analysisResult) return null;
+    const text = analysisResult.preprocessed_text;
+    const spans = [];
+    const ent = analysisResult.entities || {};
+
+    (ent.conditions || []).forEach(c => {
+      (c.all_spans || [(c.start_char, c.end_char)]).forEach(span => {
+        if (span && span[0] !== undefined) {
+          spans.push({ start: span[0], end: span[1], type: 'condition', label: 'Condition: ' + c.normalized });
+        }
+      });
+    });
+    (ent.symptoms || []).forEach(s => {
+      (s.all_spans || [(s.start_char, s.end_char)]).forEach(span => {
+        if (span && span[0] !== undefined) {
+          spans.push({ start: span[0], end: span[1], type: 'symptom', label: 'Symptom: ' + s.normalized });
+        }
+      });
+    });
+    (ent.medications || []).forEach(m => {
+      (m.all_spans || [(m.start_char, m.end_char)]).forEach(span => {
+        if (span && span[0] !== undefined) {
+          spans.push({ start: span[0], end: span[1], type: 'medication', label: 'Medication: ' + m.normalized });
+        }
+      });
+    });
+    (ent.investigations || []).forEach(i => {
+      (i.all_spans || [(i.start_char, i.end_char)]).forEach(span => {
+        if (span && span[0] !== undefined) {
+          spans.push({ start: span[0], end: span[1], type: 'investigation', label: 'Investigation: ' + i.normalized });
+        }
+      });
+    });
+    (ent.treatments || []).forEach(t => {
+      (t.all_spans || [(t.start_char, t.end_char)]).forEach(span => {
+        if (span && span[0] !== undefined) {
+          spans.push({ start: span[0], end: span[1], type: 'treatment', label: 'Treatment: ' + t.normalized });
+        }
+      });
+    });
+    (ent.measurements || []).forEach(ms => {
+      if (ms.start_char !== undefined && ms.end_char !== undefined) {
+        spans.push({ start: ms.start_char, end: ms.end_char, type: 'measurement', label: 'Measurement: ' + ms.type });
+      }
+    });
+    (ent.abbreviations || []).forEach(a => {
+      if (a.start_char !== undefined && a.end_char !== undefined) {
+        spans.push({ start: a.start_char, end: a.end_char, type: 'abbr', label: 'Abbreviation: ' + a.expansion });
+      }
+    });
+
+    spans.sort((a, b) => a.start - b.start);
+
+    const nonOverlapping = [];
+    let lastEnd = 0;
+    for (const s of spans) {
+      if (s.start >= lastEnd && s.start < s.end && s.end <= text.length) {
+        nonOverlapping.push(s);
+        lastEnd = s.end;
+      }
+    }
+
+    const fragments = [];
+    let currentIndex = 0;
+    nonOverlapping.forEach((span, i) => {
+      if (span.start > currentIndex) {
+        fragments.push(text.substring(currentIndex, span.start));
+      }
+      fragments.push(
+        <span 
+          key={i} 
+          className={`highlight-span ${span.type}`} 
+          title={span.label}
+        >
+          {text.substring(span.start, span.end)}
+        </span>
+      );
+      currentIndex = span.end;
+    });
+
+    if (currentIndex < text.length) {
+      fragments.push(text.substring(currentIndex));
+    }
+
+    return fragments;
+  }
 
   return (
     <div className="analyze-container">
@@ -274,7 +376,7 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
           </div>
         </div>
 
-        {/* Text Area with Live Dictation Playback */}
+        {/* Text Area with Synchronized Read-Along */}
         <div className="input-group">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
             <label className="input-label" style={{ margin: 0 }}>
