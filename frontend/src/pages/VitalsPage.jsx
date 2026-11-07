@@ -81,11 +81,11 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
 
   function handleScenarioSelect(scenario) {
     if (scenario === 'normal') {
-      setFormVitals({ hr: 72, bp_sys: 120, bp_dia: 80, spo2: 98, rr: 16, temperature: 36.8 });
+      setFormVitals({ hr: 72, bp_sys: 120, bp_dia: 80, spo2: 98, rr: 16, temperature: 36.8, acvpu: 'A' });
     } else if (scenario === 'tachy') {
-      setFormVitals({ hr: 118, bp_sys: 135, bp_dia: 85, spo2: 96, rr: 22, temperature: 38.6 });
+      setFormVitals({ hr: 118, bp_sys: 135, bp_dia: 85, spo2: 96, rr: 22, temperature: 38.6, acvpu: 'A' });
     } else if (scenario === 'sepsis') {
-      setFormVitals({ hr: 130, bp_sys: 86, bp_dia: 52, spo2: 91, rr: 28, temperature: 39.4 });
+      setFormVitals({ hr: 130, bp_sys: 86, bp_dia: 52, spo2: 91, rr: 28, temperature: 39.4, acvpu: 'V' });
     } else if (scenario === 'hypoxia') {
       setFormVitals({ hr: 104, bp_sys: 142, bp_dia: 90, spo2: 89, rr: 24, temperature: 37.2 });
     }
