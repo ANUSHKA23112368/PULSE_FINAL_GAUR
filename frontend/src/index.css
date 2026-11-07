@@ -2587,6 +2587,7 @@ code, pre, .mono {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-width: 0;
   transition: all 0.2s ease;
   border: 1px solid var(--border-color);
 }
@@ -2607,6 +2608,8 @@ code, pre, .mono {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
   margin-bottom: 0.65rem;
 }
 
@@ -2623,6 +2626,9 @@ code, pre, .mono {
 .patient-card-badges {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  min-width: 0;
   gap: 0.4rem;
 }
 
