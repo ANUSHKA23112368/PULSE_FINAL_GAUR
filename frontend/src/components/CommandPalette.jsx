@@ -178,15 +178,9 @@ export function CommandPalette({
                 <span className="command-item-main">Switch to {theme === 'dark' ? 'Light Theme' : 'Dark Clinical HUD'}</span>
                 <span className="command-item-sub">Toggle workstation interface appearance</span>
               </div>
-              <span className="command-item-action">Toggle</span>
+              <span className="command-item-action">Toggle <ArrowRight size={12} /></span>
             </div>
           </div>
-        </div>
-
-        <div className="command-footer">
-          <span>Use <kbd>↑</kbd> <kbd>↓</kbd> to navigate</span>
-          <span><kbd>↵</kbd> to select</span>
-          <span><kbd>ESC</kbd> to close</span>
         </div>
       </div>
     </div>
