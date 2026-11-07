@@ -83,7 +83,8 @@ export function CommandPalette({
     { id: 'about', label: 'About PULSE & Clinical Scope', icon: ShieldAlert, sub: 'Technical specifications, ethics disclosure & research architecture' },
   ].filter(item => 
     item.label.toLowerCase().includes(search.toLowerCase()) ||
-    item.sub.toLowerCase().includes(search.toLowerCase())
+    item.sub.toLowerCase().includes(search.toLowerCase()) ||
+    item.id.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -95,7 +96,7 @@ export function CommandPalette({
             ref={inputRef}
             type="text"
             className="command-search-input"
-            placeholder="Type a command, patient name, ward, or clinical tool..."
+            placeholder="Search patients, wards, NLP tools, 101 reports, or benchmark models..."
             value={search}
             onChange={e => setSearch(e.target.value)}
           />
@@ -134,7 +135,7 @@ export function CommandPalette({
           {/* Navigation Section */}
           {navigationItems.length > 0 && (
             <div className="command-section">
-              <div className="command-section-title">Navigation & Tools</div>
+              <div className="command-section-title">Clinical & Research Navigation ({navigationItems.length})</div>
               {navigationItems.map(item => {
                 const Icon = item.icon;
                 return (
