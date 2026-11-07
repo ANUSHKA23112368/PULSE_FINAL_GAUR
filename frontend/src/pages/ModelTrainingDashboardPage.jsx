@@ -976,20 +976,20 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
               </tr>
               <tr>
                 <td>
-                  <strong>Hybrid Rule + Regex Normalizer</strong>
-                  <span className="model-sub">Deterministic clinical vocabulary & heuristic span alignment</span>
+                  <strong>Bio_ClinicalBERT (Fine-Tuned, eval-time)</strong>
+                  <span className="model-sub">emilyalsentzer/Bio_ClinicalBERT; measured at evaluation time (fold 0)</span>
                 </td>
-                <td>74.2%</td>
-                <td>83.6%</td>
-                <td>81.0%</td>
-                <td>68.5%</td>
-                <td>~3 ms</td>
-                <td><span className="pill-secondary">Fallback</span></td>
+                <td>55.76%</td>
+                <td>77.29%</td>
+                <td>46.73%</td>
+                <td>69.12%</td>
+                <td>~153 ms</td>
+                <td><span className="pill-secondary">Checkpoint loaded</span></td>
               </tr>
               <tr>
                 <td>
-                  <strong>CRF (Conditional Random Fields)</strong>
-                  <span className="model-sub">Word shape, orthographic & prefix/suffix n-gram features</span>
+                  <strong>BERT→CRF Stack (Leak-free, fold 0)</strong>
+                  <span className="model-sub">Fold-specific BERT probabilities as CRF features; not 5-fold averaged</span>
                 </td>
                 <td>69.8%</td>
                 <td>78.4%</td>
