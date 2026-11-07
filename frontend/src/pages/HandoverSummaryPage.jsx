@@ -59,15 +59,6 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     }
   }, [selectedPatient]);
 
-  // Clean up audio on unmount
-  useEffect(() => {
-    return () => {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-    };
-  }, []);
-
   async function loadNotes() {
     setLoading(true);
     setSaveError(null);
@@ -236,32 +227,14 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     setTimeout(() => setSaveSuccess(null), 3000);
   }
 
-  // Audio Readout Toggle (TTS)
-  function toggleAudioBriefing() {
-    if (!('speechSynthesis' in window)) {
-      alert("Speech synthesis is not supported by this browser.");
-      return;
-    }
-    if (isPlayingAudio) {
-      window.speechSynthesis.cancel();
-      setIsPlayingAudio(false);
-      return;
-    }
-
-    const narrative = `Clinical Shift Handover for ${selectedPatient?.name || 'patient'}. ` +
-      `Ward: ${selectedPatient?.ward || 'General Medical'}, Bed ${selectedPatient?.bed_number || 'unassigned'}. ` +
+  const audioNarrative = useMemo(() => {
+    return `Clinical shift handover for ${selectedPatient?.name || 'the patient'}. ` +
+      `Ward: ${selectedPatient?.ward || 'General Medical'}, bed ${selectedPatient?.bed_number || 'unassigned'}. ` +
       `Situation: ${editedIsbar.situation || 'Not recorded'}. ` +
       `Background: ${editedIsbar.background || 'Not recorded'}. ` +
       `Assessment: ${editedIsbar.assessment || 'Not recorded'}. ` +
       `Recommendation: ${editedIsbar.recommendation || 'Not recorded'}.`;
-
-    const utterance = new SpeechSynthesisUtterance(narrative);
-    utterance.rate = 0.95;
-    utterance.onend = () => setIsPlayingAudio(false);
-    utterance.onerror = () => setIsPlayingAudio(false);
-    setIsPlayingAudio(true);
-    window.speechSynthesis.speak(utterance);
-  }
+  }, [selectedPatient, editedIsbar]);
 
   // FHIR R4 Generation
   function generateFhirBundle() {
