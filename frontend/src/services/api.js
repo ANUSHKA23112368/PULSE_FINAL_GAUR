@@ -367,7 +367,7 @@ export async function comparePatientHandovers(patientId, priorNoteId, currentNot
     if (priorNoteId && currentNoteId) {
       url += `?prior_note_id=${priorNoteId}&current_note_id=${currentNoteId}`;
     }
-    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    const res = await request(url, { signal: AbortSignal.timeout(5000) });
     if (!res.ok) throw new Error("Failed to compare handovers");
     return await res.json();
   } catch (err) {
@@ -395,7 +395,7 @@ export async function comparePatientHandovers(patientId, priorNoteId, currentNot
 
 export async function fetchResearchEvaluation() {
   try {
-    const res = await fetch(`${API_BASE}/research/evaluation`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/research/evaluation`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Failed to fetch research evaluation");
     return await res.json();
   } catch (err) {
@@ -409,7 +409,7 @@ export async function fetchResearchEvaluation() {
 
 export async function fetchTrainingStatus() {
   try {
-    const res = await fetch(`${API_BASE}/training/status`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/training/status`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error("Training status unavailable");
     return await res.json();
   } catch (err) {
