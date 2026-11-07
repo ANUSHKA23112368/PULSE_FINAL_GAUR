@@ -509,32 +509,167 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                     <ArrowRight size={13} />
                   </button>
                 </div>
-                <div className="model-stat-row">
-                  <span>Micro F1-Score:</span> <strong>91.4%</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Inference Latency:</span> <strong>28 ms / note</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Safety / Hallucination:</span> <strong className="text-emerald">Strict Negation Aware</strong>
+
+                {/* 5 Datasets Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                  {/* Dataset 1 */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(56, 189, 248, 0.35)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#38bdf8' }}>1. NICTA / ANU Synthetic Handover</span>
+                      <span className="chip" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.7rem' }}>Primary Gold</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
+                      101 written nursing shift reports by Suominen et al., with 2,103 clinically verified entity spans. Reflects authentic ward handover syntax and clinical abbreviations.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.85rem' }}>
+                      <span className="pill-mini">101 Reports</span>
+                      <span className="pill-mini">7,214 Tokens</span>
+                      <span className="pill-mini">1,441 Vocab</span>
+                      <span className="pill-mini">18 Patients</span>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => onNavigate('analyze')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <Activity size={12} /> Test in Structuring Engine
+                    </button>
+                  </div>
+
+                  {/* Dataset 2 */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(52, 211, 153, 0.35)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#34d399' }}>2. Hospital ISBAR Multi-Shift Pack</span>
+                      <span className="chip" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontSize: '0.7rem' }}>Augmentation</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
+                      160 de-identified multi-shift ISBAR handovers covering acute ICU, PACU, telemetry, and subacute wards. Augments rare titrations, NEWS2 deterioration, and IV workflows.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.85rem' }}>
+                      <span className="pill-mini">261 Total Notes</span>
+                      <span className="pill-mini">9,500+ Spans</span>
+                      <span className="pill-mini">ISBAR Framework</span>
+                      <span className="pill-mini">ICU/PACU/Ward</span>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => onNavigate('dashboard')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <Stethoscope size={12} /> Launch in Ward Roster
+                    </button>
+                  </div>
+
+                  {/* Dataset 3 */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(168, 85, 247, 0.35)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#c084fc' }}>3. n2c2 2018 Track 2 Challenge</span>
+                      <span className="chip" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', fontSize: '0.7rem' }}>External Challenge</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
+                      National NLP Clinical Challenges benchmark for Adverse Drug Events (ADE) and medication extraction. Ingested via <code className="mono">backend/dataset/external_loader.py</code>.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.85rem' }}>
+                      <span className="pill-mini">.txt + .ann Ingestion</span>
+                      <span className="pill-mini">Drug & Dosage</span>
+                      <span className="pill-mini">ADE Recognition</span>
+                      <span className="pill-mini">Route/Frequency</span>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => onNavigate('training')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <BrainCircuit size={12} /> View BioClinicalBERT Training
+                    </button>
+                  </div>
+
+                  {/* Dataset 4 */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(245, 158, 11, 0.35)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#fbbf24' }}>4. i2b2 2010 Clinical Relations</span>
+                      <span className="chip" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', fontSize: '0.7rem' }}>External Challenge</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
+                      Hospital discharge summaries and progress notes. Automatically normalizes <code className="mono">problem</code> → Condition, <code className="mono">treatment</code> → Medication, <code className="mono">test</code> → Investigation.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.85rem' }}>
+                      <span className="pill-mini">Discharge Summaries</span>
+                      <span className="pill-mini">Unified Ontology</span>
+                      <span className="pill-mini">configs/label_map.yaml</span>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => onNavigate('dataset')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <Database size={12} /> Inspect Ontology Mappings
+                    </button>
+                  </div>
+
+                  {/* Dataset 5 */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(99, 102, 241, 0.35)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <span style={{ fontSize: '0.92rem', fontWeight: 800, color: '#a5b4fc' }}>5. MIMIC-III Critical Care Corpus</span>
+                      <span className="chip" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#a5b4fc', fontSize: '0.7rem' }}>Foundation Model</span>
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: '0 0 0.75rem 0' }}>
+                      Over 2 million de-identified ICU notes from Beth Israel Deaconess Medical Center. Serves as the self-supervised pretraining domain for <code className="mono">emilyalsentzer/Bio_ClinicalBERT</code>.
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.85rem' }}>
+                      <span className="pill-mini">2M+ Clinical Notes</span>
+                      <span className="pill-mini">Domain Embeddings</span>
+                      <span className="pill-mini">BERT Tokenizer</span>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-xs"
+                      onClick={() => onNavigate('training')}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <BrainCircuit size={12} /> Model Checkpoint Telemetry
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <div className="hospital-card model-stat-card">
-                <div className="model-stat-header">
-                  <strong>Standard RoBERTa (Clinical)</strong>
-                  <span className="badge-tag badge-tag-alt">Baseline</span>
-                </div>
-                <div className="model-stat-row">
-                  <span>Micro F1-Score:</span> <strong>84.2%</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Inference Latency:</span> <strong>34 ms / note</strong>
-                </div>
-                <div className="model-stat-row">
-                  <span>Safety / Hallucination:</span> <strong className="text-amber">Moderate Scoping</strong>
+              {/* Direct Launch Sample Cases into Workpage */}
+              <div className="hospital-card" style={{ marginBottom: '1.5rem' }}>
+                <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Sparkles size={18} className="text-primary" />
+                  <span>Interactive Workpage Bridging: Test Sample Cases from Multiple Corpora</span>
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 1rem 0' }}>
+                  Click "Load in Structuring Engine" on any curated case below to immediately jump to the live NLP workpage and execute real-time extraction:
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+                  {sampleDatasetCases.map((c, i) => (
+                    <div key={i} style={{ background: 'rgba(0, 0, 0, 0.35)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '6px', padding: '1rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8' }}>{c.dataset}</span>
+                        <span className="chip" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>{c.category}</span>
+                      </div>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#ffffff', marginBottom: '0.2rem' }}>{c.title}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.6rem' }}>{c.patient}</div>
+                      <p style={{ fontSize: '0.75rem', color: '#cbd5e1', lineHeight: 1.4, margin: '0 0 0.75rem 0', fontStyle: 'italic' }}>
+                        "{c.snippet}"
+                      </p>
+                      <button
+                        className="btn btn-primary btn-xs"
+                        onClick={() => {
+                          if (onSelectReport) onSelectReport(c.reportId);
+                          onNavigate('analyze');
+                        }}
+                        style={{ width: '100%', justifyContent: 'center' }}
+                      >
+                        <Activity size={12} /> Load in Structuring Engine <ArrowRight size={12} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
+            </div>
+          )}
 
               <div className="hospital-card model-stat-card">
                 <div className="model-stat-header">
