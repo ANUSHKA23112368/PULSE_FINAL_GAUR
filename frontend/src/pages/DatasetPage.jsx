@@ -10,9 +10,99 @@ import {
   Info,
   Check,
   FileSpreadsheet,
-  SplitSquareVertical
+  SplitSquareVertical,
+  ExternalLink
 } from 'lucide-react';
 import { fetchReports, fetchReport } from '../services/api';
+
+const LOCAL_REPORTS_INDEXED = 261;
+const ANNOTATED_SPANS = 2103;
+
+const CATEGORIES = [
+  {
+    id: 'primary',
+    label: 'Primary training corpora',
+    note: 'Synthetic handover corpora that ship with the repository and are indexed locally.',
+  },
+  {
+    id: 'benchmark',
+    label: 'Imported benchmark corpora',
+    note: 'Retrieved under data-use agreements, normalised and label-mapped onto the PULSE categories.',
+  },
+  {
+    id: 'foundation',
+    label: 'Pretraining foundation',
+    note: 'Supplies the clinical vocabulary the language model is initialised from, not handover training data.',
+  },
+];
+
+const DATASETS = [
+  {
+    id: 'nicta',
+    name: 'NICTA / ANU Synthetic Nursing Handover',
+    role: 'Primary Gold',
+    accent: '#38bdf8',
+    border: 'rgba(56, 189, 248, 0.25)',
+    roleBg: 'rgba(56, 189, 248, 0.15)',
+    description: '101 authentic nursing shift handovers from acute medical and surgical wards, annotated with 2,103 clinically verified entity spans and ground-truth 9-category slot structures.',
+    pills: ['101 Handover Notes', '2,103 Gold Spans', '9 Macro Categories'],
+    source: null,
+    sourceLabel: 'Ships with the repository',
+    category: 'primary',
+  },
+  {
+    id: 'hospital-pack',
+    name: 'Hospital Training Pack (ISBAR)',
+    role: 'Augmentation',
+    accent: '#34d399',
+    border: 'rgba(16, 185, 129, 0.25)',
+    roleBg: 'rgba(16, 185, 129, 0.15)',
+    description: '160 de-identified synthetic multi-shift handovers across ICU, PACU and telemetry wards, expanding vocabulary with IV titration rates, NEWS2 deterioration scores and PRN analgesia.',
+    pills: ['160 Augmentation Notes', '9,500+ Tokens', 'Multi-Ward ISBAR'],
+    source: null,
+    sourceLabel: 'Generated in-project',
+    category: 'primary',
+  },
+  {
+    id: 'n2c2-2018',
+    name: 'n2c2 2018 Track 2 (ADE)',
+    role: 'Imported',
+    accent: '#c084fc',
+    border: 'rgba(168, 85, 247, 0.25)',
+    roleBg: 'rgba(168, 85, 247, 0.15)',
+    description: 'Adverse drug event and medication extraction benchmark built on roughly 500 discharge summaries. Imported as paired .txt and .ann files and label-mapped onto PULSE categories.',
+    pills: ['.txt + .ann', 'Drugs & Dosages', 'ADEs & Reasons'],
+    source: 'https://portal.dbmi.hms.harvard.edu/projects/n2c2-2018-t2',
+    sourceLabel: 'DBMI Data Portal (DUA required)',
+    category: 'benchmark',
+  },
+  {
+    id: 'i2b2-2010',
+    name: 'i2b2 2010 Clinical Relations',
+    role: 'Imported',
+    accent: '#fbbf24',
+    border: 'rgba(245, 158, 11, 0.25)',
+    roleBg: 'rgba(245, 158, 11, 0.15)',
+    description: 'Discharge summaries and progress notes annotated for problems, tests, treatments and the relations between them, normalised into the PULSE macro categories.',
+    pills: ['Discharge Summaries', 'Problems & Treatments', 'Concept Relations'],
+    source: 'https://www.i2b2.org/NLP/Relations',
+    sourceLabel: 'i2b2 NLP Data Sets (DUA required)',
+    category: 'benchmark',
+  },
+  {
+    id: 'mimic-iii',
+    name: 'MIMIC-III Critical Care Corpus',
+    role: 'Pretraining',
+    accent: '#818cf8',
+    border: 'rgba(99, 102, 241, 0.25)',
+    roleBg: 'rgba(99, 102, 241, 0.15)',
+    description: 'Critical care records from Beth Israel Deaconess Medical Center with over 2 million free-text notes. Used as the domain vocabulary behind the clinical language model rather than as handover training data.',
+    pills: ['2M+ Notes', 'ICU Vocabulary', 'Domain Embeddings'],
+    source: 'https://physionet.org/content/mimiciii/1.4/',
+    sourceLabel: 'PhysioNet v1.4 (credentialed access)',
+    category: 'foundation',
+  },
+];
 
 export function DatasetPage({ onSelectReport, onNavigate }) {
   const [reports, setReports] = useState([]);
@@ -74,6 +164,9 @@ export function DatasetPage({ onSelectReport, onNavigate }) {
           </div>
           <span className="chip" style={{ background: 'rgba(6, 182, 212, 0.15)', borderColor: '#06b6d4', color: '#67e8f9', fontWeight: 700 }}>
             Read-Only Preserved
+          </span>
+          <span className="chip" style={{ background: 'rgba(56, 189, 248, 0.12)', borderColor: 'rgba(56, 189, 248, 0.35)', color: '#7dd3fc', fontWeight: 700 }}>
+            {DATASETS.length} Datasets Integrated
           </span>
         </div>
 
