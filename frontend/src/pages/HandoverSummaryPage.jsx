@@ -17,6 +17,8 @@ import {
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, reviewPatientNote } from '../services/api';
+import { AudioHandoverPlayer } from '../components/AudioHandoverPlayer';
+import { FhirExportModal } from '../components/FhirExportModal';
 
 export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [notes, setNotes] = useState([]);
@@ -27,12 +29,8 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
   const [activeTab, setActiveTab] = useState('handover');
   const [isEditing, setIsEditing] = useState(false);
 
-  // Audio Readout (TTS) State
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-
   // FHIR Export Modal State
   const [showFhirModal, setShowFhirModal] = useState(false);
-  const [copiedFhir, setCopiedFhir] = useState(false);
   const [copiedIsbar, setCopiedIsbar] = useState(false);
 
   // Editable review state
