@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Layers, 
   AlertTriangle, 
@@ -11,12 +11,9 @@ import {
   ShieldCheck,
   Eye,
   Check,
-  Volume2,
-  VolumeX,
   Printer,
   Copy,
-  FileCode,
-  Download
+  FileCode
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, reviewPatientNote } from '../services/api';
