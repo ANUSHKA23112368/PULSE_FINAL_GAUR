@@ -78,30 +78,84 @@ export function FhirExportModal({
           </button>
         </div>
 
-        <div className="modal-body">
-          <p className="fhir-description">
-            Structured clinical handover exported as a standard HL7 FHIR R4 compliant JSON Bundle for electronic health record (EHR) integration.
-          </p>
-          <pre className="fhir-code-preview">
-            {JSON.stringify(fhirBundle, null, 2)}
-          </pre>
+        <div className="fhir-tabbar" role="tablist" aria-label="Export format">
+          {TABS.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                className={`fhir-tab ${activeTab === tab.id ? 'is-active' : ''}`}
+                onClick={() => setActiveTab(tab.id)}
+              >
+                <Icon size={14} />
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="modal-footer">
-          <button
-            className="modal-action-btn secondary"
-            onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(fhirBundle, null, 2));
-              alert("FHIR R4 Bundle copied to clipboard!");
-            }}
-          >
-            Copy JSON
+        <div className="modal-body fhir-export-body">
+          {activeTab === 'json' && (
+            <>
+              <p className="fhir-description">
+                HL7 FHIR R4 document bundle with Patient, Composition, Condition, MedicationStatement and Task resources for
+                Epic, Cerner or NHS EHR ingestion.
+              </p>
+              <pre className="fhir-code-preview">{json}</pre>
+            </>
+          )}
+
+          {activeTab === 'csv' && (
+            <>
+              <p className="fhir-description">
+                Flat resource table for spreadsheet review, audit sampling and data-quality checks. Values are quoted and
+                newline-safe for Excel and R.
+              </p>
+              <pre className="fhir-code-preview">{csv}</pre>
+            </>
+          )}
+
+          {activeTab === 'document' && (
+            <>
+              <p className="fhir-description">
+                Print-ready shift handover sheet in black and white. Use your browser print dialog to choose A4 and save as
+                PDF if a signed digital copy is required.
+              </p>
+              <div className="fhir-document-preview">
+                <div className="fhir-document-preview-head">
+                  <strong>{title}</strong>
+                  <span>{patient?.name || 'Handover document'}</span>
+                </div>
+                <ul>
+                  <li>Patient identification and NEWS2 risk</li>
+                  <li>ISBAR narrative with all five sections</li>
+                  <li>Active conditions, medications and pending tasks</li>
+                  <li>Handover / receiving nurse signature lines</li>
+                </ul>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="modal-footer fhir-export-footer">
+          <button className="modal-action-btn secondary" onClick={handleCopy}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            <span>{copied ? 'Copied' : 'Copy'}</span>
           </button>
-          <button
-            className="modal-action-btn primary"
-            onClick={onClose}
-          >
-            Close
+          <button className="modal-action-btn secondary" onClick={handleDownloadJson}>
+            <Download size={14} />
+            <span>Download .json</span>
+          </button>
+          <button className="modal-action-btn secondary" onClick={handleDownloadCsv}>
+            <Download size={14} />
+            <span>Download .csv</span>
+          </button>
+          <button className="modal-action-btn primary" onClick={handlePrint}>
+            <Printer size={14} />
+            <span>Print Clipboard Sheet</span>
           </button>
         </div>
       </div>
