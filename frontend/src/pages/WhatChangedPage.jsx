@@ -140,7 +140,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
       await processPatientNote(pKey, n1.id);
 
       // Shift 2 Evening Note
-      const note2Text = "At 12 PM, Rahul's temperature was 100°F. Blood report received. Doctor reviewed the report and advised continued monitoring. Patient's cough persists.";
+      const note2Text = "At 12 PM, " + demoName + "'s temperature was 100°F. Blood report received. Doctor reviewed the report and advised continued monitoring. Patient's cough persists.";
       const n2 = await createPatientNote(pKey, note2Text, "Evening Shift Nurse (12:30 PM Handover)");
       await processPatientNote(pKey, n2.id);
 
@@ -153,6 +153,13 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
       setSeedingDemo(false);
     }
   }
+
+  const hasAnyDelta = Boolean(comparison) && comparison.comparison_available !== false && (
+    (comparison.observations_changed?.length || 0) +
+    (comparison.new_events?.length || 0) +
+    (comparison.task_status_updates?.length || 0) +
+    (comparison.ongoing_conditions?.length || 0)
+  ) > 0;
 
   return (
     <div className="page-container">
@@ -183,7 +190,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
             className="btn btn-outline"
           >
             <Sparkles size={14} className="text-emerald" />
-            <span>{seedingDemo ? 'Seeding Multi-Shift...' : 'Load Rahul 2-Shift Demo'}</span>
+            <span>{seedingDemo ? 'Seeding Multi-Shift...' : 'Load 2-Shift Demo'}</span>
           </button>
 
           <button
