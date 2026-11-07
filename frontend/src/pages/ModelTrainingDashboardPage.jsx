@@ -370,6 +370,9 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
               <span className="sub-val">62.92% / 76.23%</span>
             </div>
           </div>
+          <div className="card-note" style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', marginTop: '0.5rem', lineHeight: 1.35 }}>
+            CRF is 5-fold micro (measured). BERT+CRF 87.66/94.36 was invalid (deployed checkpoint retrained on held-out notes); leak-free fold-0 stack is 62.92/76.23.
+          </div>
           <div className="card-action-row">
             <button
               className="hot-reload-btn"
@@ -576,19 +579,52 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
                 <span>EPOCH WEIGHTED LOSS PROGRESSION</span>
                 <span className="loss-current">Final: {lossHistory[lossHistory.length - 1].loss}</span>
               </div>
-              <div className="sparkline-bars">
-                {lossHistory.map((pt, i) => (
-                  <div key={i} className="sparkline-col">
-                    <div
-                      className="sparkline-fill"
-                      style={{
-                        height: `${Math.max(15, Math.min(100, (pt.loss / (lossHistory[0]?.loss || 1)) * 100))}%`
-                      }}
-                      title={`Epoch ${pt.epoch}: ${pt.loss}`}
-                    />
-                    <span className="sparkline-label">E{pt.epoch}</span>
+              <div className="loss-chart-wrap" onMouseLeave={() => setHoveredLoss(null)}>
+                <svg className="loss-chart" viewBox="0 0 560 180" role="img" aria-label="Bio_ClinicalBERT loss by epoch">
+                  <defs>
+                    <linearGradient id="loss-area" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.35" />
+                      <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {[0.25, 0.5, 0.75].map((ratio) => (
+                    <line key={ratio} x1="28" x2="532" y1={28 + ratio * 124} y2={28 + ratio * 124} className="loss-grid-line" />
+                  ))}
+                  <polyline
+                    className="loss-line"
+                    points={lossHistory
+                      .map((point, index) => `${28 + (index / Math.max(1, lossHistory.length - 1)) * 504},${28 + (1 - point.loss / Math.max(0.001, lossHistory[0].loss)) * 124}`)
+                      .join(' ')}
+                  />
+                  {lossHistory.map((point, index) => {
+                    const x = 28 + (index / Math.max(1, lossHistory.length - 1)) * 504;
+                    const y = 28 + (1 - point.loss / Math.max(0.001, lossHistory[0].loss)) * 124;
+                    return (
+                      <g key={`${point.epoch}-${index}`}>
+                        <circle
+                          cx={x}
+                          cy={y}
+                          r={hoveredLoss?.index === index ? 6 : 4}
+                          className={`loss-point ${hoveredLoss?.index === index ? 'is-active' : ''}`}
+                          tabIndex="0"
+                          onMouseEnter={() => setHoveredLoss({ index, x, y, ...point })}
+                          onFocus={() => setHoveredLoss({ index, x, y, ...point })}
+                          aria-label={`Epoch ${point.epoch}, loss ${point.loss}`}
+                        />
+                        <text x={x} y={168} className="loss-axis-label">E{point.epoch}</text>
+                      </g>
+                    );
+                  })}
+                </svg>
+                {hoveredLoss && (
+                  <div
+                    className="loss-tooltip"
+                    style={{ left: `${(hoveredLoss.x / 560) * 100}%`, top: `${(hoveredLoss.y / 180) * 100}%` }}
+                  >
+                    <strong>Epoch {hoveredLoss.epoch}</strong>
+                    <span>Loss {Number(hoveredLoss.loss).toFixed(4)}</span>
                   </div>
-                ))}
+                )}
               </div>
             </div>
           )}
