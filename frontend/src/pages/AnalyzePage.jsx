@@ -378,39 +378,24 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
 
         {/* Text Area with Synchronized Read-Along */}
         <div className="input-group">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-            <label className="input-label" style={{ margin: 0 }}>
-              Enter or paste nursing handover narrative:
-            </label>
-
-            {/* Audio Handover Dictation Player */}
-            <div className="audio-player-widget">
-              <button 
-                className="audio-play-btn" 
-                onClick={toggleAudioPlayback}
-                title={isPlayingAudio ? "Stop Dictation" : "Listen to Nursing Handover"}
-              >
-                {isPlayingAudio ? <VolumeX size={16} /> : <Volume2 size={16} />}
-              </button>
-              <div className={`sound-wave ${isPlayingAudio ? 'playing' : ''}`}>
-                <div className="sound-bar" />
-                <div className="sound-bar" />
-                <div className="sound-bar" />
-                <div className="sound-bar" />
-                <div className="sound-bar" />
-              </div>
-              <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#cbd5e1' }}>
-                {isPlayingAudio ? "Dictating handover..." : "Listen to Handover"}
-              </span>
-            </div>
-          </div>
+          <label className="input-label" htmlFor="handover-narrative">
+            Enter or paste nursing handover narrative:
+          </label>
 
           <textarea
+            id="handover-narrative"
             className="pulse-textarea"
             rows={5}
             placeholder="Paste unstructured nursing handover report text here, or choose a report from the dropdown above..."
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
+          />
+
+          <AudioHandoverPlayer
+            text={inputText}
+            title="Nursing handover read-along"
+            subtitle="Sentence-synchronized dictation with adjustable nurse cadence"
+            compact
           />
         </div>
 
