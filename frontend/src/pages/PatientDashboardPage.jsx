@@ -195,15 +195,70 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
         </div>
 
         <div className="dashboard-top-actions">
-          <button className="btn btn-primary" onClick={() => {/* Add patient modal trigger */}}>
-            <UserPlus size={16} /> Register Patient
+          <div className="registered-count-badge">
+            <Users size={16} className="text-primary" />
+            <span><strong>{patients.length} Registered Demo Patients</strong></span>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setFormError(null);
+              setShowAddModal(true);
+            }}
+          >
+            <UserPlus size={15} /> Add Demo Patient
           </button>
         </div>
       </div>
 
-      {/* Modern Search/Filter Toolbar */}
+      {/* Ward pulse summary */}
+      <div className="roster-stats">
+        <div className="roster-stat">
+          <span className="roster-stat-icon"><Users size={17} /></span>
+          <div className="roster-stat-copy">
+            <strong>{patients.length}</strong>
+            <span>Registered patients</span>
+          </div>
+        </div>
+        <div className="roster-stat roster-stat-amber">
+          <span className="roster-stat-icon"><AlertCircle size={17} /></span>
+          <div className="roster-stat-copy">
+            <strong>{criticalCount}</strong>
+            <span>High attention</span>
+          </div>
+        </div>
+        <div className="roster-stat roster-stat-emerald">
+          <span className="roster-stat-icon"><CheckCircle2 size={17} /></span>
+          <div className="roster-stat-copy">
+            <strong>{stableCount}</strong>
+            <span>Clinically stable</span>
+          </div>
+        </div>
+        <div className="roster-stat roster-stat-sky">
+          <span className="roster-stat-icon"><Building2 size={17} /></span>
+          <div className="roster-stat-copy">
+            <strong>{wardCount}</strong>
+            <span>Wards covered</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Creation Success Alert */}
+      {creationSuccess && (
+        <div className="feedback-alert feedback-success">
+          <CheckCircle2 size={18} className="text-emerald" />
+          <span className="feedback-text">
+            Demo patient registered successfully: <strong>{creationSuccess.name}</strong> ({creationSuccess.display_id}). Now active for handover testing.
+          </span>
+          <button className="feedback-close" onClick={() => setCreationSuccess(null)}>×</button>
+        </div>
+      )}
+
+      {/* Search & Filter Bar */}
       <div className="hospital-card search-card">
-        <div className="search-row">
+        <form onSubmit={handleSearchSubmit} className="search-form-row">
           <div className="search-input-wrapper">
             <Search size={18} className="search-icon" />
             <input
