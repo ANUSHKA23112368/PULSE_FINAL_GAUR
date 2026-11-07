@@ -451,13 +451,15 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#38bdf8', fontSize: '0.85rem', fontWeight: 600 }}>
               <div className="pulse-anim" style={{ width: '12px', height: '12px', borderRadius: '50%', background: '#06b6d4', flexShrink: 0 }} />
               <span>
-                Live {selectedEngine === 'rule' ? 'rule baseline' : 'Bio_ClinicalBERT'} pipeline
-                {pipelineStep ? ` — step ${pipelineStep}/7` : ''}:
+                Live {selectedEngine === 'rule' ? 'rule baseline' : (selectedEngine === 'hybrid_crf' ? 'hybrid CRF' : 'Bio_ClinicalBERT')} pipeline
+                {pipelineStep ? ` ΓÇö step ${pipelineStep}/7` : ''}:
                 {' '}
                 <strong>
                   {selectedEngine === 'rule'
                     ? 'Deterministic Rule Baseline'
-                    : (selectedEngine === 'clinical_bert' ? 'Bio_ClinicalBERT Token Classifier' : 'Hybrid Pipeline (Bio_ClinicalBERT + ConText)')}
+                    : (selectedEngine === 'hybrid_crf'
+                      ? 'Hybrid CRF + Gazetteer'
+                      : (selectedEngine === 'clinical_bert' ? 'Bio_ClinicalBERT Token Classifier' : 'Hybrid Pipeline (Bio_ClinicalBERT + ConText)'))}
                 </strong>
               </span>
             </div>
@@ -529,7 +531,7 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
           {/* Executive Nursing Shift Brief */}
           {analysisResult.model_metadata?.total_inference_ms != null && (
             <div style={{ margin: '0 0 1rem', padding: '0.75rem 1rem', background: 'rgba(14, 165, 233, 0.08)', border: '1px solid rgba(14, 165, 233, 0.25)', borderRadius: '8px', fontSize: '0.82rem', color: '#e0f2fe' }}>
-              Real-time Bio_ClinicalBERT run in <strong>{analysisResult.model_metadata.total_inference_ms} ms</strong>
+              Real-time extraction run in <strong>{analysisResult.model_metadata.total_inference_ms} ms</strong>
               {analysisResult.model_metadata.neural_span_ms != null ? ` (neural spans ${analysisResult.model_metadata.neural_span_ms} ms)` : ''}.
               {' '}Engine: {analysisResult.engine_used || analysisResult.model_metadata.pipeline}.
             </div>
