@@ -37,7 +37,7 @@ export function AboutPage() {
       </div>
 
       {/* Mandatory Safety & Clinical Scope Notice */}
-      <div className="pulse-card" style={{ marginBottom: '2rem', borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.06)' }}>
+      <div className="pulse-card safety-scope-card" style={{ marginBottom: '2rem', borderColor: 'rgba(245, 158, 11, 0.4)', background: 'rgba(245, 158, 11, 0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1rem' }}>
           <ShieldCheck size={26} color="#f59e0b" style={{ flexShrink: 0, marginTop: '2px' }} />
           <div>
@@ -147,11 +147,11 @@ export function AboutPage() {
 
       {/* Research Background & Problem Definition */}
       <div className="pulse-card" style={{ marginBottom: '2rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem', color: '#f8fafc' }}>
+        <h3 className="card-title" style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>
           <BookOpen size={20} color="#06b6d4" /> Research Problem & Clinical Motivation
         </h3>
 
-        <div style={{ fontSize: '0.875rem', color: '#cbd5e1', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.7, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <p>
             Clinical nursing handover is one of the most critical communication touchpoints in healthcare delivery. During shift handovers, outgoing nurses verbally convey patient updates, vital sign trajectories, pending diagnostic investigations, medication adjustments, and follow-up duties to incoming nursing staff.
           </p>
@@ -166,7 +166,7 @@ export function AboutPage() {
 
       {/* 9 Standard Categories */}
       <div className="pulse-card" style={{ marginBottom: '2rem' }}>
-        <h3 className="card-title" style={{ marginBottom: '1rem', color: '#f8fafc' }}>
+        <h3 className="card-title" style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>
           <Layers size={20} color="#10b981" /> Standardized Handover Schema (9 Categories)
         </h3>
 
@@ -196,7 +196,7 @@ export function AboutPage() {
 
       {/* Technology Stack */}
       <div className="pulse-card">
-        <h3 className="card-title" style={{ marginBottom: '1rem', color: '#f8fafc' }}>
+        <h3 className="card-title" style={{ marginBottom: '1rem', color: 'var(--text-main)' }}>
           <Cpu size={20} color="#6366f1" /> Technology Stack
         </h3>
 
