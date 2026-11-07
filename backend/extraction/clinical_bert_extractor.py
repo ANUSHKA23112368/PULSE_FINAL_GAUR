@@ -618,6 +618,25 @@ class ClinicalBERTExtractor(BaseClinicalExtractor):
                 entities["symptoms"].append(r_symp)
                 existing_symp_texts.add(r_symp["text"].lower())
 
+        # A low-confidence token-classification span can occasionally absorb
+        # assertion cues and conjunctions (for example, "has no fever and
+        # denies"). That is not a clinical symptom span and can bypass the
+        # deterministic assertion scope. Keep the rule-aligned spans, which
+        # retain exact source offsets and the correct negated status.
+        assertion_cue_pattern = re.compile(
+            r"\b(?:no|not|denies|denied|without|never|negative\s+for)\b",
+            re.IGNORECASE,
+        )
+        rule_symptom_spans = {
+            (item.get("start_char"), item.get("end_char"))
+            for item in rule_entities.get("symptoms", [])
+        }
+        entities["symptoms"] = [
+            item for item in entities["symptoms"]
+            if not assertion_cue_pattern.search(item.get("text", ""))
+            or (item.get("start_char"), item.get("end_char")) in rule_symptom_spans
+        ]
+
         # Also run measurement regexes to ensure vitals (BP, GCS, BGL) are captured accurately
         clinical_entity_extractor._extract_measurements(text, sentence_spans, entities["measurements"])
         clinical_entity_extractor._extract_abbreviations(text, sentence_spans, entities["abbreviations"])
