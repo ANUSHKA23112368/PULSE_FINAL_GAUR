@@ -753,7 +753,7 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
             </div>
           )}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
