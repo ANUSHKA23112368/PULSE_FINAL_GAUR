@@ -2703,6 +2703,8 @@ code, pre, .mono {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .card-profile-type {
@@ -2712,6 +2714,7 @@ code, pre, .mono {
 
 .card-footer-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
 }
 
@@ -4486,7 +4489,7 @@ code, pre, .mono {
 }
 
 /* ==========================================================================
-   Print Styles for Shift Handover Sheet
+   App Shell: Deep-link routing, Focus Management & Mobile Navigation
    ========================================================================== */
 
 @media print {
