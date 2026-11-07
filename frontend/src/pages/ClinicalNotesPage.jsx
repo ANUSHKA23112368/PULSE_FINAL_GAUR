@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   FileText, 
   Save, 
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PatientBanner } from '../components/PatientBanner';
 import { fetchPatientNotes, createPatientNote, processPatientNote } from '../services/api';
+import { buildQuickTemplate, QUICK_INSERT_TEMPLATES, scanClinicalAbbreviations } from '../utils/clinicalText';
 
 const CLINICAL_SPECIALTY_TEMPLATES = [
   {
@@ -81,6 +82,7 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error' | 'info', message: '' }
   const [expandedExtraction, setExpandedExtraction] = useState({});
   const [showShorthandGuide, setShowShorthandGuide] = useState(false);
+  const detectedAbbreviations = useMemo(() => scanClinicalAbbreviations(noteText), [noteText]);
 
   // Simulated Voice Dictation
   const [isDictating, setIsDictating] = useState(false);
