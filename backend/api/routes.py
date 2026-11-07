@@ -16,12 +16,17 @@ from typing import Dict, Any, List, Optional
 import re
 
 import json
+from pathlib import Path
 from fastapi.responses import StreamingResponse
 
 from backend.dataset.loader import dataset_loader
 from backend.preprocessing.preprocessor import clinical_preprocessor
 from backend.extraction.entity_extractor import clinical_entity_extractor
 from backend.extraction.clinical_bert_extractor import clinical_bert_extractor
+try:
+    from backend.extraction.hybrid_ner_extractor import hybrid_ner_extractor
+except Exception:  # pragma: no cover
+    hybrid_ner_extractor = None
 from backend.extraction.event_extractor import clinical_event_extractor
 from backend.extraction.temporal_extractor import clinical_temporal_extractor
 from backend.extraction.structured_generator import structured_handover_generator
@@ -93,6 +98,27 @@ async def health_check():
     """
     stats = dataset_loader.calculate_statistics()
     bert_available = clinical_bert_extractor.is_available()
+    hybrid_available = bool(hybrid_ner_extractor and hybrid_ner_extractor.is_available())
+    hybrid_metrics = None
+    if hybrid_available:
+        try:
+            import json, os
+            mp = os.path.join(os.path.dirname(hybrid_ner_extractor.model_dir), "..", "models", "hybrid_ner", "metrics.json")
+            mp = os.path.abspath(mp)
+            if os.path.exists(mp):
+                with open(mp, "r", encoding="utf-8") as fh:
+                    m = json.load(fh)
+                crf = (m.get("micro") or {}).get("crf") or {}
+                hybrid_metrics = {"strict_f1": (crf.get("strict") or [None]*3)[2], "lenient_f1": (crf.get("lenient") or [None]*3)[2], "evaluation": "5-fold micro"}
+        except Exception:
+            hybrid_metrics = None
+    # /api/analyze defaults to engine="hybrid", which prefers Bio_ClinicalBERT. The CRF
+    # artifact is opt-in (engine="hybrid_crf"), so report the default path, not availability.
+    current_engine = (
+        "Hybrid Bio_ClinicalBERT + ConText (default)"
+        if bert_available
+        else ("Hybrid CRF + Gazetteer" if hybrid_available else "Hybrid Clinical Rule Engine")
+    )
     return {
         "status": "healthy",
         "system": "PULSE (Patient Update & Log Structuring Engine)",
