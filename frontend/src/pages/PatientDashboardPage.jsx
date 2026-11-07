@@ -183,12 +183,17 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
 
   return (
     <div className="page-container">
-      {/* Refined Dashboard Header */}
+      {/* Page Header */}
       <div className="dashboard-header-row">
         <div>
-          <h1 className="page-heading">Patient Roster</h1>
-          <p className="page-subheading">Review current ward state and handover status.</p>
+          <h1 className="page-heading">
+            Clinical Patient Dashboard
+          </h1>
+          <p className="page-subheading">
+            Select a patient profile to review telemetry, record handover notes, and examine AI ISBAR extractions.
+          </p>
         </div>
+
         <div className="dashboard-top-actions">
           <button className="btn btn-primary" onClick={() => {/* Add patient modal trigger */}}>
             <UserPlus size={16} /> Register Patient
