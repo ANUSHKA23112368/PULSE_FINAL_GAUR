@@ -159,6 +159,16 @@ export function FhirExportModal({
           </button>
         </div>
       </div>
+
+      <ClinicalPrintSheet
+        patient={patient}
+        isbar={isbar}
+        bundle={activeBundle}
+        analysisResult={analysisResult}
+        title={title}
+      />
     </div>
   );
 }
+
+export default FhirExportModal;
