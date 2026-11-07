@@ -298,25 +298,6 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
     };
   }
 
-  function handleCopyFhir() {
-    const json = JSON.stringify(generateFhirBundle(), null, 2);
-    navigator.clipboard.writeText(json).then(() => {
-      setCopiedFhir(true);
-      setTimeout(() => setCopiedFhir(false), 2000);
-    });
-  }
-
-  function handleDownloadFhir() {
-    const json = JSON.stringify(generateFhirBundle(), null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `FHIR_ISBAR_${selectedPatient?.display_id || 'HANDOVER'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   function handleCopyIsbar() {
     const isbarText = `=== PULSE ISBAR CLINICAL SHIFT HANDOVER ===\n` +
       `PATIENT: ${selectedPatient?.name} (${selectedPatient?.display_id})\n` +
@@ -533,17 +514,6 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
             </div>
           )}
 
-          {/* Audio TTS Briefing Button */}
-          <button
-            type="button"
-            className={`btn btn-outline ${isPlayingAudio ? 'btn-audio-active' : ''}`}
-            onClick={toggleAudioBriefing}
-            title={isPlayingAudio ? "Stop audio briefing" : "Listen to audio handover briefing"}
-          >
-            {isPlayingAudio ? <VolumeX size={14} /> : <Volume2 size={14} />}
-            <span>{isPlayingAudio ? "Stop Audio" : "Listen Briefing"}</span>
-          </button>
-
           {/* Copy ISBAR Button */}
           <button
             type="button"
@@ -589,6 +559,13 @@ export function HandoverSummaryPage({ selectedPatient, onSwitchPatient, onNaviga
           )}
         </div>
       </div>
+
+      <AudioHandoverPlayer
+        text={audioNarrative}
+        title="ISBAR audio briefing"
+        subtitle="Full shift handover · sentence-synchronized read-along"
+        compact
+      />
 
       {loading ? (
         <div className="hospital-card loading-state-card">
