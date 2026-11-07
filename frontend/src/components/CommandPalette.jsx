@@ -161,10 +161,10 @@ export function CommandPalette({
             </div>
           )}
 
-          {/* Quick Actions */}
+          {/* Theme Quick Toggle */}
           <div className="command-section">
-            <div className="command-section-title">Actions & Workstation</div>
-            <div
+            <div className="command-section-title">Preferences & Environment</div>
+            <div 
               className="command-item"
               onClick={() => {
                 toggleTheme();
@@ -175,8 +175,8 @@ export function CommandPalette({
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </div>
               <div className="command-item-content">
-                <span className="command-item-main">Switch to {theme === 'dark' ? 'Light Workstation' : 'Dark Cyber-HUD'} Mode</span>
-                <span className="command-item-sub">Toggle interface contrast theme</span>
+                <span className="command-item-main">Switch to {theme === 'dark' ? 'Light Theme' : 'Dark Clinical HUD'}</span>
+                <span className="command-item-sub">Toggle workstation interface appearance</span>
               </div>
               <span className="command-item-action">Toggle</span>
             </div>
