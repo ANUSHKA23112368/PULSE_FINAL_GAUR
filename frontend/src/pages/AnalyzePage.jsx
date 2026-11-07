@@ -698,15 +698,15 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
                     {copied ? 'Copied to Clipboard!' : 'Copy Summary'}
                   </button>
 
-                  <button
-                    className="btn-secondary"
+                  <button 
+                    className="btn-secondary" 
                     onClick={() => setShowFhirModal(true)}
                     title="Export as FHIR R4 Bundle"
                   >
                     <ExternalLink size={16} /> Export FHIR
                   </button>
-                  <button
-                    className="btn-secondary"
+                  <button 
+                    className="btn-secondary" 
                     onClick={() => setShowPrintModal(true)}
                     title="Print / View Shift Handover Sheet"
                   >
@@ -714,15 +714,6 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
                   </button>
                 </div>
               </div>
-
-              {/* ... (keep existing handoverFormat/isbar logic) */}
-
-              {/* Add modals here */}
-              <FhirExportModal
-                isOpen={showFhirModal}
-                onClose={() => setShowFhirModal(false)}
-                analysisResult={analysisResult}
-              />
 
               {/* Sub-view: ISBAR Clinical Framework */}
               {handoverFormat === 'isbar' && analysisResult.isbar && (
