@@ -1,50 +1,66 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
+import { Check, Copy, Download, FileCode, FileText, Printer, X } from 'lucide-react';
+import { useToast } from './Toast';
+import { ClinicalPrintSheet } from './ClinicalPrintSheet';
+import { buildBundleFromAnalysis, bundleToCsv, downloadTextFile } from '../utils/fhir';
+
+const TABS = [
+  { id: 'json', label: 'FHIR R4 JSON', icon: FileCode },
+  { id: 'csv', label: 'CSV Table', icon: FileText },
+  { id: 'document', label: 'Handover Sheet', icon: Printer },
+];
 
 /**
- * FHIR R4 Bundle Export Modal Preview for Interoperability
+ * Interoperability export modal. Accepts either a pre-built bundle or an
+ * analysis result, then exposes JSON, CSV and a print-ready clipboard sheet.
  */
-export function FhirExportModal({ isOpen, onClose, analysisResult }) {
-  if (!isOpen || !analysisResult) return null;
+export function FhirExportModal({
+  isOpen,
+  onClose,
+  analysisResult,
+  bundle,
+  patient,
+  isbar,
+  title = 'Clinical Shift Handover',
+}) {
+  const showToast = useToast();
+  const [activeTab, setActiveTab] = useState('json');
+  const [copied, setCopied] = useState(false);
 
-  // Build simulated FHIR R4 Bundle
-  const fhirBundle = {
-    resourceType: "Bundle",
-    type: "collection",
-    timestamp: new Date().toISOString(),
-    entry: [
-      {
-        resource: {
-          resourceType: "Patient",
-          id: "pulse-patient-demo",
-          name: [{ text: analysisResult.entities?.patient_information?.find(p => p.field === "Patient Name")?.value || "Demo Patient" }],
-          gender: analysisResult.entities?.patient_information?.find(p => p.field === "Gender / Sex")?.value?.toLowerCase() || "unknown"
-        }
-      },
-      {
-        resource: {
-          resourceType: "Composition",
-          status: "final",
-          type: {
-            coding: [{ system: "http://loinc.org", code: "34133-9", display: "Nursing shift handover note" }]
-          },
-          subject: { reference: "Patient/pulse-patient-demo" },
-          text: {
-            status: "generated",
-            div: `<div xmlns="http://www.w3.org/1999/xhtml">${analysisResult.executive_summary}</div>`
-          }
-        }
-      },
-      ...(analysisResult.entities?.medications || []).map((med, idx) => ({
-        resource: {
-          resourceType: "MedicationStatement",
-          status: "active",
-          medicationCodeableConcept: { text: med.normalized },
-          dosage: [{ text: `${med.dosage || ''} ${med.route || ''} ${med.frequency || ''}`.trim() }],
-          subject: { reference: "Patient/pulse-patient-demo" }
-        }
-      }))
-    ]
-  };
+  const generatedBundle = useMemo(() => buildBundleFromAnalysis(analysisResult), [analysisResult]);
+  const activeBundle = bundle || generatedBundle;
+  const json = useMemo(() => JSON.stringify(activeBundle, null, 2), [activeBundle]);
+  const csv = useMemo(() => bundleToCsv(activeBundle), [activeBundle]);
+  const baseName = (patient?.display_id || patient?.id || 'PULSE_HANDOVER').toString().replace(/[^a-zA-Z0-9_-]/g, '_');
+
+  if (!isOpen) return null;
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(activeTab === 'csv' ? csv : json);
+      setCopied(true);
+      showToast?.(`${activeTab === 'csv' ? 'CSV table' : 'FHIR R4 bundle'} copied to clipboard.`, 'success');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      showToast?.('Clipboard access was blocked by the browser.', 'error');
+    }
+  }
+
+  function handleDownloadJson() {
+    downloadTextFile(`${baseName}_FHIR_R4.json`, json, 'application/fhir+json');
+    showToast?.('FHIR R4 JSON bundle downloaded.', 'success');
+  }
+
+  function handleDownloadCsv() {
+    downloadTextFile(`${baseName}_handover.csv`, csv, 'text/csv;charset=utf-8');
+    showToast?.('CSV handover table downloaded.', 'success');
+  }
+
+  function handlePrint() {
+    document.body.classList.add('print-sheet-mode');
+    window.print();
+    window.setTimeout(() => document.body.classList.remove('print-sheet-mode'), 900);
+  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
