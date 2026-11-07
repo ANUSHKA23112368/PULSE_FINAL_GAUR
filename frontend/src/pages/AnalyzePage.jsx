@@ -28,6 +28,8 @@ import { fetchReports, fetchReport, analyzeHandover } from '../services/api';
 import { useToast } from '../components/Toast';
 import { ClinicalHighlighter } from '../components/ClinicalHighlighter';
 import { FhirExportModal } from '../components/FhirExportModal';
+import { AudioHandoverPlayer } from '../components/AudioHandoverPlayer';
+
 
 export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }) {
   const [reportList, setReportList] = useState([]);
@@ -39,9 +41,9 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
   const [showFhirModal, setShowFhirModal] = useState(false);
-
   const showToast = useToast();
 
+  
   // Navigation & Sub-views
   const [activeTab, setActiveTab] = useState('structured');
   const [handoverFormat, setHandoverFormat] = useState('isbar'); // 'isbar' | '9categories'
