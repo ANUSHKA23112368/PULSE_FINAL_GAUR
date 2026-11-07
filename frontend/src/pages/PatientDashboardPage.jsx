@@ -356,16 +356,300 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
         </div>
       )}
 
-            <div className="patient-card-locations">
-              <div className="location-row"><Bed size={14} /> {p.ward} • {p.bed_number}</div>
-              <div className="location-row"><Stethoscope size={14} /> {p.consultant}</div>
+      {/* Patient Cards Grid */}
+      {!loading && !error && filteredPatients.length > 0 && (
+        <div className="patient-cards-grid">
+          {filteredPatients.map((p) => {
+            const isSelected = selectedPatient && String(selectedPatient.id) === String(p.id);
+            const isCritical = isHighAttention(p);
+            const patientVitals = getPatientVitals(p);
+            const news2 = calculateNews2(patientVitals);
+            const hrTrend = buildVitalsTrend(patientVitals, 'hr', 8);
+
+            return (
+              <div 
+                key={p.id}
+                className={`hospital-card patient-card ${isSelected ? 'patient-card-selected' : ''}`}
+                onClick={() => onSelectPatient(p)}
+              >
+                <div>
+                  {/* Card Header */}
+                  <div className="patient-card-header">
+                    <span className="patient-card-id">
+                      {p.display_id}
+                    </span>
+
+                    <div className="patient-card-badges">
+                      {isCritical ? (
+                        <span className="acuity-pill acuity-amber">
+                          <AlertCircle size={11} /> High Attention
+                        </span>
+                      ) : (
+                        <span className="acuity-pill acuity-emerald">
+                          <CheckCircle2 size={11} /> Stable
+                        </span>
+                      )}
+
+                      {isSelected && (
+                        <span className="active-patient-indicator">
+                          <CheckCircle2 size={13} /> Active
+                        </span>
+                      )}
+
+                      <News2Badge news2={news2} />
+                    </div>
+                  </div>
+
+                  {/* Patient Name & Demographics */}
+                  <div className="patient-card-identity">
+                    <span className={`patient-avatar ${isCritical ? 'patient-avatar-alert' : ''}`} aria-hidden="true">
+                      {getInitials(p.name)}
+                    </span>
+                    <div className="patient-card-identity-text">
+                      <h3 className="patient-card-name">
+                        {p.name}
+                      </h3>
+                      <div className="patient-card-demographics">
+                        {p.age || 'Age unrecorded'} • {p.gender || 'Unspecified'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Ward & Consultant */}
+                  <div className="patient-card-locations">
+                    <div className="location-row">
+                      <Bed size={14} className="text-primary" />
+                      <span>{p.ward || 'General Medical'} {p.bed_number ? `(${p.bed_number})` : ''}</span>
+                    </div>
+                    <div className="location-row">
+                      <Stethoscope size={14} className="text-primary" />
+                      <span>{p.consultant || 'Attending Physician'}</span>
+                    </div>
+                  </div>
+
+                  {/* Presenting Clinical Issue */}
+                  <div className="patient-card-presenting">
+                    <strong>Presenting Issue:</strong> {p.admitting_diagnosis || 'Synthetic demonstration handover record.'}
+                  </div>
+
+                  {/* Bedside Vitals Micro-Telemetry Preview if available */}
+                  {patientVitals && (
+                    <>
+                    <div className="card-micro-vitals">
+                      <span className="micro-vital-item">
+                        <Heart size={11} className="text-rose" />
+                        <span>{patientVitals.hr ?? 78} <small>bpm</small></span>
+                      </span>
+                      <span className="micro-vital-item">
+                        <Activity size={11} className="text-sky" />
+                        <span>{patientVitals.spo2 ?? 98}%</span>
+                      </span>
+                      <span className="micro-vital-item">
+                        <Gauge size={11} className="text-violet" />
+                        <span>{patientVitals.bp_sys ?? 120}/{patientVitals.bp_dia ?? 80}</span>
+                      </span>
+                    </div>
+                    {hrTrend && (
+                      <div className="patient-trend-row">
+                        <Sparkline
+                          data={hrTrend.series}
+                          color={hrTrend.worsening ? '#f43f5e' : '#10b981'}
+                          label="Heart rate 24-hour trend"
+                          className="patient-trend-sparkline"
+                        />
+                        <span className={`patient-trend-copy ${hrTrend.worsening ? 'is-worse' : 'is-better'}`}>
+                          HR {hrTrend.summary}
+                        </span>
+                      </div>
+                    )}
+                    </>
+                  )}
+                </div>
+
+                {/* Card Actions Footer */}
+                <div className="patient-card-footer">
+                  <span className="card-profile-type">
+                    Synthetic Demo
+                  </span>
+                  <div className="card-footer-buttons">
+                    <button 
+                      type="button"
+                      className="btn btn-outline btn-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPatient(p);
+                        onNavigate('vitals');
+                      }}
+                    >
+                      <Activity size={12} /> Vitals
+                    </button>
+                    <button 
+                      type="button"
+                      className="btn btn-outline btn-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPatient(p);
+                        onNavigate('notes');
+                      }}
+                    >
+                      <FileText size={12} /> Notes
+                    </button>
+                    <button 
+                      type="button"
+                      className="btn btn-primary btn-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectPatient(p);
+                        onNavigate('summary');
+                      }}
+                    >
+                      <Layers size={12} /> Handover
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add New Demo Patient Modal */}
+      {showAddModal && (
+        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
+          <div className="add-patient-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <UserPlus size={20} className="modal-icon" />
+                <h3>Add Synthetic Demonstration Patient</h3>
+              </div>
+              <button className="modal-close-btn" onClick={() => setShowAddModal(false)}>×</button>
             </div>
 
-            <div className="patient-card-footer">
-              <button className="btn btn-outline btn-xs" onClick={() => onNavigate('vitals')}>Vitals</button>
-              <button className="btn btn-outline btn-xs" onClick={() => onNavigate('notes')}>Notes</button>
-              <button className="btn btn-primary btn-xs" onClick={() => onNavigate('summary')}>Handover</button>
-            </div>
+            <form onSubmit={handleCreatePatientSubmit}>
+              <div className="modal-body">
+                {formError && (
+                  <div className="feedback-alert feedback-error">
+                    <AlertCircle size={16} className="text-rose" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                <div className="form-grid-2col">
+                  <div className="form-group">
+                    <label className="form-label">Full Patient Name *</label>
+                    <input 
+                      type="text" 
+                      name="name" 
+                      className="form-input" 
+                      placeholder="e.g. Eleanor Vance" 
+                      value={newPatientForm.name} 
+                      onChange={handleFormChange} 
+                      required 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Display ID / MRN (Optional)</label>
+                    <input 
+                      type="text" 
+                      name="display_id" 
+                      className="form-input" 
+                      placeholder="e.g. PULSE-DEMO-025" 
+                      value={newPatientForm.display_id} 
+                      onChange={handleFormChange} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Age (Years)</label>
+                    <input 
+                      type="text" 
+                      name="age" 
+                      className="form-input" 
+                      placeholder="e.g. 52" 
+                      value={newPatientForm.age} 
+                      onChange={handleFormChange} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Gender</label>
+                    <select 
+                      name="gender" 
+                      className="form-input" 
+                      value={newPatientForm.gender} 
+                      onChange={handleFormChange}
+                    >
+                      <option value="Female">Female</option>
+                      <option value="Male">Male</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Ward Department</label>
+                    <input 
+                      type="text" 
+                      name="ward" 
+                      className="form-input" 
+                      value={newPatientForm.ward} 
+                      onChange={handleFormChange} 
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Bed Location</label>
+                    <input 
+                      type="text" 
+                      name="bed_number" 
+                      className="form-input" 
+                      value={newPatientForm.bed_number} 
+                      onChange={handleFormChange} 
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Attending Consultant</label>
+                  <input 
+                    type="text" 
+                    name="consultant" 
+                    className="form-input" 
+                    value={newPatientForm.consultant} 
+                    onChange={handleFormChange} 
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Admitting Clinical Presentation / Chief Complaint</label>
+                  <textarea 
+                    name="admitting_diagnosis" 
+                    className="form-input" 
+                    rows={3} 
+                    placeholder="e.g. Admitted with acute respiratory distress and productive cough query pneumonia..." 
+                    value={newPatientForm.admitting_diagnosis} 
+                    onChange={handleFormChange} 
+                  />
+                </div>
+              </div>
+
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="modal-action-btn secondary" 
+                  onClick={() => setShowAddModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="modal-action-btn primary" 
+                  disabled={formSubmitting}
+                >
+                  {formSubmitting ? 'Registering...' : '+ Create Patient Record'}
+                </button>
+              </div>
+            </form>
           </div>
         ))}
       </div>
