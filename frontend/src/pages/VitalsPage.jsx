@@ -87,7 +87,7 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
     } else if (scenario === 'sepsis') {
       setFormVitals({ hr: 130, bp_sys: 86, bp_dia: 52, spo2: 91, rr: 28, temperature: 39.4, acvpu: 'V' });
     } else if (scenario === 'hypoxia') {
-      setFormVitals({ hr: 104, bp_sys: 142, bp_dia: 90, spo2: 89, rr: 24, temperature: 37.2 });
+      setFormVitals({ hr: 104, bp_sys: 142, bp_dia: 90, spo2: 89, rr: 24, temperature: 37.2, acvpu: 'A' });
     }
   }
 
@@ -171,6 +171,9 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
           </button>
         </div>
       </div>
+
+      {/* National Early Warning Score is the first clinical signal on this page. */}
+      <News2ScorePanel news2={news2} trends={vitalTrends} />
 
       {/* Bedside Oscilloscope Telemetry Monitor (Philips/GE Style HUD) */}
       <div className="bedside-telemetry-panel">
@@ -347,41 +350,6 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
             )}
           </div>
         </div>
-      </div>
-
-      {/* Real-time National Early Warning Score (NEWS2) Card */}
-      <div className={`hospital-card news2-score-card news2-risk-${news2.color}`}>
-        <div className="news2-header">
-          <div className="news2-title-group">
-            <ShieldAlert size={22} className={`news2-icon text-${news2.color}`} />
-            <div>
-              <div className="news2-title">
-                National Early Warning Score (NEWS2): <strong>{news2.score}</strong>
-                <span className={`news2-badge news2-badge-${news2.color}`}>{news2.level}</span>
-              </div>
-              <div className="news2-action-guidance">{news2.action}</div>
-            </div>
-          </div>
-
-          <div className="news2-score-dial">
-            <span className="score-num">{news2.score}</span>
-            <span className="score-label">Points</span>
-          </div>
-        </div>
-
-        {/* Breakdown of Trigger Parameters if any */}
-        {news2.breakdown.length > 0 && (
-          <div className="news2-triggers">
-            <span className="triggers-label">Parameters contributing to clinical risk:</span>
-            <div className="triggers-chips">
-              {news2.breakdown.map((b, idx) => (
-                <span key={idx} className="trigger-chip">
-                  <strong>{b.param}</strong>: {b.value} (+{b.points} pts)
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Clinical Notes Action Banner */}
