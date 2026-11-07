@@ -13,6 +13,10 @@ from backend.extraction.event_extractor import clinical_event_extractor
 from backend.extraction.structured_generator import structured_handover_generator
 from backend.extraction.temporal_extractor import clinical_temporal_extractor
 from backend.preprocessing.preprocessor import clinical_preprocessor
+try:
+    from backend.extraction.hybrid_ner_extractor import hybrid_ner_extractor
+except Exception:  # pragma: no cover
+    hybrid_ner_extractor = None
 
 
 def _now() -> float:
@@ -27,7 +31,9 @@ def run_realtime_analysis(
     engine = (engine or "hybrid").lower()
     timings: Dict[str, float] = {}
     bert_ready = clinical_bert_extractor.is_available()
-    use_bert = engine in ["clinical_bert", "hybrid"] and bert_ready
+    hybrid_ready = bool(hybrid_ner_extractor and hybrid_ner_extractor.is_available())
+    use_hybrid = engine in ("hybrid_crf", "crf") and hybrid_ready
+    use_bert = (not use_hybrid) and engine in ["clinical_bert", "hybrid"] and bert_ready
 
     def emit(step: str, payload: Optional[Dict[str, Any]] = None):
         if on_step:
@@ -41,7 +47,10 @@ def run_realtime_analysis(
 
     emit("extract")
     t1 = _now()
-    if use_bert:
+    if use_hybrid:
+        entities = hybrid_ner_extractor.extract(preprocessed_text)
+        engine_used = "Hybrid CRF + Gazetteer"
+    elif use_bert:
         entities = clinical_bert_extractor.extract(preprocessed_text)
         engine_used = "Bio_ClinicalBERT" if engine == "clinical_bert" else "Hybrid Bio_ClinicalBERT + ConText"
     else:
