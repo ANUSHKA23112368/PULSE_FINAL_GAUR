@@ -24,12 +24,32 @@ import {
   compareLocalPatientHandovers,
   getLocalResearchEvaluation
 } from './localEngine';
+import { notify } from './toastBus';
 
 const API_BASE = '/api';
 
+/**
+ * Every request gets a bounded timeout and emits one deduplicated toast when
+ * the Python service is unreachable. Callers then fall back to the bundled
+ * deterministic engine, so the workstation remains usable offline.
+ */
+async function request(url, options = {}) {
+  const requestOptions = options.signal ? options : { ...options, signal: AbortSignal.timeout(8000) };
+  try {
+    return await fetch(url, requestOptions);
+  } catch (error) {
+    if (error?.name === 'TimeoutError' || error?.name === 'AbortError') {
+      notify('Clinical backend timed out — using the local deterministic engine.', 'warning');
+    } else {
+      notify('Clinical backend unreachable — using the local deterministic engine.', 'warning');
+    }
+    throw error;
+  }
+}
+
 export async function fetchHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
+    const res = await request(`${API_BASE}/health`, { signal: AbortSignal.timeout(2000) });
     if (!res.ok) throw new Error("Backend not responding");
     return await res.json();
   } catch (err) {
