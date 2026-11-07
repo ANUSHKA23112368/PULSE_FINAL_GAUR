@@ -376,17 +376,81 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                     Out-of-Domain Strict F1: 50.0% | Lenient F1: 65.79%
                   </span>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                  Corpus expanded to 261 reports, boosting rare entity representation (titrations, NEWS2).
+                <p style={{ fontSize: '0.82rem', color: '#cbd5e1', lineHeight: 1.5, margin: '0 0 1rem 0' }}>
+                  To guarantee that PULSE does not merely memorize the 101 NICTA handover syntax, the pipeline is evaluated on complex, multi-system ISBAR notes with dense ICU acronyms, IV titrations, and ventilator settings.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Medication Name Accuracy</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#34d399' }}>75.0%</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>6 of 8 high-risk drug entities matched</div>
+                  </div>
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Symptom & Sign Extraction</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#38bdf8' }}>83.3%</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>5 of 6 bedside signs correctly mapped</div>
+                  </div>
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Vital Sign Range Parsing</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#f59e0b' }}>91.7%</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Accurate BP, SpO2, and GCS segmentation</div>
+                  </div>
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '0.75rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Average Pipeline Latency</div>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#a5b4fc' }}>18–25 ms</div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Sub-second real-time responsiveness</div>
+                  </div>
                 </div>
               </div>
+            </div>
+          )}
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#a5b4fc', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Layers size={14} /> Class-Weighted Loss
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                  Inverse frequency cross-entropy loss dampening dominant 'O' tokens and penalizing entity errors.
+          {/* TAB 2: F1 METHODOLOGY & MATHEMATICAL FORMULATION */}
+          {activeTab === 'methodology' && (
+            <div className="evaluation-stack">
+              <div className="hospital-card" style={{ marginBottom: '1.5rem' }}>
+                <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#38bdf8' }}>
+                  <BookOpen size={20} color="#38bdf8" />
+                  <span>Clinical NLP Metric Formulation: Strict vs. Lenient Span F1</span>
+                </h3>
+                <p style={{ fontSize: '0.85rem', color: '#cbd5e1', lineHeight: 1.6 }}>
+                  Standard classification metrics (accuracy, precision) fail in clinical NER because non-entity whitespace and tokens make up &gt;90% of handover text. PULSE implements the rigorous **CoNLL-2003 / SemEval** span evaluation protocols:
+                </p>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1.25rem' }}>
+                  {/* Strict Span F1 Card */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#38bdf8' }}>Strict Span F1 (Zero Boundary Tolerance)</span>
+                      <span className="chip" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontSize: '0.7rem' }}>Gold Benchmark</span>
+                    </div>
+                    <div style={{ background: 'rgba(0, 0, 0, 0.4)', padding: '0.75rem', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.8rem', color: '#e2e8f0', marginBottom: '0.75rem' }}>
+                      True Positive ⇔ (start_pred == start_gold) ∧ (end_pred == end_gold) ∧ (label_pred == label_gold)
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                      Requires exact verbatim character offset matching. If a gold annotation is <code className="mono" style={{ color: '#38bdf8' }}>"metoprolol tartrate"</code> [chars 42–61] and the model extracts <code className="mono" style={{ color: '#f87171' }}>"metoprolol"</code> [chars 42–52], Strict Span evaluation marks it as 1 False Positive and 1 False Negative.
+                    </p>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', marginTop: '0.5rem' }}>
+                      Measured: CRF 60.51% strict / 74.46% lenient (5-fold). Bio_ClinicalBERT eval-time 55.76% / 77.29% (fold 0).
+                    </div>
+                  </div>
+
+                  {/* Lenient Span F1 Card */}
+                  <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '8px', padding: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#34d399' }}>Lenient Span F1 (Clinical Overlap Match)</span>
+                      <span className="chip" style={{ background: 'rgba(52, 211, 153, 0.15)', color: '#34d399', fontSize: '0.7rem' }}>Clinical Practical</span>
+                    </div>
+                    <div style={{ background: 'rgba(0, 0, 0, 0.4)', padding: '0.75rem', borderRadius: '6px', fontFamily: 'monospace', fontSize: '0.8rem', color: '#e2e8f0', marginBottom: '0.75rem' }}>
+                      True Positive ⇔ max(0, min(end_pred, end_gold) - max(start_pred, start_gold)) &gt; 0 ∧ (label_pred ≈ label_gold)
+                    </div>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5 }}>
+                      Requires at least one overlapping character/token with category compatibility. Clinically, identifying that a patient is on <code className="mono" style={{ color: '#34d399' }}>"metoprolol"</code> captures the essential cardiovascular medication even if the dosage string boundary differs slightly.
+                    </p>
+                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', marginTop: '0.5rem' }}>
+                      Measured (CRF, 5-fold): 60.51% strict / 74.46% lenient. Bio_ClinicalBERT eval-time (fold 0): 55.76% / 77.29%.
+                    </div>
+                  </div>
                 </div>
               </div>
 
