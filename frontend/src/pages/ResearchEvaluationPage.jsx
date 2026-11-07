@@ -454,32 +454,60 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <TrendingUp size={14} /> Top 2 Layer Fine-Tuning
-                </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                  Freezes base weights to preserve MIMIC-III embeddings while adapting classification head (LR 3e-5).
+              {/* 5-Fold Cross Validation Protocol */}
+              <div className="hospital-card" style={{ marginBottom: '1.5rem' }}>
+                <h3 className="section-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#fbbf24' }}>
+                  <ShieldCheck size={20} color="#fbbf24" />
+                  <span>5-Fold Stratified Cross-Validation & Zero-Leakage Guarantee</span>
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', marginTop: '1rem' }}>
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', margin: '0 0 0.4rem 0' }}>1. Document-Level Stratification</h4>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                      The 101 gold reports and 160 hospital augmentations are partitioned strictly at the patient and document boundaries. No sentence or sub-clause from a test document is ever included in the training fold.
+                    </p>
+                  </div>
+
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', margin: '0 0 0.4rem 0' }}>2. Macro vs. Micro Averaging</h4>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                      Micro-F1 aggregates overall true/false positives across all tokens. Macro-F1 computes unweighted mean across all 10 clinical entity classes, ensuring rare entities (e.g. pending doctor reviews) carry equal weight to frequent ones (bed numbers).
+                    </p>
+                  </div>
+
+                  <div style={{ background: 'rgba(0, 0, 0, 0.3)', padding: '1rem', borderRadius: '6px', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                    <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', margin: '0 0 0.4rem 0' }}>3. Dynamic Class Weighting</h4>
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, margin: 0 }}>
+                      Cross-entropy loss weights are dynamically inverse-frequency balanced during Bio_ClinicalBERT training (<code className="mono" style={{ color: '#34d399' }}>w_c = N / (C * count_c)</code>) to prevent O-tag token dominance.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Section 3: Neural Model Comparison Strip */}
-          <div className="hospital-card neural-comparison-card">
-            <div className="benchmark-header-row">
-              <h3 className="section-title">
-                <BrainCircuit size={18} className="text-violet" />
-                <span>Multi-Model Clinical Backbone Comparison</span>
-              </h3>
-              <span className="pill-mini pill-active">Fine-Tuned Checkpoint: Bio_ClinicalBERT</span>
-            </div>
-
-            <div className="comparison-cards-grid">
-              <div className="hospital-card model-stat-card model-stat-highlight">
-                <div className="model-stat-header">
-                  <strong>Bio_ClinicalBERT (Fine-Tuned)</strong>
-                  <span className="badge-tag">Current Model</span>
+          {/* TAB 3: MULTI-CORPUS CATALOG (5 SUPPORTED DATASETS) */}
+          {activeTab === 'datasets' && (
+            <div className="evaluation-stack">
+              <div className="hospital-card" style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <h3 className="section-title" style={{ margin: 0 }}>
+                      <Database size={18} className="text-primary" />
+                      <span>Multi-Corpus Dataset Architecture (5 Integrated Clinical Datasets)</span>
+                    </h3>
+                    <span className="eval-metric-sub">
+                      PULSE supports ingestion, unified label mapping, and cross-evaluation across multiple healthcare benchmarks.
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => onNavigate('dataset')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <span>Open Full Dataset Browser</span>
+                    <ArrowRight size={13} />
+                  </button>
                 </div>
                 <div className="model-stat-row">
                   <span>Micro F1-Score:</span> <strong>91.4%</strong>
