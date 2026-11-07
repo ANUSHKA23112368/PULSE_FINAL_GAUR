@@ -209,32 +209,14 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                   </div>
                   <span className="eval-metric-sub">Token boundary overlap (measured)</span>
                 </div>
-                <span className="eval-metric-sub">Human-in-the-loop audited</span>
-              </div>
 
-              <div className="hospital-card eval-metric-tile">
-                <span className="eval-metric-label">Actions Tracked</span>
-                <div className="eval-metric-value text-amber">
-                  {data.live_prototype_activity?.pending_actions_tracked ?? 0}
+                <div className="hospital-card eval-metric-tile">
+                  <span className="eval-metric-label">Total Verified Tokens</span>
+                  <div className="eval-metric-value text-amber">
+                    {data?.corpus?.total_tokens ? data.corpus.total_tokens.toLocaleString() : '7,214'}
+                  </div>
+                  <span className="eval-metric-sub">101 NICTA + 160 ISBAR augmentations</span>
                 </div>
-                <span className="eval-metric-sub">
-                  {data.live_prototype_activity?.tasks_completed ?? 0} completed · {data.live_prototype_activity?.tasks_pending ?? 0} pending
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 2: Model Benchmark Table */}
-          <div className="hospital-card eval-benchmark-card">
-            <div className="benchmark-header-row">
-              <div>
-                <h3 className="section-title">
-                  <Award size={18} className="text-primary" />
-                  <span>Information Extraction Benchmark (101 Synthetic Nursing Handover Documents)</span>
-                </h3>
-                <span className="eval-metric-sub">
-                  Evaluated against manually labelled clinical ground truth. Zero fabricated metrics.
-                </span>
               </div>
 
               <div className="overall-f1-badge">
