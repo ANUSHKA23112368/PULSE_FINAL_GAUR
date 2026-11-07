@@ -104,7 +104,6 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
   const [isDictating, setIsDictating] = useState(false);
   const [dictationElapsed, setDictationElapsed] = useState(0);
   const [showFhirModal, setShowFhirModal] = useState(false);
-  const [copiedFhir, setCopiedFhir] = useState(false);
   const [assertionFilter, setAssertionFilter] = useState('all'); // 'all', 'affirmed', 'negated'
 
   const logsEndRef = useRef(null);
@@ -213,6 +212,17 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
     }
   }
 
+  function handleLatencyBenchmark() {
+    const passes = 25;
+    const start = performance.now();
+    let entities = [];
+    for (let index = 0; index < passes; index += 1) {
+      entities = recognizeEntities(latencyText, latencyThreshold);
+    }
+    setLatencyMeasured((performance.now() - start) / passes);
+    setLatencyEntities(entities);
+  }
+
   async function handleRunInference() {
     if (!sandboxText.trim()) return;
     setIsAnalyzing(true);
@@ -300,24 +310,6 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
         }))
       ]
     };
-  }
-
-  function handleCopyFhir() {
-    const jsonStr = JSON.stringify(generateFhirBundle(), null, 2);
-    navigator.clipboard.writeText(jsonStr);
-    setCopiedFhir(true);
-    setTimeout(() => setCopiedFhir(false), 2000);
-  }
-
-  function handleDownloadFhir() {
-    const jsonStr = JSON.stringify(generateFhirBundle(), null, 2);
-    const blob = new Blob([jsonStr], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `PULSE_FHIR_Handover_${new Date().toISOString().slice(0,10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   return (
