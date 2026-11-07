@@ -63,13 +63,19 @@ export function FhirExportModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="fhir-modal-dialog" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} role="presentation">
+      <div className="fhir-modal-dialog fhir-export-dialog" onClick={(event) => event.stopPropagation()} role="dialog" aria-modal="true" aria-label="Interoperability export">
         <div className="modal-header">
           <div className="modal-title-group">
-            <h3>HL7 FHIR R4 Interoperability Bundle</h3>
+            <FileCode size={20} className="modal-icon text-primary" />
+            <div>
+              <h3>Interoperability Export</h3>
+              <p className="modal-subtitle">FHIR R4 · CSV · printable clipboard sheet</p>
+            </div>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>×</button>
+          <button className="modal-close-btn" onClick={onClose} aria-label="Close export dialog">
+            <X size={18} />
+          </button>
         </div>
 
         <div className="modal-body">
