@@ -1346,6 +1346,16 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
           </div>
         </div>
       )}
+    
+      {/* FHIR R4 Interoperability Export Modal */}
+      <FhirExportModal
+        isOpen={showFhirModal}
+        onClose={() => setShowFhirModal(false)}
+        analysisResult={analysisResult}
+      />
+
     </div>
   );
 }
+
+export default AnalyzePage;
