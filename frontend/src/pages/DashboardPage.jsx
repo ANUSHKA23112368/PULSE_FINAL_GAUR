@@ -84,10 +84,10 @@ export function DashboardPage({ onNavigate, onSelectReport }) {
       <div style={{ marginBottom: '2.5rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <Database size={20} color="#06b6d4" /> Dynamic Dataset EDA Statistics
             </h2>
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
               Calculated live directly from the 101 text files in <code className="mono" style={{ color: '#38bdf8' }}>data/101writtenfreetextreports/</code>
             </p>
           </div>
