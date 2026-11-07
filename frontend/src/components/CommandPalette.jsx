@@ -12,7 +12,11 @@ import {
   BrainCircuit, 
   Moon, 
   Sun, 
-  ArrowRight
+  ArrowRight,
+  Database,
+  FileSpreadsheet,
+  ShieldAlert,
+  Sparkles
 } from 'lucide-react';
 
 export function CommandPalette({ 
@@ -41,8 +45,6 @@ export function CommandPalette({
         e.preventDefault();
         if (isOpen) {
           onClose();
-        } else {
-          // Trigger open via parent
         }
       }
       if (e.key === 'Escape' && isOpen) {
@@ -62,15 +64,23 @@ export function CommandPalette({
   ).slice(0, 5);
 
   const navigationItems = [
-    { id: 'dashboard', label: 'Patient Dashboard', icon: Users, sub: 'All patient rosters and admissions' },
-    { id: 'vitals', label: 'Simulated Vitals & NEWS2', icon: Activity, sub: 'Bedside telemetry monitor & early warning score' },
-    { id: 'notes', label: 'Clinical Handover Notes', icon: FileText, sub: 'Voice dictation & free-text entry' },
-    { id: 'summary', label: 'ISBAR Handover Summary', icon: Layers, sub: 'Structured handover, audio briefing & FHIR export' },
-    { id: 'changes', label: 'What Changed (Shift Delta)', icon: GitCompare, sub: 'Temporal shift comparison and changes' },
-    { id: 'tasks', label: 'Pending Actions & Tasks', icon: ListTodo, sub: 'Ward task kanban and clinical orders' },
-    { id: 'history', label: 'Execution & Note History', icon: History, sub: 'Audit log of handover transitions' },
-    { id: 'training', label: 'BioClinicalBERT Neural Engine', icon: BrainCircuit, sub: 'Live fine-tuning telemetry & inference sandbox' },
-    { id: 'evaluation', label: 'Research Evaluation', icon: BarChart3, sub: 'Benchmark F1-scores and validation' },
+    // Clinical Ward Workspace
+    { id: 'dashboard', label: 'Patient Roster', icon: Users, sub: 'Ward bed rosters, admissions, and quick filters' },
+    { id: 'vitals', label: 'Bedside Vitals & NEWS2', icon: Activity, sub: 'Physiological telemetry monitor & early warning score' },
+    { id: 'notes', label: 'Shift Notes & Dictation', icon: FileText, sub: 'Nursing handover input, voice dictation & free-text' },
+    { id: 'summary', label: 'ISBAR Handover Summary', icon: Layers, sub: 'Standardized ISBAR clinical report, audio readout & FHIR export' },
+    { id: 'changes', label: 'What Changed? (Shift Delta)', icon: GitCompare, sub: 'Consecutive handover differential and vital trends' },
+    { id: 'tasks', label: 'Pending Actions & Orders', icon: ListTodo, sub: 'Prioritized checklist, status toggles & deadline alerts' },
+    { id: 'history', label: 'Analysis & Note History', icon: History, sub: 'SQLite stored execution records and past handover logs' },
+
+    // NLP Handover & Research Studio
+    { id: 'analyze', label: 'Live Handover Structuring Engine', icon: Sparkles, sub: 'Ingest 101 reports or free-text, multi-color entity highlights, 9 categories' },
+    { id: 'overview', label: 'PULSE Architecture & Dynamic EDA', icon: Database, sub: 'Dynamic corpus statistics, 6-stage NLP pipeline diagram' },
+    { id: 'reports', label: 'Browse 101 Handover Reports', icon: FileSpreadsheet, sub: 'Library of 101 NICTA reports with word counts and 1-click analyze' },
+    { id: 'dataset', label: 'Multi-Corpus Dataset Explorer', icon: Database, sub: 'Corpus browser, raw vs preprocessed text, token normalization' },
+    { id: 'training', label: 'BioClinicalBERT Studio', icon: BrainCircuit, sub: 'Live training telemetry, loss sparkline, hot reload & latency benchmark' },
+    { id: 'evaluation', label: 'Model Evaluation Benchmarks', icon: BarChart3, sub: '5-fold cross-validation metrics, strict & lenient F1 scores' },
+    { id: 'about', label: 'About PULSE & Clinical Scope', icon: ShieldAlert, sub: 'Technical specifications, ethics disclosure & research architecture' },
   ].filter(item => 
     item.label.toLowerCase().includes(search.toLowerCase()) ||
     item.sub.toLowerCase().includes(search.toLowerCase())
