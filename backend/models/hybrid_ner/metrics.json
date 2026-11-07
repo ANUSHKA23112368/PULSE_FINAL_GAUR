@@ -1,0 +1,65 @@
+{
+  "folds": [
+    "fold_0",
+    "fold_1",
+    "fold_2",
+    "fold_3",
+    "fold_4"
+  ],
+  "micro": {
+    "crf": {
+      "strict": [
+        66.53,
+        55.49,
+        60.51
+      ],
+      "lenient": [
+        81.87,
+        68.28,
+        74.46
+      ]
+    },
+    "gaz": {
+      "strict": [
+        56.29,
+        40.66,
+        47.21
+      ],
+      "lenient": [
+        71.82,
+        51.88,
+        60.24
+      ]
+    },
+    "merge": {
+      "strict": [
+        61.37,
+        55.06,
+        58.05
+      ],
+      "lenient": [
+        76.74,
+        68.85,
+        72.58
+      ]
+    },
+    "snap": {
+      "strict": [
+        65.96,
+        55.02,
+        59.99
+      ],
+      "lenient": [
+        81.87,
+        68.28,
+        74.46
+      ]
+    }
+  },
+  "params": {
+    "c1": 0.1,
+    "c2": 0.1,
+    "max_iter": 250
+  },
+  "feature_module": "backend/extraction/hybrid_ner_features.py"
+}
