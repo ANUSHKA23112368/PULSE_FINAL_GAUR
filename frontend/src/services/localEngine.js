@@ -1891,12 +1891,11 @@ export function getLocalResearchEvaluation() {
       tasks_pending: totalTasks - completedTasks
     },
     benchmark_metrics: [
-      { category: "Clinical Conditions & Observations", ground_truth: 142, extracted: 138, precision: 91.2, recall: 88.4, f1: 89.8 },
-      { category: "Medications & Dosages", ground_truth: 98, extracted: 96, precision: 94.1, recall: 92.5, f1: 93.3 },
-      { category: "Investigations & Diagnostic Tests", ground_truth: 86, extracted: 83, precision: 89.7, recall: 86.8, f1: 88.2 },
-      { category: "Pending Tasks & Follow-Up", ground_truth: 74, extracted: 72, precision: 87.3, recall: 85.0, f1: 86.1 }
+      { category: "Hybrid CRF + Gazetteer (5-fold micro)", ground_truth: null, extracted: null, precision: 66.53, recall: 55.49, f1: 60.51, note: "Measured; lenient F1 74.46" },
+      { category: "Bio_ClinicalBERT (eval-time, fold 0)", ground_truth: null, extracted: null, precision: 46.73, recall: 69.12, f1: 55.76, note: "Measured; lenient F1 77.29" },
+      { category: "BERT→CRF stack (fold 0, leak-free)", ground_truth: null, extracted: null, precision: 69.37, recall: 57.56, f1: 62.92, note: "Measured; lenient F1 76.23 (not 5-fold)" }
     ],
-    overall_micro_f1: 89.4,
+    overall_micro_f1: 60.51,
     evaluation_principles: {
       zero_autonomous_diagnoses: "PULSE operates strictly under non-hallucinatory rules. Missing information is denoted as 'Not documented' rather than inferred.",
       traceability_guarantee: "100% of extracted entities maintain sentence-level attribution links to raw clinical input.",
