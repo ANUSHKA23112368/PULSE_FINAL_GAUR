@@ -23,13 +23,17 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
   const [showRecordModal, setShowRecordModal] = useState(false);
 
   // Form State for Recording New Vitals
-  const [formVitals, setFormVitals] = useState({
-    hr: 78,
-    bp_sys: 124,
-    bp_dia: 82,
-    spo2: 98,
-    rr: 16,
-    temperature: 37.0
+  const [formVitals, setFormVitals] = useState(() => {
+    const baseline = getPatientVitals(selectedPatient || {});
+    return {
+      hr: baseline.hr,
+      bp_sys: baseline.bp_sys,
+      bp_dia: baseline.bp_dia,
+      spo2: baseline.spo2,
+      rr: baseline.rr,
+      temperature: baseline.temperature,
+      acvpu: baseline.acvpu || 'A'
+    };
   });
 
   // Simulated Telemetry Waveform Phase
@@ -43,16 +47,16 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
         const fresh = await fetchPatient(selectedPatient.display_id || selectedPatient.id);
         if (fresh) {
           setPatientDetails(fresh);
-          if (fresh.vitals) {
-            setFormVitals({
-              hr: fresh.vitals.hr ?? 78,
-              bp_sys: fresh.vitals.bp_sys ?? 120,
-              bp_dia: fresh.vitals.bp_dia ?? 80,
-              spo2: fresh.vitals.spo2 ?? 98,
-              rr: fresh.vitals.rr ?? 16,
-              temperature: fresh.vitals.temperature ?? 37.0
-            });
-          }
+          const baseline = fresh.vitals || getPatientVitals(fresh);
+          setFormVitals({
+            hr: baseline.hr ?? 78,
+            bp_sys: baseline.bp_sys ?? 120,
+            bp_dia: baseline.bp_dia ?? 80,
+            spo2: baseline.spo2 ?? 98,
+            rr: baseline.rr ?? 16,
+            temperature: baseline.temperature ?? 37.0,
+            acvpu: baseline.acvpu || 'A'
+          });
         }
       } catch (err) {
         console.warn("Could not reload patient vitals:", err);
@@ -73,6 +77,7 @@ export function VitalsPage({ selectedPatient, onSwitchPatient, onNavigate, allPa
 
   const currentVitals = customVitals || patientDetails?.vitals || formVitals;
   const news2 = calculateNews2(currentVitals);
+  const vitalTrends = buildVitalsTrendSet(currentVitals);
 
   function handleScenarioSelect(scenario) {
     if (scenario === 'normal') {
