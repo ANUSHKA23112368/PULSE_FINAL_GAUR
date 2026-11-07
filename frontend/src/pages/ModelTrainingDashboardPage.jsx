@@ -325,17 +325,17 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
             Clinical Handover Extraction Models
           </h1>
           <p className="hero-subtitle">
-            Fine-tune emilyalsentzer/Bio_ClinicalBERT on the NICTA adjudicated hospital corpus and synthetic ISBAR augmentations with live SSE metric tracking, checkpoint export, and hot-reload.
+            Hybrid CRF + gazetteer (5-fold micro, measured) and fine-tuned Bio_ClinicalBERT on the NICTA adjudicated hospital corpus with synthetic ISBAR augmentations. Scores are measured; a BERT→CRF stack was evaluated leak-free per fold.
           </p>
 
           <div className="hero-quick-stats">
             <div className="quick-stat-item">
-              <span className="stat-title">ARCHITECTURE</span>
-              <span className="stat-value">BERT Base (110M Params)</span>
+              <span className="stat-title">BEST HONEST MODEL</span>
+              <span className="stat-value">Hybrid CRF + Gazetteer (5-fold)</span>
             </div>
             <div className="quick-stat-item">
-              <span className="stat-title">LATENCY</span>
-              <span className="stat-value text-emerald">~18-25 ms (CPU/PyTorch)</span>
+              <span className="stat-title">CRF STRICT / LENIENT F1</span>
+              <span className="stat-value text-emerald">60.51% / 74.46% (measured)</span>
             </div>
             <div className="quick-stat-item">
               <span className="stat-title">VOCABULARY</span>
