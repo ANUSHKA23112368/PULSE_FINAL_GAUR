@@ -45,15 +45,11 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
 
   
   // Navigation & Sub-views
-  const [activeTab, setActiveTab] = useState('structured');
+  const [activeTab, setActiveTab] = useState('structured'); 
   const [handoverFormat, setHandoverFormat] = useState('isbar'); // 'isbar' | '9categories'
-  const [selectedEngine, setSelectedEngine] = useState('hybrid'); // 'hybrid' | 'clinical_bert' | 'rule'
+  const [selectedEngine, setSelectedEngine] = useState('hybrid'); // 'hybrid' | 'hybrid_crf' | 'clinical_bert' | 'rule'
   const [copied, setCopied] = useState(false);
   const [showPrintModal, setShowPrintModal] = useState(false);
-
-  // Audio Speech Synthesis state
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const speechUtteranceRef = useRef(null);
 
   // Quick preset clinical cases
   const clinicalPresets = [
