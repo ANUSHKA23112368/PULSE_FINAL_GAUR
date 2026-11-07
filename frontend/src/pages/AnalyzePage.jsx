@@ -60,13 +60,143 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
     { id: '56', label: 'Report #56 (Respiratory / COPD)', tag: 'Respiratory' }
   ];
 
-  // ... (keeping loadReports, loadReportContent, toggleAudioPlayback, handleAnalyze unchanged)
-  // [Truncated for brevity, assuming standard implementation]
+  // Load report list for dropdown
+  useEffect(() => {
+    async function loadReports() {
+      try {
+        const data = await fetchReports();
+        setReportList(data.reports || []);
+      } catch (err) {
+        console.error("Failed to load report dropdown options:", err);
+      }
+    }
+    loadReports();
+  }, []);
 
-  // [Added handleCopyStructured improvement with toast]
+  // Sync selectedReportId changes
+  useEffect(() => {
+    if (selectedReportId) {
+      setChosenReportId(selectedReportId);
+      loadReportContent(selectedReportId);
+    } else {
+      loadReportContent('0');
+    }
+  }, [selectedReportId]);
+
+  async function loadReportContent(id) {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const data = await fetchReport(id);
+      setInputText(data.raw_text);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to load report:", err);
+      setError(`Failed to load report #${id}: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleSelectChange(e) {
+    const id = e.target.value;
+    setChosenReportId(id);
+    if (onSelectReport) onSelectReport(id);
+  }
+
+  function handleClear() {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    setIsPlayingAudio(false);
+    setInputText('');
+    setAnalysisResult(null);
+    setError(null);
+  }
+
+  async function handleAnalyze() {
+    if (!inputText.trim()) {
+      setError("Please enter or load a nursing handover report before analyzing.");
+      return;
+    }
+
+    try {
+      setAnalyzing(true);
+      setError(null);
+      setPipelineStep(1);
+      const result = await analyzeHandover({
+        reportId: chosenReportId,
+        rawText: inputText,
+        engine: selectedEngine,
+        onStep: (step) => {
+          const order = ['preprocess', 'extract', 'events', 'temporal', 'tasks', 'structure', 'complete'];
+          const idx = order.indexOf(step);
+          setPipelineStep(idx >= 0 ? idx + 1 : 1);
+        }
+      });
+
+      setAnalysisResult(result);
+      if (onStoreResults) onStoreResults(result);
+    } catch (err) {
+      console.error("Analysis failed:", err);
+      setError(err.message || "An unexpected error occurred during pipeline analysis.");
+    } finally {
+      setAnalyzing(false);
+    }
+  }
+
   function handleCopyStructured() {
     if (!analysisResult) return;
-    // ... [text construction logic remains same]
+    let textToCopy = "";
+
+    if (handoverFormat === 'isbar' && analysisResult.isbar) {
+      const isbar = analysisResult.isbar;
+      textToCopy = [
+        "==================================================",
+        "ISBAR CLINICAL SHIFT HANDOVER REPORT (PULSE)",
+        "==================================================",
+        `EXECUTIVE BRIEF: ${analysisResult.executive_summary}`,
+        "\n[I] IDENTIFY:",
+        ...isbar.identify.map(i => `  • ${i}`),
+        "\n[S] SITUATION:",
+        ...isbar.situation.map(i => `  • ${i}`),
+        "\n[B] BACKGROUND:",
+        ...isbar.background.map(i => `  • ${i}`),
+        "\n[A] ASSESSMENT:",
+        ...isbar.assessment.map(i => `  • ${i}`),
+        "\n[R] RECOMMENDATION & ACTIONS:",
+        ...isbar.recommendation.map(i => `  • ${i}`),
+        "\n==================================================",
+        "Handover Protocol: ISBAR Clinical Standard | PULSE Prototype"
+      ].join('\n');
+    } else {
+      const sh = analysisResult.structured_handover;
+      textToCopy = [
+        "==================================================",
+        "STRUCTURED CLINICAL HANDOVER (9 CATEGORIES)",
+        "==================================================",
+        `EXECUTIVE BRIEF: ${analysisResult.executive_summary}`,
+        "\n1. PATIENT INFORMATION:",
+        ...sh.patient_information.map(i => `  • ${i}`),
+        "\n2. CURRENT CONDITION:",
+        ...sh.current_condition.map(i => `  • ${i}`),
+        "\n3. MEDICAL HISTORY:",
+        ...sh.medical_history.map(i => `  • ${i}`),
+        "\n4. MEDICATIONS / TREATMENT:",
+        ...sh.medications_treatment.map(i => `  • ${i}`),
+        "\n5. INVESTIGATIONS:",
+        ...sh.investigations.map(i => `  • ${i}`),
+        "\n6. CLINICAL EVENTS:",
+        ...sh.clinical_events.map(i => `  • ${i}`),
+        "\n7. TEMPORAL INFORMATION:",
+        ...sh.temporal_information.map(i => `  • ${i}`),
+        "\n8. PENDING TASKS:",
+        ...sh.pending_tasks.map(i => `  • ${i}`),
+        "\n9. FOLLOW-UP:",
+        ...sh.follow_up.map(i => `  • ${i}`),
+        "\n==================================================",
+        "PULSE Research Prototype | Verified Against Reference Corpus"
+      ].join('\n');
+    }
+
     navigator.clipboard.writeText(textToCopy);
     showToast("Clinical handover copied to clipboard.", "success");
     setCopied(true);
