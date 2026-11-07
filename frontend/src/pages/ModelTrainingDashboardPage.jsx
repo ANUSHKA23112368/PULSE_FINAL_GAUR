@@ -359,15 +359,15 @@ export function ModelTrainingDashboardPage({ onNavigate }) {
           <div className="card-sub-metrics">
             <div>
               <span className="sub-label">Lenient F1:</span>
-              <span className="sub-val">{modelCard?.metrics?.lenient?.f1 ? `${modelCard.metrics.lenient.f1}%` : '92.1%'}</span>
+              <span className="sub-val">{modelCard?.hybrid_model?.metrics?.lenient?.f1 != null ? `${modelCard.hybrid_model.metrics.lenient.f1}%` : (modelCard?.metrics?.lenient?.f1 != null ? `${modelCard.metrics.lenient.f1}%` : '—')}</span>
             </div>
             <div>
-              <span className="sub-label">Backbone:</span>
-              <span className="sub-val">Bio_ClinicalBERT</span>
+              <span className="sub-label">BERT (eval):</span>
+              <span className="sub-val">{modelCard?.metrics?.strict?.f1 != null ? `${modelCard.metrics.strict.f1}% / ${modelCard.metrics.lenient?.f1 ?? '—'}%` : '—'}</span>
             </div>
             <div>
-              <span className="sub-label">Task:</span>
-              <span className="sub-val">ISBAR 14-Class NER</span>
+              <span className="sub-label">BERT+CRF (fold 0, leak-free):</span>
+              <span className="sub-val">62.92% / 76.23%</span>
             </div>
           </div>
           <div className="card-action-row">
