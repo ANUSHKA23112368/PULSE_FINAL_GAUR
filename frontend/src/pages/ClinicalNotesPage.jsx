@@ -124,6 +124,15 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
     });
   }
 
+  function handleInsertQuickTemplate(templateId) {
+    const text = buildQuickTemplate(templateId, selectedPatient || {});
+    setNoteText((previous) => (previous.trim() ? `${previous.trim()}\n\n${text}` : text));
+    setFeedback({
+      type: 'info',
+      message: 'Structured handover scaffold inserted. Complete the bracketed clinical fields.'
+    });
+  }
+
   // Voice Dictation Simulation
   function toggleDictation() {
     if (isDictating) {
@@ -355,6 +364,24 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
           </div>
         </div>
 
+        <div className="quick-insert-bar">
+          <span className="quick-insert-label">Quick-insert handover:</span>
+          <div className="quick-insert-actions">
+            {QUICK_INSERT_TEMPLATES.map((template) => (
+              <button
+                key={template.id}
+                type="button"
+                className="quick-insert-btn"
+                onClick={() => handleInsertQuickTemplate(template.id)}
+                title={template.description}
+              >
+                <Layers size={12} />
+                {template.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Feedback Alert */}
         {feedback && (
           <div className={`feedback-alert feedback-${feedback.type}`}>
@@ -380,6 +407,25 @@ export function ClinicalNotesPage({ selectedPatient, onSwitchPatient, onNavigate
               <div className="textarea-character-counter">
                 {noteText.split(/\s+/).filter(Boolean).length} words • {noteText.length} chars
               </div>
+            )}
+          </div>
+
+          <div className={`abbreviation-bar ${detectedAbbreviations.length ? 'has-matches' : ''}`} aria-live="polite">
+            <span className="abbreviation-label">Recognized clinical abbreviations</span>
+            {detectedAbbreviations.length ? (
+              <div className="abbreviation-chips">
+                {detectedAbbreviations.map((item) => (
+                  <span key={item.short} className="abbreviation-chip" title={item.note}>
+                    <strong>{item.short}</strong>
+                    <span>{item.expanded}</span>
+                    {item.count > 1 && <em>×{item.count}</em>}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <span className="abbreviation-empty">
+                Start typing — T2DM, GCS 15, IVF, PRN and BGL are detected live.
+              </span>
             )}
           </div>
 
