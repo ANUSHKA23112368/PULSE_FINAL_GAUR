@@ -307,20 +307,74 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                 </div>
               </div>
 
-            {/* Key Engineering Interventions */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem', marginTop: '1rem' }}>
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <CheckCircle2 size={14} /> Subword Alignment Fix
+              {/* Category-by-Category Granular Extraction Metrics */}
+              <div className="hospital-card" style={{ marginBottom: '1.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div>
+                    <h3 className="section-title" style={{ margin: 0 }}>
+                      <Layers size={18} className="text-sky" />
+                      <span>Category-by-Category Entity Span Extraction Accuracy</span>
+                    </h3>
+                    <span className="eval-metric-sub">
+                      Strict character-level evaluation on the 101 Ground Truth corpus across demographics, clinical states, and treatments.
+                    </span>
+                  </div>
+                  <div className="overall-f1-badge">
+                    CRF Strict Micro-F1 (5-fold): <strong>60.51%</strong> · Lenient: <strong>74.46%</strong>
+                  </div>
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', lineHeight: 1.4 }}>
-                  Fast tokenizer offsets mapped to verbatim characters with 100% roundtrip span recovery.
+
+                <div className="table-responsive-wrapper">
+                  <table className="benchmark-table" style={{ width: '100%' }}>
+                    <thead>
+                      <tr>
+                        <th>Clinical Category Tag</th>
+                        <th className="text-right">Precision</th>
+                        <th className="text-right">Recall</th>
+                        <th className="text-right">Strict F1-Score</th>
+                        <th>Clinical Significance in Handover</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(data?.benchmark_metrics || []).map((m, idx) => (
+                        <tr key={idx}>
+                          <td className="font-semibold mono" style={{ color: '#38bdf8' }}>
+                            {m.category}
+                          </td>
+                          <td className="text-right">{m.precision != null ? `${m.precision}%` : 'N/A'}</td>
+                          <td className="text-right">{m.recall != null ? `${m.recall}%` : 'N/A'}</td>
+                          <td className="text-right font-bold" style={{ color: (m.f1 || 0) > 80 ? '#34d399' : (m.f1 || 0) > 40 ? '#38bdf8' : '#fbbf24' }}>
+                            {m.f1 != null ? `${m.f1}%` : 'N/A'}
+                          </td>
+                          <td style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                            {m.category.includes('Bed') && 'Crucial for room placement, acuity zoning, and patient identification.'}
+                            {m.category.includes('Age') && 'Directly influences risk thresholds, baseline vitals, and pharmacokinetics.'}
+                            {m.category.includes('Doctor') && 'Maintains clinician-in-charge continuity during shift handover.'}
+                            {m.category.includes('Condition') && 'Primary admitting diagnosis and surgical indications.'}
+                            {m.category.includes('Observation') && 'Bedside clinical signs, reported pain levels, and nurse observations.'}
+                            {m.category.includes('Medication') && 'Active infusions, PRN analgesia, antibiotic schedules, and insulin.'}
+                            {m.category.includes('Investigation') && 'Diagnostic procedures, imaging (MRI, CT), troponin, and blood gas.'}
+                            {m.category.includes('Plan') && 'Upcoming scans, consults, and pending discharge readiness.'}
+                            {m.category.includes('Gender') && 'Demographic validation and ward bed assignment.'}
+                            {m.category.includes('Name') && 'Patient identification (evaluated with privacy de-identification masking).'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              <div style={{ background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-sm)', padding: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <Zap size={14} /> 160 ISBAR Augmentations
+              {/* Generalization Challenge (Out-of-Domain Transfer) */}
+              <div className="hospital-card" style={{ border: '1px solid rgba(168, 85, 247, 0.3)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.7), rgba(88, 28, 135, 0.15))' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <h3 className="section-title" style={{ color: '#c084fc', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Zap size={18} color="#c084fc" />
+                    <span>Cross-Domain Generalization Challenge (Unseen Clinical Wards)</span>
+                  </h3>
+                  <span className="badge-tag" style={{ background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
+                    Out-of-Domain Strict F1: 50.0% | Lenient F1: 65.79%
+                  </span>
                 </div>
                 <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem', lineHeight: 1.4 }}>
                   Corpus expanded to 261 reports, boosting rare entity representation (titrations, NEWS2).
