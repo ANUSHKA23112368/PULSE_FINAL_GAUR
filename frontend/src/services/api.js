@@ -110,7 +110,7 @@ export async function fetchReport(reportId) {
 
 export async function preprocessText(rawText) {
   try {
-    const res = await fetch(`${API_BASE}/preprocess`, {
+    const res = await request(`${API_BASE}/preprocess`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ raw_text: rawText }),
@@ -136,7 +136,7 @@ export async function analyzeHandover({ reportId, rawText, engine, onStep }) {
   }
 
   try {
-    const streamRes = await fetch(`${API_BASE}/analyze/stream`, {
+    const streamRes = await request(`${API_BASE}/analyze/stream`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
@@ -171,7 +171,7 @@ export async function analyzeHandover({ reportId, rawText, engine, onStep }) {
     throw new Error('Streaming analyzer unavailable');
   } catch (streamErr) {
     try {
-      const res = await fetch(`${API_BASE}/analyze`, {
+      const res = await request(`${API_BASE}/analyze`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
