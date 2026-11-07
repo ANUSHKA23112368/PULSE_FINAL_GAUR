@@ -20,6 +20,51 @@ import {
   comparePatientHandovers
 } from '../services/api';
 
+
+function normalizeComparison(raw) {
+  if (!raw || raw.comparison_available === false) return raw || null;
+
+  const observations = Array.isArray(raw.observations_changed) ? raw.observations_changed : [];
+  const investigations = Array.isArray(raw.investigations_updated) ? raw.investigations_updated : [];
+  const tasks = Array.isArray(raw.tasks_progressed)
+    ? raw.tasks_progressed
+    : (Array.isArray(raw.task_status_updates) ? raw.task_status_updates : []);
+  const directives = Array.isArray(raw.new_directives) ? raw.new_directives : [];
+  const ongoing = Array.isArray(raw.ongoing_conditions) ? raw.ongoing_conditions : [];
+  const explicitEvents = Array.isArray(raw.new_events) ? raw.new_events : [];
+
+  const derivedEvents = [];
+  for (const item of investigations) {
+    const statusChange = (item.prior_status || 'Prior') + ' to ' + (item.current_status || 'Current');
+    derivedEvents.push({ description: (item.name || 'Investigation') + ': ' + statusChange });
+  }
+  for (const item of directives) {
+    const source = item.source_sentence ? ' - "' + item.source_sentence + '"' : '';
+    derivedEvents.push({ description: (item.directive || 'Directive') + source });
+  }
+
+  const events = explicitEvents.length > 0 ? explicitEvents : derivedEvents;
+
+  return {
+    ...raw,
+    observations_changed: observations.map((item) => ({
+      ...item,
+      parameter: item.parameter || item.type || 'Clinical observation',
+      clinical_significance: item.clinical_significance || item.clinical_caution || '',
+    })),
+    investigations_updated: investigations,
+    new_events: events,
+    task_status_updates: tasks.map((item) => ({
+      ...item,
+      task: item.task || item.description || 'Task',
+      evidence: item.evidence || item.current_sentence || '',
+      new_status: item.new_status || item.current_status || 'Documented',
+    })),
+    ongoing_conditions: ongoing,
+    summary_narrative: raw.summary_narrative || 'Consecutive handover comparison completed.',
+  };
+}
+
 export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, allPatients, onSelectPatient }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +116,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
         pId,
         cId
       );
-      setComparison(result);
+      setComparison(normalizeComparison(result));
     } catch (err) {
       console.error("Comparison failed:", err);
       setStatusMessage({ type: 'error', text: 'Failed to compute consecutive shift differences.' });
@@ -88,7 +133,9 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
       const pKey = selectedPatient.display_id || selectedPatient.id;
 
       // Shift 1 Morning Note
-      const note1Text = "Rahul, 55 years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM.";
+      const demoName = (selectedPatient.name || 'Rahul').split(' ')[0];
+      const demoAge = selectedPatient.age || 55;
+      const note1Text = demoName + ", " + demoAge + " years old, admitted with fever and cough. Temperature was 102°F in the morning. Paracetamol given at 8 AM. Blood test report is pending. Patient's temperature should be checked again at 12 PM.";
       const n1 = await createPatientNote(pKey, note1Text, "Morning Shift Nurse (8:00 AM Handover)");
       await processPatientNote(pKey, n1.id);
 
