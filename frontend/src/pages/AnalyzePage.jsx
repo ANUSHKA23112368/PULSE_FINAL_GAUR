@@ -1,25 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Play,
-  RotateCcw,
-  Download,
-  Copy,
-  Check,
-  AlertCircle,
-  Clock,
-  Calendar,
-  Activity,
-  Pill,
-  Stethoscope,
-  CheckCircle2,
-  FileText,
-  User,
+﻿import React, { useState, useEffect } from 'react';
+import { 
+  Play, 
+  RotateCcw, 
+  Download, 
+  Copy, 
+  Check, 
+  AlertCircle, 
+  Clock, 
+  Calendar, 
+  Activity, 
+  Pill, 
+  Stethoscope, 
+  CheckCircle2, 
+  FileText, 
+  User, 
   Search,
   ExternalLink,
   HelpCircle,
   Tag,
-  Volume2,
-  VolumeX,
   Printer,
   ShieldAlert,
   Sparkles,
@@ -29,7 +27,6 @@ import {
 import { fetchReports, fetchReport, analyzeHandover } from '../services/api';
 import { useToast } from '../components/Toast';
 import { ClinicalHighlighter } from '../components/ClinicalHighlighter';
-import { PulseCard } from '../components/PulseCard';
 import { FhirExportModal } from '../components/FhirExportModal';
 
 export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }) {
