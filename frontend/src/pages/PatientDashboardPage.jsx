@@ -651,8 +651,10 @@ export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavig
               </div>
             </form>
           </div>
-        ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
+
+export default PatientDashboardPage;
