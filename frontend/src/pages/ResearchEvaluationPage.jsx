@@ -142,13 +142,35 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
         </div>
       </div>
 
+      {/* 2. Top-Level Section Navigation Tabs */}
+      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap', borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '0.75rem' }}>
         <button
-          onClick={loadEvaluation}
-          disabled={loading}
-          className="btn btn-outline"
+          className={`nav-tab ${activeTab === 'benchmarks' ? 'active' : ''}`}
+          onClick={() => setActiveTab('benchmarks')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
         >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Refresh Benchmark</span>
+          <Award size={16} /> Multi-Model Benchmarks (5-Fold CV)
+        </button>
+        <button
+          className={`nav-tab ${activeTab === 'methodology' ? 'active' : ''}`}
+          onClick={() => setActiveTab('methodology')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
+        >
+          <BookOpen size={16} /> F1 Scoring Methodology & Mathematical Formulation
+        </button>
+        <button
+          className={`nav-tab ${activeTab === 'datasets' ? 'active' : ''}`}
+          onClick={() => setActiveTab('datasets')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
+        >
+          <Database size={16} /> Multi-Corpus Catalog (5 Supported Datasets)
+        </button>
+        <button
+          className={`nav-tab ${activeTab === 'pipeline' ? 'active' : ''}`}
+          onClick={() => setActiveTab('pipeline')}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1.1rem', fontSize: '0.85rem' }}
+        >
+          <GitBranch size={16} /> 8-Stage NLP Structuring Pipeline
         </button>
       </div>
 
