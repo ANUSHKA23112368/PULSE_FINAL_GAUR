@@ -825,13 +825,10 @@ async def get_research_evaluation():
             "tasks_completed": completed_tasks,
             "tasks_pending": total_tasks - completed_tasks
         },
-        "benchmark_metrics": [
-            {"category": "Clinical Conditions & Observations", "ground_truth": 142, "extracted": 138, "precision": 91.2, "recall": 88.4, "f1": 89.8},
-            {"category": "Medications & Dosages", "ground_truth": 98, "extracted": 96, "precision": 94.1, "recall": 92.5, "f1": 93.3},
-            {"category": "Investigations & Diagnostic Tests", "ground_truth": 86, "extracted": 83, "precision": 89.7, "recall": 86.8, "f1": 88.2},
-            {"category": "Pending Tasks & Follow-Up", "ground_truth": 74, "extracted": 72, "precision": 87.3, "recall": 85.0, "f1": 86.1}
-        ],
-        "overall_micro_f1": 89.4,
+        "benchmark_metrics": benchmark_metrics,
+        "overall_micro_f1": overall_micro_f1,
+        "benchmark_source": benchmark_source,
+        "model_comparison": model_comparison,
         "evaluation_principles": {
             "zero_autonomous_diagnoses": "PULSE operates strictly under non-hallucinatory rules. Missing information is denoted as 'Not documented' rather than inferred.",
             "traceability_guarantee": "100% of extracted entities maintain sentence-level attribution links to raw clinical input.",
