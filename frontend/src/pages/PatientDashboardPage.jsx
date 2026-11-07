@@ -1,13 +1,55 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Users, Search, Bed, Stethoscope, FileText, Activity, Layers,
-  CheckCircle2, AlertCircle, RefreshCw, UserPlus, Gauge, Filter
+﻿import React, { useState, useEffect } from 'react';
+import { 
+  Users, 
+  Search, 
+  Bed, 
+  Stethoscope, 
+  FileText, 
+  Activity, 
+  Layers, 
+  CheckCircle2, 
+  AlertCircle,
+  RefreshCw,
+  UserPlus,
+  Heart,
+  Gauge,
+  Building2
 } from 'lucide-react';
 import { fetchPatients, createPatient } from '../services/api';
+import { News2Badge } from '../components/News2ScorePanel';
+import { Sparkline } from '../components/Sparkline';
+import { buildVitalsTrend, calculateNews2, getPatientVitals } from '../utils/news2';
+
+function isHighAttention(patient) {
+  const diagnosis = (patient?.admitting_diagnosis || '').toLowerCase();
+  return ['embolism', 'chest pain', 'vertigo', 'icu', 'sepsis'].some((term) => diagnosis.includes(term));
+}
+
+function getInitials(name = '') {
+  const initials = name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0])
+    .join('')
+    .toUpperCase();
+  return initials || 'PT';
+}
+
+const WARDS_FILTER = [
+  'All Wards',
+  'Acute Medical Unit (Demo Ward A)',
+  'Surgical Ward 4B',
+  'ICU Critical Unit 2',
+  'Emergency Triage',
+  'Cardiology Stepdown'
+];
 
 export function PatientDashboardPage({ selectedPatient, onSelectPatient, onNavigate, onPatientCountChange }) {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedWard, setSelectedWard] = useState('All Wards');
+  const [acuityFilter, setAcuityFilter] = useState('ALL'); // 'ALL' | 'CRITICAL' | 'STABLE'
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
