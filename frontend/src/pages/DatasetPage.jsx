@@ -200,96 +200,80 @@ export function DatasetPage({ onSelectReport, onNavigate }) {
             <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#34d399', marginTop: '0.25rem' }}>
               MIMIC-III Clinical BERT
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.2rem' }}>emilyalsentzer/Bio_ClinicalBERT</div>
+            <a href="https://huggingface.co/emilyalsentzer/Bio_ClinicalBERT" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.75rem', color: '#818cf8', marginTop: '0.2rem', textDecoration: 'none' }}><ExternalLink size={11} /> emilyalsentzer/Bio_ClinicalBERT</a>
           </div>
         </div>
 
         {/* Multi-Corpus Extended Catalog */}
         <div style={{ marginTop: '1.5rem', borderTop: '1px solid var(--border-subtle)', paddingTop: '1.25rem' }}>
-          <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#e2e8f0', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Database size={16} color="#38bdf8" /> Integrated Datasets & Clinical Benchmark Corpora
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
-            {/* NICTA Gold */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8' }}>1. NICTA Synthetic Nursing Handover</span>
-                <span className="badge-tag" style={{ background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8' }}>Primary Gold</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
-                101 authentic nursing shift handovers from acute medical/surgical hospital wards. Annotated with 2,103 clinically verified entity spans and ground truth 9-category slot structures.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
-                <span className="pill-mini">101 Handover Notes</span>
-                <span className="pill-mini">2,103 Gold Spans</span>
-                <span className="pill-mini">9 Macro Categories</span>
-              </div>
-            </div>
-
-            {/* Hospital Training Pack */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399' }}>2. Hospital Training Pack (ISBAR)</span>
-                <span className="badge-tag" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>Augmentation</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
-                160 de-identified synthetic multi-shift handovers across ICU, PACU, and telemetry wards. Expands vocabulary with IV titration rates, NEWS2 early warning deterioration scores, and PRN analgesia.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
-                <span className="pill-mini">261 Total Reports</span>
-                <span className="pill-mini">9,500+ Tokens</span>
-                <span className="pill-mini">Multi-Ward ISBAR</span>
-              </div>
-            </div>
-
-            {/* n2c2 2018 Track 2 */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(168, 85, 247, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc' }}>3. n2c2 2018 Track 2 Benchmark</span>
-                <span className="badge-tag" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>Supported Ingestion</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
-                National NLP Clinical Challenges benchmark for Adverse Drug Events (ADE) and medication extraction. Ingested via ExternalDatasetLoader with automated label mapping.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
-                <span className="pill-mini">.txt + .ann Ingestion</span>
-                <span className="pill-mini">Drugs & Dosages</span>
-                <span className="pill-mini">ADEs & Reasons</span>
-              </div>
-            </div>
-
-            {/* i2b2 2010 Challenge */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>4. i2b2 2010 Clinical Relations</span>
-                <span className="badge-tag" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>Supported Ingestion</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
-                Hospital discharge summaries and clinical progress notes. Ingests problem, treatment, and clinical test annotations normalized to PULSE macro categories.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
-                <span className="pill-mini">Discharge Summaries</span>
-                <span className="pill-mini">Problems & Treatments</span>
-                <span className="pill-mini">Configs/label_map.yaml</span>
-              </div>
-            </div>
-
-            {/* MIMIC-III Corpus */}
-            <div style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(99, 102, 241, 0.25)', borderRadius: 'var(--radius-md)', padding: '1rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#818cf8' }}>5. MIMIC-III Critical Care Corpus</span>
-                <span className="badge-tag" style={{ background: 'rgba(99, 102, 241, 0.15)', color: '#818cf8' }}>Pretraining Foundation</span>
-              </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>
-                Over 2 million de-identified critical care notes from Beth Israel Deaconess Medical Center. Provides foundational domain-specific clinical vocabulary for Bio_ClinicalBERT.
-              </p>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', fontSize: '0.7rem' }}>
-                <span className="pill-mini">2M+ Clinical Notes</span>
-                <span className="pill-mini">ICU Vocabulary</span>
-                <span className="pill-mini">Domain Embeddings</span>
-              </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '0.5rem' }}>
+            <h4 style={{ fontSize: '0.88rem', fontWeight: 700, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Database size={16} color="#38bdf8" /> Integrated Datasets &amp; Clinical Benchmark Corpora
+            </h4>
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+              <span className="chip" style={{ background: 'rgba(56, 189, 248, 0.15)', borderColor: 'rgba(56, 189, 248, 0.4)', color: '#7dd3fc', fontSize: '0.7rem', fontWeight: 700 }}>
+                {DATASETS.length} datasets
+              </span>
+              <span className="chip" style={{ fontSize: '0.7rem' }}>
+                {CATEGORIES.length} categories
+              </span>
+              <span className="chip" style={{ fontSize: '0.7rem' }}>
+                {LOCAL_REPORTS_INDEXED} reports indexed
+              </span>
+              <span className="chip" style={{ fontSize: '0.7rem' }}>
+                {ANNOTATED_SPANS.toLocaleString()} annotated spans
+              </span>
             </div>
           </div>
+          <p style={{ fontSize: '0.74rem', color: '#64748b', lineHeight: 1.5, marginBottom: '1.25rem' }}>
+            Corpora are grouped by how PULSE uses them: local training data, externally imported benchmarks, and the pretraining foundation behind the language model.
+          </p>
+          {CATEGORIES.map((category) => {
+            const items = DATASETS.filter((dataset) => dataset.category === category.id);
+            if (items.length === 0) return null;
+            return (
+              <div key={category.id} style={{ marginBottom: '1.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap', marginBottom: '0.3rem' }}>
+                  <h5 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#cbd5e1', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                    <Layers size={14} color="#6366f1" /> {category.label}
+                  </h5>
+                  <span className="chip" style={{ fontSize: '0.68rem' }}>
+                    {items.length} {items.length === 1 ? 'dataset' : 'datasets'}
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.73rem', color: '#64748b', lineHeight: 1.5, margin: '0 0 0.75rem' }}>{category.note}</p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem' }}>
+                  {items.map((dataset) => (
+                    <div key={dataset.id} style={{ background: 'rgba(15, 23, 42, 0.6)', border: '1px solid ' + dataset.border, borderRadius: 'var(--radius-md)', padding: '1rem', display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: dataset.accent }}>
+                          {DATASETS.indexOf(dataset) + 1}. {dataset.name}
+                        </span>
+                        <span className="badge-tag" style={{ background: dataset.roleBg, color: dataset.accent, whiteSpace: 'nowrap' }}>{dataset.role}</span>
+                      </div>
+                      <p style={{ fontSize: '0.78rem', color: '#94a3b8', lineHeight: 1.5, marginBottom: '0.6rem' }}>{dataset.description}</p>
+                      <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', fontSize: '0.7rem', marginBottom: '0.7rem' }}>
+                        {dataset.pills.map((pill) => (
+                          <span key={pill} className="pill-mini">{pill}</span>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 'auto', paddingTop: '0.6rem', borderTop: '1px solid rgba(148, 163, 184, 0.12)' }}>
+                        {dataset.source ? (
+                          <a href={dataset.source} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', fontWeight: 600, color: dataset.accent, textDecoration: 'none' }}>
+                            <ExternalLink size={12} /> {dataset.sourceLabel}
+                          </a>
+                        ) : (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.72rem', color: '#64748b' }}>
+                            <CheckCircle2 size={12} /> {dataset.sourceLabel}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
