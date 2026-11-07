@@ -55,3 +55,6 @@ scratch/
 # Local incoming datasets and backups
 data/incoming_staging/
 data/gold_standard/*.backup.json
+
+# Contaminated BERT probability cache (checkpoint retrained on held-out notes)
+backend/models/hybrid_ner/bert_token_probs.pkl
