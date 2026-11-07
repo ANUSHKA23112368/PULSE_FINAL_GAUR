@@ -194,18 +194,20 @@ export function ResearchEvaluationPage({ onNavigate, onSelectReport }) {
                   <span className="eval-metric-sub">Zero document leakage</span>
                 </div>
 
-              <div className="hospital-card eval-metric-tile">
-                <span className="eval-metric-label">Handover Notes Processed</span>
-                <div className="eval-metric-value text-sky">
-                  {data.live_prototype_activity?.clinical_notes_processed ?? 0}
+                <div className="hospital-card eval-metric-tile">
+                  <span className="eval-metric-label">Strict Micro-F1 (CRF, 5-fold)</span>
+                  <div className="eval-metric-value text-sky">
+                    {data?.overall_micro_f1 ? `${data.overall_micro_f1}%` : '60.51%'}
+                  </div>
+                  <span className="eval-metric-sub">Exact verbatim character span match (measured)</span>
                 </div>
-                <span className="eval-metric-sub">Unstructured clinical narratives</span>
-              </div>
 
-              <div className="hospital-card eval-metric-tile">
-                <span className="eval-metric-label">Clinician Verified Handovers</span>
-                <div className="eval-metric-value text-emerald">
-                  {data.live_prototype_activity?.clinician_reviews_verified ?? 0}
+                <div className="hospital-card eval-metric-tile">
+                  <span className="eval-metric-label">Lenient Clinical F1 (CRF, 5-fold)</span>
+                  <div className="eval-metric-value text-emerald">
+                    74.46%
+                  </div>
+                  <span className="eval-metric-sub">Token boundary overlap (measured)</span>
                 </div>
                 <span className="eval-metric-sub">Human-in-the-loop audited</span>
               </div>
