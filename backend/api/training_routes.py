@@ -413,6 +413,33 @@ async def training_stream():
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
 
+def _load_hybrid_metrics(base_dir: str):
+    path = os.path.join(base_dir, "backend", "models", "hybrid_ner", "metrics.json")
+    if not os.path.exists(path):
+        return None
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    except Exception:
+        return None
+    micro = (data.get("micro") or {}).get("crf") or {}
+    strict = micro.get("strict") or []
+    lenient = micro.get("lenient") or []
+    return {
+        "name": "Hybrid CRF + Gazetteer",
+        "model_dir": os.path.dirname(path),
+        "available": os.path.exists(os.path.join(os.path.dirname(path), "crf_model.pkl")),
+        "metrics": {
+            "strict": {"precision": strict[0], "recall": strict[1], "f1": strict[2]} if len(strict) == 3 else None,
+            "lenient": {"precision": lenient[0], "recall": lenient[1], "f1": lenient[2]} if len(lenient) == 3 else None,
+        },
+        "evaluation": "5-fold micro (NICTA 101 + synthetic augmentations)",
+        "feature_module": data.get("feature_module"),
+        "params": data.get("params"),
+        "raw": data,
+    }
+
+
 @training_router.get("/model-info")
 @training_router.get("/card")
 async def model_info():
@@ -432,6 +459,7 @@ async def model_info():
         os.path.exists(os.path.join(MODEL_DIR, name))
         for name in ("model.safetensors", "pytorch_model.bin")
     )
+    hybrid = _load_hybrid_metrics(BASE_DIR)
 
     return {
         "model_name": "Bio_ClinicalBERT",
@@ -444,6 +472,7 @@ async def model_info():
         "average_inference_ms": clinical_bert_extractor.average_inference_ms(),
         "training_card": training_card,
         "metrics": training_card.get("metrics") if training_card else None,
+        "hybrid_model": hybrid,
     }
 
 
