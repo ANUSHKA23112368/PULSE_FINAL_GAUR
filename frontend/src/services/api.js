@@ -271,7 +271,7 @@ export async function createPatientNote(patientId, rawText, authorIdentifier = "
 
 export async function processPatientNote(patientId, noteId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/process`, {
+    const res = await request(`${API_BASE}/patients/${patientId}/notes/${noteId}/process`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       signal: AbortSignal.timeout(15000)
@@ -289,7 +289,7 @@ export async function processPatientNote(patientId, noteId) {
 
 export async function fetchPatientNote(patientId, noteId) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}`, { signal: AbortSignal.timeout(3000) });
+    const res = await request(`${API_BASE}/patients/${patientId}/notes/${noteId}`, { signal: AbortSignal.timeout(3000) });
     if (!res.ok) throw new Error(`Note ${noteId} not found`);
     return await res.json();
   } catch (err) {
@@ -300,7 +300,7 @@ export async function fetchPatientNote(patientId, noteId) {
 
 export async function reviewPatientNote(patientId, noteId, reviewedData, reviewerIdentifier = "Staff Clinician (Demo)", reviewNotes = null) {
   try {
-    const res = await fetch(`${API_BASE}/patients/${patientId}/notes/${noteId}/review`, {
+    const res = await request(`${API_BASE}/patients/${patientId}/notes/${noteId}/review`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
