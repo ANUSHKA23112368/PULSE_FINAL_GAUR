@@ -286,7 +286,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
               className="btn btn-primary"
             >
               <Sparkles size={15} />
-              <span>{seedingDemo ? 'Creating Demo Notes...' : 'Load Rahul 2-Shift Demo'}</span>
+              <span>{seedingDemo ? 'Creating Demo Notes...' : 'Load 2-Shift Demo'}</span>
             </button>
             <button
               onClick={() => onNavigate && onNavigate('notes')}
@@ -297,7 +297,7 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
             </button>
           </div>
         </div>
-      ) : comparison ? (
+      ) : comparison && comparison.comparison_available !== false ? (
         <div className="comparison-results-stack">
           {/* Executive Delta Banner */}
           <div className="hospital-card delta-synthesis-card">
@@ -312,6 +312,37 @@ export function WhatChangedPage({ selectedPatient, onSwitchPatient, onNavigate, 
               {comparison.summary_narrative}
             </p>
           </div>
+
+          {!hasAnyDelta && (
+            <div className="hospital-card delta-section-card">
+              <span className="empty-delta-text">
+                Neither selected note reports a measurable temperature change, diagnostic update, completed task or persisting symptom. Pick a different note pair, or load the two-shift demo for a populated example.
+              </span>
+            </div>
+          )}
+
+          {/* Ongoing Conditions */}
+          {comparison.ongoing_conditions?.length > 0 && (
+            <div className="hospital-card delta-section-card">
+              <div className="delta-card-header">
+                <h3 className="section-heading text-amber">
+                  <AlertCircle size={18} />
+                  <span>Ongoing Conditions</span>
+                </h3>
+                <span className="count-pill">
+                  {comparison.ongoing_conditions.length} persisting
+                </span>
+              </div>
+              <div className="delta-events-list">
+                {comparison.ongoing_conditions.map((cond, idx) => (
+                  <div key={idx} className="delta-event-pill">
+                    <AlertCircle size={15} className="text-amber" />
+                    <span>{cond.condition}{cond.status ? ' - ' + cond.status : ''}{cond.clinical_note ? ': ' + cond.clinical_note : ''}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Observations Changed */}
           <div className="hospital-card delta-section-card">
