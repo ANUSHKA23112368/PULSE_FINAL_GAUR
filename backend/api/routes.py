@@ -127,11 +127,26 @@ async def health_check():
         "total_reports": stats["total_reports"],
         "total_patients": len(db.list_patients()),
         "model_status": {
-            "current_engine": "Bio_ClinicalBERT Real-Time Extraction Pipeline" if bert_available else "Hybrid Clinical Rule Engine",
+            "current_engine": current_engine,
             "clinical_bert_loaded": bert_available,
             "clinical_bert_model": "emilyalsentzer/Bio_ClinicalBERT",
             "clinical_bert_path": clinical_bert_extractor.model_path,
-            "status_detail": "Fine-tuned model checkpoint active" if bert_available else "Rule engine fallback active (checkpoint loading pending or in progress)",
+            "hybrid_ner_loaded": hybrid_available,
+            "hybrid_ner_model": "CRF + Gazetteer (hybrid NER)",
+            "hybrid_ner_metrics": hybrid_metrics,
+            "status_detail": (
+                "Bio_ClinicalBERT checkpoint active (default); Hybrid CRF available via engine='hybrid_crf'"
+                if bert_available and hybrid_available
+                else (
+                    "Fine-tuned model checkpoint active"
+                    if bert_available
+                    else (
+                        "Hybrid CRF NER checkpoint active"
+                        if hybrid_available
+                        else "Rule engine fallback active (checkpoint loading pending or in progress)"
+                    )
+                )
+            ),
             "realtime": {
                 "warmup_complete": clinical_bert_extractor.warmup_complete,
                 "last_inference_ms": clinical_bert_extractor.last_inference_ms,
@@ -746,6 +761,51 @@ async def get_research_evaluation():
         tasks = db.list_patient_tasks(p["id"])
         total_tasks += len(tasks)
         completed_tasks += sum(1 for t in tasks if t.get("status") == "Completed")
+
+    project_root = Path(__file__).resolve().parents[2]
+    benchmark_path = project_root / "data" / "gold_standard" / "statistical_classifier_tuning_results.json"
+    benchmark_metrics = []
+    overall_micro_f1 = None
+    benchmark_source = "Unavailable"
+    model_comparison = []
+
+    try:
+        with benchmark_path.open("r", encoding="utf-8") as benchmark_file:
+            benchmark = json.load(benchmark_file)
+        per_class = benchmark.get("per_class_strict_metrics", {})
+        for category, metrics in list(per_class.items())[:10]:
+            benchmark_metrics.append({
+                "category": category,
+                "ground_truth": None,
+                "extracted": None,
+                "precision": metrics.get("precision_mean"),
+                "recall": metrics.get("recall_mean"),
+                "f1": metrics.get("f1_mean"),
+            })
+        overall_micro_f1 = benchmark.get("overall_test_metrics", {}).get("strict_span_metrics", {}).get("f1", {}).get("mean")
+        benchmark_source = str(benchmark_path.relative_to(project_root))
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        benchmark_metrics = []
+
+    comparison_path = project_root / "data" / "gold_standard" / "multi_model_benchmark_results.json"
+    try:
+        with comparison_path.open("r", encoding="utf-8") as comparison_file:
+            comparison = json.load(comparison_file)
+        for model_key, model in comparison.get("corpus_gold_standard_101", {}).get("models", {}).items():
+            if model.get("status") == "UNAVAILABLE":
+                continue
+            model_comparison.append({
+                "key": model_key,
+                "model_name": model.get("model_name", model_key),
+                "strict_precision": model.get("strict_precision"),
+                "strict_recall": model.get("strict_recall"),
+                "strict_f1": model.get("strict_f1"),
+                "lenient_f1": model.get("lenient_f1"),
+                "avg_latency_ms": model.get("avg_latency_ms"),
+                "protocol": comparison.get("corpus_gold_standard_101", {}).get("evaluation_protocol"),
+            })
+    except (OSError, json.JSONDecodeError, KeyError, TypeError):
+        model_comparison = []
 
     return {
         "corpus": {
