@@ -429,7 +429,7 @@ export function AnalyzePage({ selectedReportId, onSelectReport, onStoreResults }
               title="Select NLP extraction engine"
             >
               <option value="hybrid">Hybrid (Bio_ClinicalBERT + ConText Rules)</option>
-              <option value="hybrid_crf">Hybrid CRF + Gazetteer (5-Fold, 61.1% Strict F1)</option>
+              <option value="hybrid_crf">Hybrid CRF + Gazetteer (5-Fold, 60.51% Strict F1)</option>
               <option value="clinical_bert">Bio_ClinicalBERT (Pure Neural)</option>
               <option value="rule">Rule Baseline (Deterministic Regex/Dict)</option>
             </select>            <span className="chip" style={{ 
