@@ -22,6 +22,7 @@ import {
   Sparkles,
   Info,
   Menu,
+  FolderOpen,
 } from 'lucide-react';
 
 import { CommandPalette } from './components/CommandPalette';
@@ -47,6 +48,7 @@ const HandoverSummaryPage = lazy(() => import('./pages/HandoverSummaryPage').the
 const WhatChangedPage = lazy(() => import('./pages/WhatChangedPage').then((m) => ({ default: m.WhatChangedPage })));
 const PendingActionsPage = lazy(() => import('./pages/PendingActionsPage').then((m) => ({ default: m.PendingActionsPage })));
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })));
+const PriorHistoryPage = lazy(() => import('./pages/PriorHistoryPage').then((m) => ({ default: m.PriorHistoryPage })));
 const AnalyzePage = lazy(() => import('./pages/AnalyzePage').then((m) => ({ default: m.AnalyzePage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((m) => ({ default: m.DashboardPage })));
 const SampleReportsPage = lazy(() => import('./pages/SampleReportsPage').then((m) => ({ default: m.SampleReportsPage })));
@@ -60,6 +62,7 @@ const WARD_NAV = [
   { id: 'dashboard', label: 'Roster', icon: Users, sub: 'Patient bed roster and admissions' },
   { id: 'vitals', label: 'Vitals & NEWS2', icon: Activity, sub: 'Bedside telemetry and early warning score' },
   { id: 'notes', label: 'Notes', icon: FileText, sub: 'Author and structure shift handover notes' },
+  { id: 'prior', label: 'Prior History', icon: FolderOpen, sub: 'Upload prior history and analyse its entities' },
   { id: 'summary', label: 'ISBAR', icon: Layers, sub: 'Standardised ISBAR handover summary' },
   { id: 'changes', label: 'Changes', icon: GitCompare, sub: 'Consecutive shift delta and clinical trends' },
   { id: 'tasks', label: 'Tasks', icon: ListTodo, sub: 'Pending actions and clinical directives' },
@@ -325,6 +328,8 @@ export function App() {
         return <WhatChangedPage {...patientProps} />;
       case 'tasks':
         return <PendingActionsPage {...patientProps} />;
+      case 'prior':
+        return <PriorHistoryPage {...patientProps} />;
       case 'history':
         return <HistoryPage {...patientProps} />;
       case 'analyze':
