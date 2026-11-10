@@ -94,7 +94,9 @@ export function PriorHistoryPage({ selectedPatient }) {
   const [analyzing, setAnalyzing] = useState(false);
   const [step, setStep] = useState('');
   const [result, setResult] = useState(null);
+  const [engine, setEngine] = useState('hybrid');
   const [engineUsed, setEngineUsed] = useState('');
+  const [latencyMs, setLatencyMs] = useState(null);
   const [error, setError] = useState(null);
   const [saved, setSaved] = useState(() => loadSaved(patientKey));
 
@@ -183,11 +185,12 @@ export function PriorHistoryPage({ selectedPatient }) {
     try {
       const data = await analyzeHandover({
         rawText: trimmed,
-        engine: 'hybrid',
+        engine,
         onStep: (next) => setStep(next),
       });
       setResult(data || null);
       setEngineUsed(data?.model_metadata?.pipeline || data?.engine_used || 'PULSE extraction pipeline');
+      setLatencyMs(data?.model_metadata?.total_inference_ms ?? null);
       if (data) {
         const entry = {
           id: `${Date.now()}`,
@@ -218,6 +221,7 @@ export function PriorHistoryPage({ selectedPatient }) {
     setText('');
     setResult(null);
     setEngineUsed('');
+    setLatencyMs(null);
     setError(null);
   }
 
@@ -303,6 +307,23 @@ export function PriorHistoryPage({ selectedPatient }) {
         </div>
 
         <div style={{ marginTop: '0.9rem' }}>
+          <div style={{ fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.35rem', ...muted }}>
+            Extraction engine
+          </div>
+          <select
+            className="pulse-select"
+            value={engine}
+            onChange={(event) => setEngine(event.target.value)}
+            style={{ width: '100%', maxWidth: '27rem', padding: '0.5rem 0.7rem', fontSize: '0.82rem' }}
+          >
+            <option value="hybrid">Hybrid Bio_ClinicalBERT + ConText (ML, default)</option>
+            <option value="hybrid_crf">Hybrid CRF + Gazetteer (ML, 60.51 strict F1)</option>
+            <option value="clinical_bert">Bio_ClinicalBERT (pure neural)</option>
+            <option value="rule">Rule baseline (no ML)</option>
+          </select>
+        </div>
+
+        <div style={{ marginTop: '0.9rem' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: '0.5rem' }}>
             <div style={{ fontSize: '0.78rem', fontWeight: 600, ...muted }}>Document text</div>
             <div style={{ fontSize: '0.72rem', ...muted }}>
@@ -376,7 +397,7 @@ export function PriorHistoryPage({ selectedPatient }) {
             <RotateCcw size={15} /> Clear
           </button>
           <span style={{ fontSize: '0.74rem', ...muted }}>
-            Engine: hybrid Bio_ClinicalBERT + ConText, with the bundled client engine as fallback.
+            ML engines need the Python service; the bundled client engine runs when it is unreachable.
           </span>
         </div>
 
@@ -395,7 +416,11 @@ export function PriorHistoryPage({ selectedPatient }) {
               <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#ffffff', margin: '0.35rem 0 0.25rem' }}>
                 {filename || 'Uploaded history'}
               </h3>
-              <div style={{ fontSize: '0.75rem', ...muted }}>{engineUsed || 'PULSE extraction pipeline'}</div>
+              <div style={{ fontSize: '0.75rem', ...muted }}>
+                {engineUsed || 'PULSE extraction pipeline'}
+                {latencyMs != null ? ` · ${latencyMs} ms` : ''}
+                {/client/i.test(engineUsed || '') ? ' · no ML weights loaded (client fallback)' : ''}
+              </div>
             </div>
             <div style={{ fontSize: '0.75rem', ...muted }}>{new Date().toLocaleString()}</div>
           </div>
