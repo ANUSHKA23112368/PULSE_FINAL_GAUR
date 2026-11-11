@@ -269,7 +269,19 @@ export function App() {
 
   function handleSelectPatient(patient) {
     setSelectedPatient(patient);
+    // A newly registered patient may not be in the bootstrap roster yet, so add
+    // it here to keep the "Change Patient" switcher and command palette current.
+    setAllPatients((prev) => {
+      if (!patient) return prev;
+      const alreadyListed = prev.some(
+        (item) => String(item.id) === String(patient.id) || String(item.display_id) === String(patient.display_id)
+      );
+      return alreadyListed ? prev : [...prev, patient];
+    });
     replaceQuery({ patient: patient?.display_id || null });
+    // replaceState does not fire hashchange, so refresh the route snapshot here.
+    // Otherwise the deep-link effect below reverts the selection to the previous patient.
+    setRoute(parseRoute());
   }
 
   function handleSwitchPatient() {

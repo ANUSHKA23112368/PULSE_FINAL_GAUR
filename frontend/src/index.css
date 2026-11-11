@@ -1816,6 +1816,7 @@ code, pre, .mono {
   align-items: center;
   justify-content: center;
   padding: 1rem;
+  overflow-y: auto;
 }
 
 .fhir-modal-dialog {
@@ -1835,6 +1836,42 @@ code, pre, .mono {
   background: #0f172a;
   border-color: #1e293b;
   color: #f1f5f9;
+}
+
+/* Add-patient and add-task dialogs share the modal chrome. Without a bounded
+   height the footer (and its submit button) can fall below the viewport and
+   become unreachable, so the body scrolls instead. */
+.add-patient-dialog,
+.add-task-dialog {
+  background: #ffffff;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 720px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  border: 1px solid #e2e8f0;
+}
+
+.add-task-dialog {
+  max-width: 620px;
+}
+
+[data-theme="dark"] .add-patient-dialog,
+[data-theme="dark"] .add-task-dialog {
+  background: #0f172a;
+  border-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.add-patient-dialog form,
+.add-task-dialog form {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -1913,6 +1950,7 @@ code, pre, .mono {
   padding: 1rem 1.5rem;
   border-top: 1px solid #e2e8f0;
   background: #f8fafc;
+  flex-shrink: 0;
 }
 
 [data-theme="dark"] .modal-footer {

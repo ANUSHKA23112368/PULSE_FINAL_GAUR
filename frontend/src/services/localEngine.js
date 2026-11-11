@@ -770,7 +770,13 @@ export function analyzeLocalEngine({ reportId, rawText, engine, patientContext }
     [/\b(?:still\s+for\s+referral\s+to|referral\s+to)\s+([^.,;]+)/gi, "Specialist Referral Pending", "Medium"],
     [/\b(?:still\s+need\s+(?:the\s+)?team\s+to\s+review|still\s+for\s+review)\b/gi, "Medical Team Review Pending", "High"],
     [/\b(?:just\s+ask\s+the\s+doctor\s+for\s+the\s+next\s+dose|ask\s+doctor)\b/gi, "Medication Dosing Clarification", "High"],
-    [/\b(?:still\s+under\s+monitoring)\b/gi, "Ongoing Active Monitoring Required", "Medium"]
+    [/\b(?:still\s+under\s+monitoring)\b/gi, "Ongoing Active Monitoring Required", "Medium"],
+    [/\b(?:recheck|repeat|check)\s+(?:the\s+)?(?:bgl|blood\s+glucose|blood\s+sugar|bsl|bp|blood\s+pressure|hr|heart\s+rate|spo2|saturation|pulse|obs|vitals?)\b[^.,;\n]*/gi, "Vital Observation Recheck Scheduled", "High"],
+    [/\b(?:report|reports|results?)\s+(?:is|are)\s+(?:still\s+)?(?:awaited|not\s+yet\s+received)\b/gi, "Diagnostic Report Awaited", "High"],
+    [/\b(?:doctor|medical\s+team|consultant|specialist|nursing)\s+review\s+(?:is\s+)?(?:pending|awaited)\b/gi, "Medical Team Review Pending", "High"],
+    [/\bplan\s+(?:for\s+)?(?:a\s+)?[a-zA-Z\s]+?\s+review\b[^.,;\n]*/gi, "Medical Team Review Pending", "Medium"],
+    [/\b[a-zA-Z][^.,;\n]*?\b(?:booked|scheduled)\s+for\s+[^.,;\n]+/gi, "Scheduled Investigation / Procedure", "Medium"],
+    [/\b(?:elevate|keep\s+elevated|raise)\s+(?:the\s+)?[^.,;\n]+/gi, "Nursing Care Directive", "Medium"]
   ];
   for (const [pat, type, prio] of pendingPats) {
     let m;
