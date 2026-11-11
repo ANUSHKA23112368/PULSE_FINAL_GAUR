@@ -52,6 +52,13 @@ scratch/
 
 
 
+# Environment secrets (MongoDB Atlas / API keys)
+.env
+.env.*
+backend/.env
+!.env.example
+!backend/.env.example
+
 # Local incoming datasets and backups
 data/incoming_staging/
 data/gold_standard/*.backup.json

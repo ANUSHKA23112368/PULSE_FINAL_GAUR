@@ -225,6 +225,19 @@ cd c:\Users\akg50\Desktop\prototype
 pip install -r backend/requirements.txt
 ```
 
+### Database: SQLite (default) or MongoDB Atlas
+
+Out of the box PULSE stores everything in a local SQLite file (`backend/pulse_prototype.db`) and needs no configuration.
+
+To persist patients, handover notes, AI extractions, clinician reviews and pending tasks in MongoDB Atlas instead:
+
+1. Copy `backend/.env.example` to `backend/.env` (this file is git-ignored).
+2. Paste the connection string from **MongoDB Atlas → Connect → Drivers** into `MONGODB_URI`, e.g. `mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority`.
+3. Optionally set `MONGODB_DB` (defaults to `pulse`).
+4. Restart the backend — startup prints `PULSE storage: MongoDB Atlas (database 'pulse')`.
+
+Leave `MONGODB_URI` unset to keep using SQLite. The same public API is implemented by `backend/database/mongo_database.py`, and the ten synthetic demo patients are seeded idempotently on first connection. Never commit `backend/.env`; the frontend build never receives database credentials.
+
 ### 2. Frontend Setup
 In a second terminal, navigate to the frontend directory:
 ```powershell
